@@ -28,7 +28,7 @@ Ideally we want to find a Bellman equation for $Q^*(s,a,\pi)$ where $\pi$ is the
 
 ## Possible direction to move in
 
-My first thought is that we need an Actor-Critic method to be able to have a prior over $\pi$. If we start on some simple environments maybe it is possible to find good posterior samples from the optimal policy. If we denote samples by $^*$ we then get $Q^*(s,a) =  r(s,a) + Q^*(s', \pi^*(s'))$. Questions surrounding this include 
+My first thought is that we need an Actor-Critic method to be able to have a prior over $\pi$. If we start on some simple environments maybe it is possible to find good posterior samples from the policy. If we denote samples by $^*$ we then get $Q^*(s,a) =  r(s,a) + Q^*(s', \pi^*(s'))$. Questions surrounding this include:
 
 1. Is this on-policy?
 2. How often do we sample $\pi^*$? Per Q-value, transition or episode?
