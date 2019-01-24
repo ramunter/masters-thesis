@@ -28,11 +28,10 @@ class Corridor(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def action_state_handler(action):
+    def action_state_handler(self, action):
         if self.state in self.reverse_states:
             action = 1 - action
         
-
     def step(self, action):
         assert self.action_space.contains(action)
         reward=0
@@ -41,7 +40,7 @@ class Corridor(gym.Env):
         if self.state in self.reverse_states: # If in a reverse state swap action.
             action = 1 - action
 
-        if action = 0 and self.state not 0:  # 'backwards action'
+        if action == 0 and self.state != 0:  # 'backwards action'
             self.state -= 1
 
         elif self.state < self.n - 1:  # 'forwards action'
