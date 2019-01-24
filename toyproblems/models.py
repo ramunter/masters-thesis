@@ -1,30 +1,21 @@
-from keras.layers import Input, Dense
-from keras.models import Model
-from keras import optimizers
+from numpy.random import binomial
 
-class actor():
+class Actor():
 
-    def __init__(self, state_dim, num_actions, layers=[]):
+    def __init__(self, initial_param=0.5):
 
-        self.model = self.create_model(state_dim, num_actions, layers)
+        self.param = initial_param
 
-        updates = optimizer.get_updates(
-            params=self.model.trainable_weights, loss=-K.mean(combined_output))
+    def policy(self, state):
+        action = binomial(1, self.param)
+        return action
 
-    def create_model(state_dim, num_actions, layers=[]):
-        inputs = Input(shape=(state_dim,))
+    def update(self, q_value, action):
+        self.param += lr*q_value*(s)
 
-        if layers != []:
-            for units in layers:
-                x = Dense(units, activation="sigmoid")(x)
-        
-            outputs = Dense(actions, activation = "softmax")
-        
-        else:
-            # Binomial regression?
-            outputs = Dense(actions, activation= "softmax")
 
-        model = Model(inputs=inputs, outputs=predictions)
-        return model.compile(optimizer='rmsprop')
+        ln w*x  = w/wx
 
-class critic():
+class Critic():
+
+    def __init__(self, )

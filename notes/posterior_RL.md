@@ -1,5 +1,3 @@
-# WIP
-
 # Using posterior sampling for exploration
 
 These are my thoughts based on reading. Things here can be wrong, I'll try to point out where I might be assuming something that might not be true with footnotes.
@@ -10,9 +8,9 @@ It seems reasonable that sampling the Q-value directly should account for our un
 
 $Q^*(s,a|\pi) = R(s,a) + \gamma\sum_{s'}P_{s'|s,a}\sum_{a'}\pi(a'|s')Q_\pi(s',a'|\pi)$
 
-The $Q$-value is conditioned on a policy $\pi$. If we have a constant policy the problem is stationary<sup>[1](#1)</sup> and all the parametric uncertainty is contained in the posterior.
+The $Q$-value is conditioned on a policy $\pi$. If we have a constant policy the problem is stationary (<sup>[1](#1)</sup>) and all the parametric uncertainty is contained in the posterior.
 
-However, as soon as we start changing our policy, the expected total reward changes making the target non-stationary. Despite this, the function approximation methods used are derived for stationary targets. This means the variance and posterior calculations will underestimate the uncertainty as they do not take into account the uncertainty in the policy of future Q-values.<sup>[2](#2)</sup>
+However, as soon as we start changing our policy, the expected total reward changes making the target non-stationary. Despite this, the function approximation methods used are derived for stationary targets. This means the variance and posterior calculations will underestimate the uncertainty as they do not take into account the uncertainty in the policy of future Q-values. (<sup>[2](#2)</sup>)
 
 To deal with this most papers attempt to "propagate" the variance from future Q-values into the current Q-value. This process means we cannot sample the posterior directly. Instead we must assume its distribution to be normal and sample based on our mean and propagated variance estimate.
 
@@ -22,9 +20,9 @@ The way this is dealt with in the UBE is to create a Bellman like equation that 
 
 ## Directly sampling posterior
 
-There are many ways to sample an approximation to the posterior $Q$ (Dropout, Ensemble Bootstrapping), however most of them do not perform any propagation and thus do not incorporate the policy uncertainty. The randomize prior function paper claims to do so, but I'm having a hard time seeing how it actually does this.<sup>[3](#3)</sup>
+There are many ways to sample an approximation to the posterior $Q$ (Dropout, Ensemble Bootstrapping), however most of them do not perform any propagation and thus do not incorporate the policy uncertainty. The randomize prior function paper claims to do so, but I'm having a hard time seeing how it actually does this. (<sup>[3](#3)</sup>)
 
-Ideally we want to find a Bellman equation for $Q^*(s,a,\pi)$ where $\pi$ is the optimal policy such that we can create a model that samples the posterior $Q^*(s,a,\pi)$. I believe that this might give the best possible exploration/exploitation trade-off<sup>[4](#4)</sup>. However, I can't be the first to think of this so there are probably plenty of obstacles stopping this.
+Ideally we want to find a Bellman equation for $Q^*(s,a,\pi)$ where $\pi$ is the optimal policy such that we can create a model that samples the posterior $Q^*(s,a,\pi)$. I believe that this might give the best possible exploration/exploitation trade-off(<sup>[4](#4)</sup>). However, I can't be the first to think of this so there are probably plenty of obstacles stopping this.
 
 ## Possible direction to move in
 

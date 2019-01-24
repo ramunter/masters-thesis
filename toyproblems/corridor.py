@@ -29,7 +29,6 @@ class Corridor(gym.Env):
         return [seed]
 
     def action_state_handler(action):
-        
         if self.state in self.reverse_states:
             action = 1 - action
         
