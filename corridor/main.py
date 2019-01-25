@@ -1,10 +1,12 @@
-from agents import actor_critic, q_learner, optimal
+from agents import actor_critic, q_learner, move_right
 from models import Actor, Critic
 from corridor import Corridor
 
-env = Corridor(N=5, K=0)
-optimal(env)
+num_states = 20
 
-critic = Critic()
-q_learner(env, critic, episodes=100)
+env = Corridor(N=num_states, K=0)
+move_right(env)
+
+critic = Critic(lr=0.01)
+q_learner(env, critic, episodes=10000)
 
