@@ -24,9 +24,14 @@ class Corridor(gym.Env):
     def __init__(self, N=3, K=1, p=0.9):
         self.seed()
         self.N = N
+        
         self.reverse_states = choice(arange(N), size=K, replace=False)
         self.p = p
+
         self.state = 0  # Start at beginning of the chain
+        self.steps = 0
+        self.max_steps = N*2
+
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Discrete(self.N)
 
@@ -54,15 +59,19 @@ class Corridor(gym.Env):
 
         elif self.state < self.N - 1:  # 'forwards action'
             self.state += 1
-        else:
-            assert False, "In final or past final state. This should never occur."
 
         if self.state == self.N - 1:
             reward = 1
-            done= True
+
+        if self.steps > self.max_steps:
+            done = True
+
+        self.steps += 1
 
         return self.state, reward, done, {}
 
     def reset(self):
         self.state = 0
+        self.steps = 0
+
         return self.state
