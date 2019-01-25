@@ -39,17 +39,14 @@ def q_learner(env, critic, episodes=10000):
     for episode in range(0,episodes):
 
         state = env.reset()
-        action = critic.best_action(state)
+        action = critic.get_action(state)
         done = False
         steps = 0
 
         while steps < env.N*2:
 
-            if binomial(1,0.2):
-                 next_state, reward, done, _ = env.step(binomial(1, 0.5))
-            else:
-                # Perform step
-                next_state, reward, done, _ = env.step(action)
+            # Perform step
+            next_state, reward, done, _ = env.step(action)
 
             # Calculate Q-values
             q_value = critic.q_value(state, action)            
