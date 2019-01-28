@@ -18,7 +18,7 @@ def ube_q_learner(env, episodes=10000):
     for episode in range(0,episodes):
 
         state = env.reset()
-        action = critic.get_action(state)
+        action = critic.sample_action(state)
         done = False
         steps = 0
 
@@ -39,12 +39,12 @@ def ube_q_learner(env, episodes=10000):
 
             # Reset loop
             state = next_state
-            action = critic.get_action(state)
+            action = critic.sample_action(state)
             steps += 1
 
-    print("Final Parameters")
-    critic.print_parameters()
-    critic.print_policy(num_states=env.N)
+    # print("Final Parameters")
+    # critic.print_parameters()
+    # critic.print_policy(num_states=env.N)
 
     return critic.is_policy_optimal(env.N)
 
@@ -59,7 +59,7 @@ def sample_target_ube_q_learner(env, episodes=10000):
     for episode in range(0,episodes):
 
         state = env.reset()
-        action = critic.get_action(state)
+        action = critic.sample_action(state)
         done = False
         steps = 0
 
@@ -72,19 +72,19 @@ def sample_target_ube_q_learner(env, episodes=10000):
             q_value = critic.mean_q_value(state, action)
 
             # Best next action
-            next_action, next_q_value = critic.get_action_and_value(next_state)
+            next_action, next_q_value = critic.get_best_sampled_action_and_value(next_state)
 
             # Update parameters
             critic.update(state, action, reward, next_q_value, done)
 
             # Reset loop
             state = next_state
-            action = critic.get_action(state)
+            action = next_action
             steps += 1
 
-    print("Final Parameters")
-    critic.print_parameters()
-    critic.print_policy(num_states=env.N)
+    # print("Final Parameters")
+    # critic.print_parameters()
+    # critic.print_policy(num_states=env.N)
 
     return critic.is_policy_optimal(env.N)
 
@@ -95,7 +95,7 @@ class UBECritic():
         self.model = SGDRegressor(learning_rate="constant", eta0=lr)
         self.gamma = gamma
         self.sigma = [np.eye(num_features)]*2 # 2 is num actions
-        self.beta = 0.1
+        self.beta = 6 # 1 + sum ()
     
     def init_model(self, state):
         features = featurizer(state, 0)
@@ -122,14 +122,14 @@ class UBECritic():
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
         return sample_q
 
-    def get_action_and_value(self, state):
+    def get_best_sampled_action_and_value(self, state):
         Q_left = self.sample_q(state, 0)
         Q_right = self.sample_q(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def get_action(self, state):
+    def sample_action(self, state):
         Q_left = self.sample_q(state, 0)
         Q_right = self.sample_q(state, 1)
         if Q_left > Q_right:

@@ -62,7 +62,7 @@ class Critic():
 
     def get_action(self, state):
 
-        if binomial(1,0.5):
+        if binomial(1,0.2):
             return binomial(1, 0.5)
         else:
             # Perform step

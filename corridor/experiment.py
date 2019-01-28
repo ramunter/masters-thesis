@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from corridor import Corridor
 
@@ -11,19 +12,18 @@ def increasing_chain_length_experiment(methods, method_names, chain_length_seque
     
     results = pd.DataFrame(dict(zip(names, data)))
 
-    for i, N in enumerate(results["Chain Length"]):
+    for i, N in enumerate(tqdm(results["Chain Length"])):
 
         env = Corridor(N=N, K=0)    
 
         for j, name in enumerate(method_names):
 
             successes = 0
-            print(name)
             for _ in range(0, attempts_per_chain_length):
 
                 learned_optimal_policy = methods[j](env, episodes=1000)
                 if learned_optimal_policy:
-                    successes +=1
+                    successes += 1
 
             results.loc[results.index[i], name] = successes/attempts_per_chain_length
 
