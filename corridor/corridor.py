@@ -1,9 +1,15 @@
-from numpy.random import choice, binomial
+from enum import Enum
+
+from numpy.random import choice, binomial, normal
 from numpy import arange
 
 import gym
 from gym import spaces
 from gym.utils import seeding
+
+# Action "Enum"
+LEFT = 0
+RIGHT = 1
 
 class Corridor(gym.Env):
     """Corridor environment
@@ -45,30 +51,53 @@ class Corridor(gym.Env):
         
     def step(self, action):
         assert self.action_space.contains(action)
-        reward=0
-        done = False
 
-        if self.state in self.reverse_states: # If in a reverse state swap action.
-            action = 1 - action
-
-        if action == 1:
-            action = binomial(1, p=0.9)
-
-        if action == 0 and self.state != 0:  # 'backwards action'
-            self.state -= 1
-
-        elif self.state < self.N - 1:  # 'forwards action'
-            self.state += 1
-
-        if self.state == self.N - 1:
-            reward = 1
+        action = self.env_changes_to_actions(action)
+        self.input(action)
+        reward = self.reward_calculator()
 
         if self.steps > self.max_steps:
             done = True
+        else:
+            done = False
 
         self.steps += 1
 
         return self.state, reward, done, {}
+
+    def env_changes_to_actions(self, action):
+
+        # If in a reverse state swap action.
+        if self.state in self.reverse_states: 
+            action = 1 - action
+
+        # If trying to move right there is a prob of moving left
+        if action == RIGHT:
+            action = binomial(1, p=0.9) # 0.9 prob of right
+
+        return action
+
+    def input(self, action):
+
+        if action == LEFT:
+            if self.state != 0: 
+                self.state -= 1
+
+        elif action == RIGHT and self.state < self.N - 1:  # 'forwards action'
+            self.state += 1
+
+    def reward_calculator(self):
+
+        if self.state == self.N - 1:
+            reward = normal(loc=1, scale=1) # Final state reward
+        
+        elif self.state == 0:
+            reward = normal(loc=0, scale=1) # State 0 reward
+
+        else:
+            reward = 0
+            
+        return reward
 
     def reset(self):
         self.state = 0

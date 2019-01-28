@@ -2,20 +2,48 @@ from numpy.random import binomial
 from numpy import array
 from sklearn.linear_model import SGDRegressor
 
-import tensorflow as tf
-import edward as ed
-from edward.models import Normal
-
-def featurizer(state, action):
-    return array([state, action]).reshape(1,-1)
-    #return array([state, action, state*action, state**2, action**2]).reshape(1, -1) # Reshape to work with sklearn...
+from util import featurizer
 
 
-class MoveRight():
-    # Class to test that things are working as expected
-    def policy(self):
-        return 1
+def q_learner(env, episodes=10000):
+    
+    critic = Critic()
 
+    state = env.reset()
+    critic.init_model(state)
+
+    for episode in range(0,episodes):
+
+        state = env.reset()
+        action = critic.get_action(state)
+        done = False
+        steps = 0
+
+        while not done:
+
+            # Perform step
+            next_state, reward, done, _ = env.step(action)
+
+            # Calculate Q-values
+            q_value = critic.q_value(state, action)            
+
+            # Best next action
+            next_action = critic.best_action(next_state)
+            next_q_value = critic.q_value(next_state, next_action)
+
+            # Update parameters
+            critic.update(state, action, reward, next_q_value, done)
+
+            # Reset loop
+            state = next_state
+            action = critic.get_action(state)
+            steps += 1
+
+    # print("Final Parameters")
+    # critic.print_parameters()
+    # critic.print_policy(num_states=env.N)
+
+    return critic.is_policy_optimal(env.N)
 
 class Critic():
 
@@ -34,7 +62,7 @@ class Critic():
 
     def get_action(self, state):
 
-        if binomial(1,0.2):
+        if binomial(1,0.5):
             return binomial(1, 0.5)
         else:
             # Perform step
@@ -56,6 +84,12 @@ class Critic():
         target = array([target]).reshape((1,)) # Correct dim for SKlearn        
 
         self.model.partial_fit(features, target)
+
+    def is_policy_optimal(self, num_states):
+        # Moving right is optimal. Checks if all actions are right.
+        policy = [self.best_action(state)==1 for state in range(0,num_states)]
+        return all(policy)
+
 
     def print_parameters(self):
         print('Coefficients: \n', self.model.coef_)
@@ -83,41 +117,3 @@ class Critic():
             else:
                 print("l", end=' ')
         print()
-
-
-class PosteriorCritic():
-
-    def __init__(self, features_shape, gamma=0.9):
-        create_model()
-
-    def create_model(self):
-        self.features = tf.placeholder(tf.int32, [1, features_shape])
-        self.w = Normal(loc=tf.zeros(state_shape), scale=tf.ones(features_shape))
-        self.b = Normal(loc=tf.zeros(1), scale=tf.ones(1))
-        self.y = Normal(loc=ed.dot(features, w) + b, scale=tf.ones(1))
-        self.post_w = Normal(loc=tf.get_variable("qw/loc", [features_shape]),
-                    scale=tf.nn.softplus(tf.get_variable("qw/scale", [features_shape])))
-        self.post_b = Normal(loc=tf.get_variable("qb/loc", [1]),
-                    scale=tf.nn.softplus(tf.get_variable("qb/scale", [1])))
-
-
-    def update(self, state, action, reward, next_q_value, done):
-        target = reward
-        if not done:
-            target += self.gamma*next_q_value
-
-        features = featurizer(state, action)
-        target = array([target]).reshape((1,))
-
-
-
-class Actor():
-
-    def __init__(self, initial_action_param=0.5, lr=0.1):
-
-        self.action_param = initial_action_param
-        self.lr = lr
-
-    def policy(self):
-        return 1
-

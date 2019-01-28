@@ -1,12 +1,12 @@
-from agents import actor_critic, q_learner, move_right
-from models import Actor, Critic
-from corridor import Corridor
+from experiment import increasing_chain_length_experiment
+from numpy import arange
 
-num_states = 8
+from regular_q_learner import q_learner
+from ube_q_learner import ube_q_learner, sample_target_ube_q_learner
 
-env = Corridor(N=num_states, K=0)
-move_right(env)
-
-critic = Critic(lr=0.1)
-q_learner(env, critic, episodes=100)
+increasing_chain_length_experiment(
+    [q_learner, ube_q_learner, sample_target_ube_q_learner],
+    ["Regular", "UBE", "UBE with sample target"],
+    chain_length_sequence=arange(2, 20, 2),
+    attempts_per_chain_length=5)
 
