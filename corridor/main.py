@@ -12,9 +12,7 @@ flags.DEFINE_integer("longest_chain", 10, "Longest chain attempted")
 
 FLAGS = flags.FLAGS 
 
-
 def main(argv):
-
 
     increasing_chain_length_experiment(
         [q_learner, ube_q_learner, sample_target_ube_q_learner],
