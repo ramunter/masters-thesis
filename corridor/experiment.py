@@ -6,7 +6,11 @@ from tqdm import tqdm, trange
 from q_learner import q_learner
 from corridor import Corridor
 
-def increasing_chain_length_experiment(methods, method_names, chain_length_sequence, attempts_per_chain_length):
+def increasing_chain_length_experiment(
+    methods, 
+    method_names, 
+    chain_length_sequence, 
+    attempts_per_chain_length):
 
     names = ["Chain Length"] + method_names
     data = [chain_length_sequence, ]+ [range(0,len(chain_length_sequence))]*3
@@ -36,4 +40,5 @@ def increasing_chain_length_experiment(methods, method_names, chain_length_seque
     results_melted = pd.melt(results, id_vars=["Chain Length"])
 
     sns.relplot(x="Chain Length", y="value", hue="variable", kind="line", data=results_melted)
-    plt.show()
+    
+    plt.savefig("results_new.png")
