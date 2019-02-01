@@ -1,8 +1,15 @@
 from abc import ABC, abstractmethod
 from util import featurizer
+from numpy import array
 
+def calculate_target(gamma, reward, next_q_value, done):
+    target = reward
+    if not done:
+        target += gamma*next_q_value
+    target = array([target]).reshape((1,))
+    return target
 
-def q_learner(env, Critic, episodes=10000, verbose=False):
+def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     
     state = env.reset()
     num_features = len(featurizer(state, 0)[0,:-1])
@@ -26,7 +33,8 @@ def q_learner(env, Critic, episodes=10000, verbose=False):
             next_action, next_q_value = critic.get_target_action_and_q_value(next_state)
 
             # Update parameters
-            critic.update(state, action, reward, next_q_value, done)
+            target = calculate_target(gamma, reward, next_q_value, done)
+            critic.update(state, action, target)
 
             # Reset loop
             state = next_state
@@ -69,6 +77,8 @@ class CriticTemplate(ABC):
     def is_policy_optimal(self, num_states):
         policy = [self.best_action(state)==1 for state in range(0,num_states)]
         return all(policy)
+
+
 
     ## Debug functions
     
