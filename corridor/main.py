@@ -14,10 +14,12 @@ FLAGS = flags.FLAGS
 def main(argv):
 
     increasing_chain_length_experiment(
-        [EGreedyCritic, SampleTargetUBECritic, GaussianBayesCritic],
-        ["E-Greedy", "UBE with sample target", "Gaussian Prior"],
-        chain_length_sequence=arange(2, FLAGS.longest_chain, 2),
+        [GaussianBayesCritic],
+        ["Gausian Prior"],
+#       [EGreedyCritic, SampleTargetUBECritic, GaussianBayesCritic],
+#       ["E-Greedy", "UBE with sample target", "Gaussian Prior"],
+        chain_length_sequence=arange(2, FLAGS.longest_chain, 4),
         attempts_per_chain_length=FLAGS.iterations)
 
 if __name__ == '__main__':
-  app.run(main)
+    app.run(main)
