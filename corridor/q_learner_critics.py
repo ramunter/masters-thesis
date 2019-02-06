@@ -170,4 +170,38 @@ class GaussianBayesCritic(CriticTemplate):
         print("Mean:\n", self.model.mean)
         print("Cov:\n", self.model.cov)
 
+class DeepGaussianBayesCritic(GaussianBayesCritic):
+    """
+    Deep exploration
+    """
+
+    def __init__(self, lr=0.01, gamma=0.9):
+                
+        self.model = GaussianRegression()
+        self.coef = self.sample_coef()
+
+    def get_target_action_and_q_value(self, state):
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0, Q_left
+        return 1, Q_right
+
+    def reset(self):
+        self.coef = self.sample_coef()
+
+    def sample_coef(self):
+        coef = np.random.multivariate_normal(self.model.mean[:,0], self.model.cov)
+        return coef
+    
+    def q_value(self, state, action):
+        features = featurizer(state, action)
+        features = np.append(features, [[1]], axis=1) # add constant
+        return features@self.coef
+
+    def print_parameters(self):
+        print("Coefficients")
+        print("Mean:\n", self.model.mean)
+        print("Cov:\n", self.model.cov)
+
 

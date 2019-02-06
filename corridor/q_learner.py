@@ -20,6 +20,8 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     for episode in range(0,episodes):
 
         state = env.reset()
+        critic.reset()
+
         action = critic.get_action(state)
         done = False
         steps = 0
@@ -40,7 +42,6 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
             state = next_state
             action = critic.get_action(state)
             steps += 1
-
 
     if verbose:
         print("Final Parameters")
@@ -68,6 +69,9 @@ class CriticTemplate(ABC):
 
     @abstractmethod
     def update(self, state, action, reward, next_q_value, done):
+        pass
+
+    def reset(self):
         pass
 
     def best_action(self, state):
