@@ -12,12 +12,13 @@ def calculate_target(gamma, reward, next_q_value, done):
 def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     
     state = env.reset()
-    num_features = len(featurizer(state, 0)[0,:-1])
     critic = Critic()
 
     critic.init_model(state)
 
-    for episode in range(0,episodes):
+    average_regret = 1
+
+    for episode in range(1,episodes+1):
 
         state = env.reset()
         critic.reset()
@@ -43,12 +44,22 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
             action = critic.get_action(state)
             steps += 1
 
+        average_regret -= average_regret / 20
+        average_regret += (1 - reward) / 20
+
+        if average_regret < 0.9*1: # What should "learned" be? 
+            # print("Episode:", episode)
+            # print(average_regret)
+            # print(cumulative_regret)
+            break # Check that this does not remove episode
+
+
     if verbose:
         print("Final Parameters")
         critic.print_parameters()
         critic.print_policy(num_states=env.N)
 
-    return critic.is_policy_optimal(env.N)
+    return episode
 
 
 class CriticTemplate(ABC):
@@ -81,8 +92,6 @@ class CriticTemplate(ABC):
     def is_policy_optimal(self, num_states):
         policy = [self.best_action(state)==1 for state in range(0,num_states)]
         return all(policy)
-
-
 
     ## Debug functions
     

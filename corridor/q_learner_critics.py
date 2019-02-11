@@ -137,7 +137,7 @@ class GaussianBayesCritic(CriticTemplate):
         pass
 
     def get_action(self, state):
-        action, q_value = self.get_target_action_and_q_value(state)
+        action, _ = self.get_target_action_and_q_value(state)
         return action
 
     def get_target_action_and_q_value(self, state):

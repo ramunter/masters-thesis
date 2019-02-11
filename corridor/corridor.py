@@ -36,7 +36,7 @@ class Corridor(gym.Env):
 
         self.state = 0  # Start at beginning of the chain
         self.steps = 0
-        self.max_steps = N*2
+        self.max_steps = N
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Discrete(self.N)
@@ -89,10 +89,10 @@ class Corridor(gym.Env):
     def reward_calculator(self):
 
         if self.state == self.N - 1:
-            reward = normal(loc=1, scale=1) # Final state reward
+            reward = 1#normal(loc=1, scale=1) # Final state reward
         
         elif self.state == 0:
-            reward = normal(loc=0, scale=1) # State 0 reward
+            reward = 0#normal(loc=0, scale=1) # State 0 reward
 
         else:
             reward = 0

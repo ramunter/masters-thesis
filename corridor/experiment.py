@@ -25,15 +25,14 @@ def increasing_chain_length_experiment(
         for i, N in enumerate(tqdm(results["Chain Length"])):
 
             env = Corridor(N=N, K=0)
-            successes = 0
+            sum_steps_to_learn = 0
             
             for _ in trange(0, attempts_per_chain_length):
 
-                learned_optimal_policy = q_learner(env, Critic=method, episodes=1000, verbose=True)
-                if learned_optimal_policy:
-                    successes += 1
+                steps_to_learn = q_learner(env, Critic=method, episodes=1000, verbose=True)
+                sum_steps_to_learn += steps_to_learn
 
-            results.loc[results.index[i], name] = successes/attempts_per_chain_length
+            results.loc[results.index[i], name] = sum_steps_to_learn/attempts_per_chain_length
 
     print(results)
 
