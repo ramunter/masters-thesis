@@ -9,7 +9,7 @@ def calculate_target(gamma, reward, next_q_value, done):
     target = array([target]).reshape((1,))
     return target
 
-def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
+def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
     
     state = env.reset()
     critic = Critic()
@@ -47,7 +47,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        if average_regret < 0.9*1: # What should "learned" be? 
+        if average_regret < 0.1*1: # What should "learned" be? 
             # print("Episode:", episode)
             # print(average_regret)
             # print(cumulative_regret)
