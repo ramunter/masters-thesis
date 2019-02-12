@@ -20,7 +20,9 @@ The corridor environment allows one to define:
 
 The current setup gives 1 reward for reaching the final node to the right, and 0 otherwise. The agent has N steps to try to reach the goal. The experiment is run with K=0 and p=1 to allow a simple linear model and simple calculation of the optimal reward.
 
-The agent is then tested in the environment multiple times for an increasing value of N. The attempt is stopped when the agent reaches a running average of regret per episode that is lower than 1% of the optimal reward. When this happens we consider that the agent has "learned" the environment.
+The agent is then tested in the environment multiple times for an increasing value of N. The attempt is stopped when the agent reaches a running average of regret per episode(optimal return - actual return) that is lower than 1% of the optimal reward. When this happens we consider that the agent has "learned" the environment.
+
+Given the deterministic state transitions and N possible steps the optimal return is 1.
 
 
 ### Experiment pseudocode
@@ -41,7 +43,7 @@ The agent is then tested in the environment multiple times for an increasing val
 
 ## Agent
 
-The agent is a vanilla Q-learning algorithm.
+The agent is a vanilla Q-learning algorithm. The following pseudocode is essentialy a reproduction of the actual code to make the critic pseudocode clear-
 
 <pre>
 <b>Q-learner</b>
@@ -53,9 +55,13 @@ The agent is a vanilla Q-learning algorithm.
   <b>while</b> not done:
 
     next_state, reward, done = take_step(action)
-    target = calculate Q-learning target
+
+    next_action, next_q_value = critic.get_target_action_and_q_value(next_state)
+
+    target = calculate_target(gamma, reward, next_q_value, done)
+
     critic.update(state, action, target)
-    
+
     state = next_state
     action = critic.get_action(state)
 
@@ -84,9 +90,11 @@ sample e from unif(0,1)
 return best action
 
 
-<b>Best Action</b>
+<b>Get Next Action and Q Value</b>
 
-return argmax Q-value(state, action | state)
+q_values = LinearRegressionModel(state, action | state) 
+action = argmax q_values
+Q_value = q_values[action]
 </pre>
 
 ### Sample Target UBE Critic
@@ -102,7 +110,7 @@ Note that this implementation does not directly propagate the local uncertainty.
 action = argmax Sample Q-value(state, action | state)
 
 
-<b>Next Q-value and Action</b>
+<b>Get Next Action and Q Value</b>
 q_values = Sample Q-value(state, action | state)
 next_action = argmax q_values
 next_q_value = q_values[next_action]
@@ -110,7 +118,7 @@ next_q_value = q_values[next_action]
 
 <b>Sample Q-value</b>
 
-mean_q = regression_prediction(state, action)
+mean_q = LinearRegressionModel(state, action)
 var_q = action_variance(state, action)
 u = sample unif(0,1)
 Q-value = mean_q + beta*var_q*u
@@ -132,17 +140,43 @@ $ -->
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\\&space;\textbf{Action&space;Variance}&space;\\\\&space;S^T\Sigma_aS&space;\\\\&space;\textbf{Update&space;}\Sigma_a&space;\\\\&space;\Sigma_a&space;=&space;\Sigma_a&space;-&space;\frac{\Sigma_aSS^T\Sigma_a}{1&space;&plus;&space;S^T\Sigma_aS}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\\&space;\textbf{Action&space;Variance}&space;\\\\&space;S^T\Sigma_aS&space;\\\\&space;\textbf{Update&space;}\Sigma_a&space;\\\\&space;\Sigma_a&space;=&space;\Sigma_a&space;-&space;\frac{\Sigma_aSS^T\Sigma_a}{1&space;&plus;&space;S^T\Sigma_aS}" title="\\ \textbf{Action Variance} \\\\ S^T\Sigma_aS \\\\ \textbf{Update }\Sigma_a \\\\ \Sigma_a = \Sigma_a - \frac{\Sigma_aSS^T\Sigma_a}{1 + S^T\Sigma_aS}" /></a>
 
+The intitial Sigma is set to an identity matrix of correct dimension.
+
 ### Gaussian Bayes Critic
+
+
+<pre>
+
+
+<b>Get Action</b>
+coef = Sample N(mu, Sigma)
+action = argmax BayesianRegressionModel(state, action, coef)
+
+
+<b>Get Next Action and Q Value</b>
+coef = Sample N(mu, Sigma)
+q_values = BayesianRegressionModel(state, action, coef)
+next_action = argmax q_values
+next_q_value = q_values[next_action]
+
+</pre>
+
+The bayesian regression model is updated using the following update functions
+
 <!-- 
 $
 \\
 \textbf{Update Mean Parameters}
 \\\\
-\mu = (X^T X + \varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu)
+\mu = (X^T X + \sigma_\varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu)
 \\\\
 \textbf{Update Covariance Matrix}
 \\\\
-\Sigma = (\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}
+\Sigma = (\sigma_\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}
 $ -->
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" title="\\ \textbf{Update Mean Parameters} \\\\ \mu = (X^T X + \varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu) \\\\ \textbf{Update Covariance Matrix} \\\\ \Sigma = (\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}" /></a>
+<a href="https://www.codecogs.com/eqnedit.php?latex=\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\sigma_\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\sigma_\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\sigma_\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\sigma_\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" title="\\ \textbf{Update Mean Parameters} \\\\ \mu = (X^T X + \sigma_\varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu) \\\\ \textbf{Update Covariance Matrix} \\\\ \Sigma = (\sigma_\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}" /></a>
+
+### Deep Exploration Gaussian Bayes Critic
+
+This algorithm is almost the same as the Gaussian Bayes Critic. The only difference is coefficients are sampled per episode rather than per step.
