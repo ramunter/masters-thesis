@@ -130,7 +130,19 @@ S^T\Sigma_aS
 \Sigma_a = \Sigma_a - \frac{\Sigma_aSS^T\Sigma_a}{1 + S^T\Sigma_aS}
 $ -->
 
-![](https://latex.codecogs.com/gif.latex?%5C%5C%20%5Ctextbf%7BAction%20Variance%7D%20%5C%5C%5C%5C%20S%5ET%5CSigma_aS%20%5C%5C%5C%5C%20%5Ctextbf%7BUpdate%20%7D%5CSigma_a%20%5C%5C%5C%5C%20%5CSigma_a%20%3D%20%5CSigma_a%20-%20%5Cfrac%7B%5CSigma_aSS%5ET%5CSigma_a%7D%7B1%20&plus;%20S%5ET%5CSigma_aS%7D)
+<a href="https://www.codecogs.com/eqnedit.php?latex=\\&space;\textbf{Action&space;Variance}&space;\\\\&space;S^T\Sigma_aS&space;\\\\&space;\textbf{Update&space;}\Sigma_a&space;\\\\&space;\Sigma_a&space;=&space;\Sigma_a&space;-&space;\frac{\Sigma_aSS^T\Sigma_a}{1&space;&plus;&space;S^T\Sigma_aS}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\\&space;\textbf{Action&space;Variance}&space;\\\\&space;S^T\Sigma_aS&space;\\\\&space;\textbf{Update&space;}\Sigma_a&space;\\\\&space;\Sigma_a&space;=&space;\Sigma_a&space;-&space;\frac{\Sigma_aSS^T\Sigma_a}{1&space;&plus;&space;S^T\Sigma_aS}" title="\\ \textbf{Action Variance} \\\\ S^T\Sigma_aS \\\\ \textbf{Update }\Sigma_a \\\\ \Sigma_a = \Sigma_a - \frac{\Sigma_aSS^T\Sigma_a}{1 + S^T\Sigma_aS}" /></a>
 
 ### Gaussian Bayes Critic
+<!-- 
+$
+\\
+\textbf{Update Mean Parameters}
+\\\\
+\mu = (X^T X + \varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu)
+\\\\
+\textbf{Update Covariance Matrix}
+\\\\
+\Sigma = (\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}
+$ -->
 
+<a href="https://www.codecogs.com/eqnedit.php?latex=\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\\&space;\textbf{Update&space;Mean&space;Parameters}&space;\\\\&space;\mu&space;=&space;(X^T&space;X&space;&plus;&space;\varepsilon\Sigma^{-1})^{-1}(X^TY&space;&plus;&space;\Sigma^{-1}\mu)&space;\\\\&space;\textbf{Update&space;Covariance&space;Matrix}&space;\\\\&space;\Sigma&space;=&space;(\varepsilon^{-2}X^TX&plus;\Sigma^{-1})^{-1}" title="\\ \textbf{Update Mean Parameters} \\\\ \mu = (X^T X + \varepsilon\Sigma^{-1})^{-1}(X^TY + \Sigma^{-1}\mu) \\\\ \textbf{Update Covariance Matrix} \\\\ \Sigma = (\varepsilon^{-2}X^TX+\Sigma^{-1})^{-1}" /></a>
