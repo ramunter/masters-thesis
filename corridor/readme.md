@@ -52,7 +52,7 @@ The agent is a vanilla Q-learning algorithm.
 
   <b>while</b> not done:
 
-    next_state, reward, done = environment_step(action)
+    next_state, reward, done = take_step(action)
     target = calculate Q-learning target
     critic.update(state, action, target)
     
@@ -60,12 +60,77 @@ The agent is a vanilla Q-learning algorithm.
     action = critic.get_action(state)
 
   average_regret = running_average_regret()
-  
+
   <b>if</b> average_regret < threshold:
     break
 </pre>
 
 ## Critics
 
-### $\varepsilon$-greedy
+For each Critic pseudocode is provided for the key functionality of the critic.
+
+### e-greedy
+
+Uses a linear regression method using SGD for parameter optimization.
+
+<pre>
+
+
+<b>Get Action</b>
+
+sample e from unif(0,1)
+<b>if</b> e < 0.2:
+  return random action
+return best action
+
+
+<b>Best Action</b>
+
+return argmax Q-value(state, action | state)
+</pre>
+
+### Sample Target UBE Critic
+
+Note that this implementation does not directly propagate the local uncertainty.
+
+
+<pre>
+
+
+<b>Get Action</b>
+
+action = argmax Sample Q-value(state, action | state)
+
+
+<b>Next Q-value and Action</b>
+q_values = Sample Q-value(state, action | state)
+next_action = argmax q_values
+next_q_value = q_values[next_action]
+
+
+<b>Sample Q-value</b>
+
+mean_q = regression_prediction(state, action)
+var_q = action_variance(state, action)
+u = sample unif(0,1)
+Q-value = mean_q + beta*var_q*u
+
+</pre>
+
+The action varaince calculation and update are best shown through their equations:
+
+<!-- $
+\\
+\textbf{Action Variance}
+\\\\
+S^T\Sigma_aS
+\\\\
+\textbf{Update }\Sigma_a
+\\\\
+\Sigma_a = \Sigma_a - \frac{\Sigma_aSS^T\Sigma_a}{1 + S^T\Sigma_aS}
+$ -->
+
+![](https://latex.codecogs.com/gif.latex?%5C%5C%20%5Ctextbf%7BAction%20Variance%7D%20%5C%5C%5C%5C%20S%5ET%5CSigma_aS%20%5C%5C%5C%5C%20%5Ctextbf%7BUpdate%20%7D%5CSigma_a%20%5C%5C%5C%5C%20%5CSigma_a%20%3D%20%5CSigma_a%20-%20%5Cfrac%7B%5CSigma_aSS%5ET%5CSigma_a%7D%7B1%20&plus;%20S%5ET%5CSigma_aS%7D)
+
+### Gaussian Bayes Critic
 

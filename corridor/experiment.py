@@ -18,8 +18,7 @@ def increasing_chain_length_experiment(
     results = pd.DataFrame(dict(zip(names, data)))
 
     for j, name in enumerate(method_names):
-
-        print("=====Now using:", name, "========")
+        print("\n=====Now using:", name, "========")
         method = methods[j]
 
         for i, N in enumerate(tqdm(results["Chain Length"])):

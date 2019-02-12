@@ -69,10 +69,8 @@ class UBECritic(CriticTemplate):
         features = featurizer(state, action)
         return self.model.predict(features)[0]
 
-    def action_variance(self, features):
-        action = features[0,-1]
-        features = features[0,:-1]
-        var_action = features*self.sigma[action]*features
+    def action_variance(self, state, action):
+        var_action = state*self.sigma[action]*state
 
         return(var_action)
 
@@ -86,7 +84,7 @@ class UBECritic(CriticTemplate):
     def sample_q(self, state, action):
         features = featurizer(state, action)
         mean_q = self.model.predict(features)[0]
-        var_q = self.action_variance(features)
+        var_q = self.action_variance(state, action)
         sample = np.random.standard_normal(size=1)
         
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
