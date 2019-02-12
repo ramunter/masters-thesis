@@ -73,7 +73,7 @@ class Corridor(gym.Env):
 
         # If trying to move right there is a prob of moving left
         if action == RIGHT:
-            action = binomial(1, p=0.9) # 0.9 prob of right
+            action = binomial(1, p=self.p) # p prob of right
 
         return action
 

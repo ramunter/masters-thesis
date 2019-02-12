@@ -47,10 +47,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        if average_regret < 0.1*1: # What should "learned" be? 
-            # print("Episode:", episode)
-            # print(average_regret)
-            # print(cumulative_regret)
+        if average_regret < 0.01*1: # What should "learned" be? 
             break # Check that this does not remove episode
 
 
@@ -58,6 +55,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
         print("Final Parameters")
         critic.print_parameters()
         critic.print_policy(num_states=env.N)
+        print("Episodes used: ", episode)
 
     return episode
 

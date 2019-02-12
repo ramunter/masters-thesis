@@ -14,9 +14,9 @@ FLAGS = flags.FLAGS
 def main(argv):
 
     increasing_chain_length_experiment(
-        [EGreedyCritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic],
-        ["E-Greedy", "UBE with sample target", "Gaussian Prior", "Deep Gaussian Prior"],
-        chain_length_sequence=arange(4, FLAGS.longest_chain, 4),
+        [SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic],
+        ["UBE with sample target", "Gaussian Prior", "Deep Gaussian Prior"],
+        chain_length_sequence=arange(4, FLAGS.longest_chain, 2),
         attempts_per_chain_length=FLAGS.iterations)
 
 if __name__ == '__main__':
