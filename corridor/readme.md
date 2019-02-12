@@ -20,7 +20,7 @@ The corridor environment allows one to define:
 
 The current setup gives 1 reward for reaching the final node to the right, and 0 otherwise. The agent has N steps to try to reach the goal. The experiment is run with K=0 and p=1 to allow a simple linear model and simple calculation of the optimal reward.
 
-The agent is then tested in the environment multiple times for an increasing value of N. The attempt is stopped when the agent reaches a running average of regret per episode(optimal return - actual return) that is lower than 1% of the optimal reward. When this happens we consider that the agent has "learned" the environment.
+The agent is then tested in the environment multiple times for an increasing value of N. The attempt is stopped when the agent reaches a running average of regret per episode (optimal return - actual return) that is lower than 1% of the optimal reward. When this happens we consider that the agent has "learned" the environment.
 
 Given the deterministic state transitions and N possible steps the optimal return is 1.
 
