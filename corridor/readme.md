@@ -41,7 +41,9 @@ Given the deterministic state transitions and N possible steps the optimal retur
     average_steps_to_learn = steps_to_learn/attempts
 </pre>
 
-## Agent
+## Agents
+
+### Q-learner
 
 The agent is a vanilla Q-learning algorithm. The following pseudocode is essentialy a reproduction of the actual code to make the critic pseudocode clear-
 
@@ -70,6 +72,38 @@ The agent is a vanilla Q-learning algorithm. The following pseudocode is essenti
   <b>if</b> average_regret < threshold:
     break
 </pre>
+
+### G-leaner
+
+The agent is a vanilla Q-learning algorithm. The following pseudocode is essentialy a reproduction of the actual code to make the critic pseudocode clear-
+
+<pre>
+<b>G-learner</b>
+
+<b>for</b> episode <b>in</b> episodes
+  state, critic = reset environment and critic
+  action = critic.get_action(state)
+
+  states = [state]
+  actions = [action]
+
+  <b>while</b> not done:
+
+    state, reward, done = take_step(action)
+    action = critic.get_action(state)
+
+    states.append(state)
+    actions.append(action)
+
+  average_regret = running_average_regret()
+
+  <b>if</b> average_regret < threshold:
+    break
+
+  for state, action in zip(states, actions):
+    critic.update(state, action, [reward])
+</pre>
+
 
 ## Critics
 

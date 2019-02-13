@@ -14,8 +14,10 @@ FLAGS = flags.FLAGS
 def main(argv):
 
     increasing_chain_length_experiment(
-        [SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic],
-        ["UBE with sample target", "Gaussian Prior", "Deep Gaussian Prior"],
+        [GaussianBayesCritic],
+        ["Gaussian Prior"],
+        # [SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic],
+        # ["UBE with sample target", "Gaussian Prior", "Deep Gaussian Prior"],
         chain_length_sequence=arange(4, FLAGS.longest_chain, 2),
         attempts_per_chain_length=FLAGS.iterations)
 
