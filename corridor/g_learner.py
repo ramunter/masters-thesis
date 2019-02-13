@@ -45,11 +45,11 @@ def g_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
+        # for state, action in zip(states, actions):
+        critic.update(states, actions, [reward])
+
         if average_regret < 0.01*1: # What should "learned" be? 
             break # Check that this does not remove episode
-
-        for state, action in zip(states, actions):
-            critic.update(state, action, [reward])
 
     if verbose:
         print("Final Parameters")

@@ -126,11 +126,6 @@ class GaussianBayesCritic(CriticTemplate):
                 
         self.model = GaussianRegression()
 
-    def init_model_params(self, dim=3):
-        GaussianParameters = namedtuple('Parameters', ['mean', 'cov', 'noise'])
-        params = GaussianParameters(mean=np.zeros((dim,1)), cov=np.eye(dim), noise=1)
-        return params
-
     def init_model(self, state):
         pass
 
@@ -147,11 +142,18 @@ class GaussianBayesCritic(CriticTemplate):
         return 1, Q_right
 
     def update(self, state, action, target):
-        X = featurizer(state, action)
+
+        if type(state) == list:
+            X = np.array([state, action, [1]*len(state)]).T
+            target =  np.repeat(np.array(target, ndmin=2), repeats=len(state), axis=0)
+
+        else:
+            X = featurizer(state, action)
+            X = np.append(X, [[1]], axis=1) # add constant
+
         inv_cov = np.linalg.inv(self.model.cov)
-        X = np.append(X, [[1]], axis=1) # add constant
         self.model.mean = np.linalg.inv(X.T @ X + self.model.noise * inv_cov) @ \
-            (X.T * target + inv_cov@self.model.mean)
+            (X.T @ target + inv_cov@self.model.mean)
         self.model.cov = np.linalg.inv(self.model.noise**(-2) * X.T @ X + inv_cov)
         
     def sample_coef(self):
