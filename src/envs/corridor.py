@@ -1,6 +1,7 @@
-                    
-from numpy.random import binomial
-from numpy import array, reshape
+from enum import Enum
+
+from numpy.random import choice, binomial
+from numpy import arange
 
 import gym
 from gym import spaces
@@ -9,17 +10,6 @@ from gym.utils import seeding
 # Action "Enum"
 LEFT = 0
 RIGHT = 1
-
-class State():
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    @property
-    def as_array(self):
-        return reshape(
-                    array([self.x, self.y])
-                    (2, 1))
 
 class Corridor(gym.Env):
     """Corridor environment
@@ -37,32 +27,28 @@ class Corridor(gym.Env):
     Code built from the Chain environment in AI GYM
     """
 
-    def __init__(self, N=3):
+    def __init__(self, N=3, K=0, p=1):
         self.seed()
         self.N = N
+        
+        self.reverse_states = choice(arange(N), size=K, replace=False)
+        self.p = p
 
-        self.is_reverse_state = binomial(1, p=0.5, size=(N,N))
-
-        self.state = State(0,0)  # Start at beginning of the chain
+        self.state = 0  # Start at beginning of the chain
         self.steps = 0
         self.max_steps = N
 
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.MultiDiscrete((self.N, self.N))
+        self.observation_space = spaces.Discrete(self.N)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-
-    def action_state_handler(self, action):
-        if self.is_reverse_state[self.state.x, self.state.y]:
-            action = 1 - action
-        return action
-
+        
     def step(self, action):
         assert self.action_space.contains(action)
 
-        action = self.action_state_handler(action)
+        action = self.env_changes_to_actions(action)
         self.transition(action)
         reward = self.reward_calculator()
 
@@ -75,29 +61,38 @@ class Corridor(gym.Env):
 
         return self.state, reward, done, {}
 
+    def env_changes_to_actions(self, action):
+
+        # If in a reverse state swap action.
+        if self.state in self.reverse_states: 
+            action = 1 - action
+
+        # If trying to move right there is a prob of moving left
+        if action == RIGHT:
+            action = binomial(1, p=self.p) # p prob of right
+
+        return action
+
     def transition(self, action):
 
         if action == LEFT:
-            if self.state.x != 0:
-                self.state.x -= 1
+            if self.state != 0: 
+                self.state -= 1
 
-        elif action == RIGHT and self.state.x < self.N - 1:  # 'forwards action'
-            self.state.x += 1
-
-        self.state.y += 1
+        elif action == RIGHT and self.state < self.N - 1:  # 'forwards action'
+            self.state += 1
 
     def reward_calculator(self):
 
-        if self.state.x == self.N - 1:
+        if self.state == self.N - 1:
             reward = 1
-
         else:
-            reward = -(1/self.N * 0.1)
-
+            reward = 0
+            
         return reward
 
     def reset(self):
-        self.state = State(0,0)
+        self.state = 0
         self.steps = 0
 
         return self.state

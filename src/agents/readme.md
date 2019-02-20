@@ -1,21 +1,5 @@
 # Documentation of Q-learning tests on a toy problem
 
-## Corridor
-
-This environment is a generalization of an environment called riverswim.
-
-![Chain Env](./images/chain.png)
-
-The corridor environment allows one to define:
-
-* **N:** The environment consists of a N long corridor where the agent can move
-  left or right.
-* **K:** in a K number of states, the direction traveled when given is the
-  opposite of the expected. I.e. action left will cause the agent to move right.
-* **p:** Probability of success when moving right. 1-**p** probability of moving left
-  instead.
-        
-
 ## Experiment setup
 
 The current setup gives 1 reward for reaching the final node to the right, and 0 otherwise. The agent has N steps to try to reach the goal. The experiment is run with K=0 and p=1 to allow a simple linear model and simple calculation of the optimal reward.

@@ -3,13 +3,44 @@ from util import featurizer
 from numpy import array
 
 def calculate_target(gamma, reward, next_q_value, done):
+    """ Caclulates the target Q-value using temporal differencing.
+
+    The Q-learning temporal target is Q(s,a) = r + gamma*Q(s', a') if in a 
+    non-terminal state. Otherwise Q(s,a) = r
+
+    args:
+        gamma (float): The decay factor.
+        reward (int): Reward from action a.
+        next_q_value (float): Equivalent to Q(s', a')
+        done (bool): Is the current state a terminal state_ 
+    
+    returns:
+        target (float): The Q-value target.
+    """
     target = reward
     if not done:
         target += gamma*next_q_value
     target = array([target]).reshape((1,))
     return target
 
+
 def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
+    """ Runs a Q-learning experiment using the given environment and agent.
+
+    This experiment must use a critic agent. The experiment is run until a
+    running average of the regret falls below a given threshold or the maximum
+    number of episodes is reached. Note that this function assumes the optimal
+    reward is 1.
+
+    args:
+        env (gym.Environment): The environment to test on.
+        Critic (CriticTemplate): The class of the agent to use. Has to be a critic.
+        episodes (int): Maximum number of episodes to run.
+        verbose (bool): Should this print information about the final model?
+
+    returns:
+        episode (int): Number of episodes run.
+    """
     
     state = env.reset()
     critic = Critic()
@@ -61,6 +92,9 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
 
 
 class CriticTemplate(ABC):
+    """Template for a critic agent that can be used with the Q-learner
+    experiment above.
+    """
     
     ## Functionality
 
