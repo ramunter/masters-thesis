@@ -25,20 +25,21 @@ def calculate_target(gamma, reward, next_q_value, done):
 
 
 def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
-    """ Runs a Q-learning experiment using the given environment and agent.
+    """
+    Runs a Q-learning experiment using the given environment and agent.
 
     This experiment must use a critic agent. The experiment is run until a
     running average of the regret falls below a given threshold or the maximum
     number of episodes is reached. Note that this function assumes the optimal
     reward is 1.
 
-    args:
-        env (gym.Environment): The environment to test on.
-        Critic (CriticTemplate): The class of the agent to use. Has to be a critic.
-        episodes (int): Maximum number of episodes to run.
-        verbose (bool): Should this print information about the final model?
+    args:  
+        env (gym.Environment): The environment to test on.  
+        Critic (CriticTemplate): The class of the agent to use. Has to be a critic.  
+        episodes (int): Maximum number of episodes to run.  
+        verbose (bool): Should this print information about the final model?  
 
-    returns:
+    returns:  
         episode (int): Number of episodes run.
     """
     
@@ -95,10 +96,6 @@ class CriticTemplate(ABC):
     """
     
     ## Functionality
-
-    @abstractmethod
-    def init_model(self, state):
-        pass
 
     @abstractmethod
     def get_action(self, state):

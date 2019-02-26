@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>corridor.py</title>
+  <link rel="stylesheet" href="../../pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>corridor.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">choice</span><span class="p">,</span> <span class="n">binomial</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">arange</span>
+
+<span class="kn">import</span> <span class="nn">gym</span>
+<span class="kn">from</span> <span class="nn">gym</span> <span class="kn">import</span> <span class="n">spaces</span>
+<span class="kn">from</span> <span class="nn">gym.utils</span> <span class="kn">import</span> <span class="n">seeding</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Action &ldquo;Enum&rdquo;</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">LEFT</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">RIGHT</span> <span class="o">=</span> <span class="mi">1</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Corridor environment</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Corridor</span><span class="p">(</span><span class="n">gym</span><span class="o">.</span><span class="n">Env</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This game is allows the reproduction of the example used to explain 
+policy gradients in Sutton on page 323 and the chain example used by 
+Osband.
+<em> N: The environment consists of a N long corridor where the agent can move
+ left or right.
+</em> K: In a K number of states, the direction traveled when given is the
+ opposite of the expected. I.e. action left will cause the agent to move right.
+<em> p: Probability of success when moving right. 1-p probability of moving left
+  instead.
+</em> Reaching the goal gives a reward of +1</p>
+<p>Code built from the Chain environment in AI GYM</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">N</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">reverse_states</span> <span class="o">=</span> <span class="n">choice</span><span class="p">(</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="n">K</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Start at beginning of the chain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">N</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_space</span> <span class="o">=</span> <span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observation_space</span> <span class="o">=</span> <span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">np_random</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="n">seeding</span><span class="o">.</span><span class="n">np_random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">seed</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_space</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+        <span class="n">action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">env_changes_to_actions</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+        <span class="n">reward</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reward_calculator</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="p">{}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">env_changes_to_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>If in a reverse state swap action.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reverse_states</span><span class="p">:</span> 
+            <span class="n">action</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">action</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>If trying to move right there is a prob of moving left</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">RIGHT</span><span class="p">:</span>
+            <span class="n">action</span> <span class="o">=</span> <span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">)</span> <span class="c1"># p prob of right</span>
+
+        <span class="k">return</span> <span class="n">action</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">transition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">LEFT</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="n">RIGHT</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># &#39;forwards action&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">reward_calculator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">reward</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reward</span> <span class="o">=</span> <span class="mi">0</span>
+            
+        <span class="k">return</span> <span class="n">reward</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

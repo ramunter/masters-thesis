@@ -4,6 +4,7 @@ from numpy import arange
 from src.experiments.experiment import experiment
 
 from src.envs.corridor import Corridor
+from src.envs.deepsea import DeepSea
 
 from src.agents.q_learner import q_learner
 from src.agents.g_learner import g_learner
@@ -24,7 +25,7 @@ def main(argv):
                    "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic}
 
         experiment(
-                environment=Corridor,
+                environment=DeepSea,#Corridor,
                 N_list=arange(4, FLAGS.longest_chain, 2),
                 methods=methods,
                 critics=critics,

@@ -14,19 +14,20 @@ def experiment(
         methods,
         critics,
         attempts_per_N):
-    """ Runs a group of agents on an environment with an increasing size.
+    """
+    Runs a group of agents on an environment with an increasing size.
 
-        Combines all the critics and methods to create a set of agents. Each agent
-        gets a set number of attempts on each environment size. The method records 
-        and plots the average number of episodes required to learn each environment
-        size for each agent.
+    Combines all the critics and methods to create a set of agents. Each agent
+    gets a set number of attempts on each environment size. The method records 
+    and plots the average number of episodes required to learn each environment
+    size for each agent.
 
-        args:  
-            environment (gym.Env): Test enviroment class.  
-            N_list ([int]): List of environment sizes to use.  
-            methods ([fn]): List of methods to use (For example, q_learning).  
-            critics ([CriticTemplate]): List of critics to use.  
-            attempts_per_N (int): Number of attempts per agent on each environment size.
+    args:  
+        environment    : Test environment class.  
+        N_list         : List of environment sizes to use.  
+        methods        : List of methods to use (For example, q_learning).  
+        critics        : List of critics to use.  
+        attempts_per_N : Number of attempts per agent on each environment size.  
     """
     
     names, agents = create_critics(methods, critics)
@@ -39,14 +40,23 @@ def experiment(
 
         for i, N in enumerate(tqdm(results["N"])):
 
-            env = environment(N=N, K=0, p=1)
+            env = environment(N=N)
             results.loc[results.index[i], name] = run_all_attempts(env, agent, N, attempts_per_N)
 
     print(results)
     plot_results(results)
 
 def run_all_attempts(env, agent, N, attempts):
+    """
+    Runs a certain number of attempts on an environment of size N using the
+    given agent.
 
+    args:  
+        env      : Test environment class.  
+        agent    : Agent to use.  
+        N        : Size of environment.  
+        attempts : Number of attempts.  
+    """
     sum_steps_to_learn = 0
 
     for _ in trange(0, attempts):
@@ -58,12 +68,34 @@ def run_all_attempts(env, agent, N, attempts):
     return average_steps_to_learn
 
 def create_result_df(names, N_list):
+    """
+    Creates a dataframe for recording the average learning time for the
+    different agents.
+    
+    args:  
+        names : Describing name of each agent.  
+        N_list : List of environment sizes to be tested on.  
+    returns:  
+        results : Empty dataframe for storing results
+    """
+    
     df_names = ["N"] + names
     data = [N_list, ] + [range(0, len(N_list))]*len(names) 
     results = pd.DataFrame(dict(zip(df_names, data)))
     return results
 
 def create_critics(methods, critics):
+    """
+    Creates every combination of methods and critics given.
+
+    args:  
+        methods : List of methods.  
+        critics : List of critics.  
+
+    returns:   
+        names : List of describing names for each agent
+        agents : List of agents.
+    """
 
     names = []
     agents = []
@@ -76,6 +108,12 @@ def create_critics(methods, critics):
     return names, agents
 
 def plot_results(results):
+    """
+    Plots the average learning time for each agent in each environment.
+
+    args:  
+        results : Dataframe containing experiment results.
+    """
 
     results_melted = pd.melt(results, id_vars=["N"], value_name="Episodes to Learn")
     print(results_melted)

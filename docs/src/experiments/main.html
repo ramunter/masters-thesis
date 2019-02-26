@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>main.py</title>
+  <link rel="stylesheet" href="../../pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>main.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">absl</span> <span class="kn">import</span> <span class="n">flags</span><span class="p">,</span> <span class="n">app</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">arange</span>
+
+<span class="kn">from</span> <span class="nn">src.experiments.experiment</span> <span class="kn">import</span> <span class="n">experiment</span>
+
+<span class="kn">from</span> <span class="nn">src.envs.corridor</span> <span class="kn">import</span> <span class="n">Corridor</span>
+<span class="kn">from</span> <span class="nn">src.envs.deepsea</span> <span class="kn">import</span> <span class="n">DeepSea</span>
+
+<span class="kn">from</span> <span class="nn">src.agents.q_learner</span> <span class="kn">import</span> <span class="n">q_learner</span>
+<span class="kn">from</span> <span class="nn">src.agents.g_learner</span> <span class="kn">import</span> <span class="n">g_learner</span>
+
+<span class="kn">from</span> <span class="nn">src.agents.q_learner_critics</span> <span class="kn">import</span> <span class="n">EGreedyCritic</span><span class="p">,</span> <span class="n">UBECritic</span><span class="p">,</span> <span class="n">SampleTargetUBECritic</span><span class="p">,</span> <span class="n">GaussianBayesCritic</span><span class="p">,</span> <span class="n">DeepGaussianBayesCritic</span>
+
+
+<span class="n">flags</span><span class="o">.</span><span class="n">DEFINE_integer</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;Number of attempts per chain length&quot;</span><span class="p">)</span>
+<span class="n">flags</span><span class="o">.</span><span class="n">DEFINE_integer</span><span class="p">(</span><span class="s2">&quot;longest_chain&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;Longest chain attempted&quot;</span><span class="p">)</span>
+
+<span class="n">FLAGS</span> <span class="o">=</span> <span class="n">flags</span><span class="o">.</span><span class="n">FLAGS</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">):</span>
+        <span class="n">methods</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Q-learning&quot;</span><span class="p">:</span> <span class="n">q_learner</span><span class="p">,</span>
+                   <span class="s2">&quot;G-learning&quot;</span><span class="p">:</span> <span class="n">g_learner</span><span class="p">}</span>
+
+        <span class="n">critics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Gaussian Prior&quot;</span><span class="p">:</span> <span class="n">GaussianBayesCritic</span><span class="p">,</span>
+                   <span class="s2">&quot;Deep Exploration Gaussian Prior&quot;</span><span class="p">:</span> <span class="n">DeepGaussianBayesCritic</span><span class="p">}</span>
+
+        <span class="n">experiment</span><span class="p">(</span>
+                <span class="n">environment</span><span class="o">=</span><span class="n">DeepSea</span><span class="p">,</span><span class="c1">#Corridor,</span>
+                <span class="n">N_list</span><span class="o">=</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">longest_chain</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="n">methods</span><span class="o">=</span><span class="n">methods</span><span class="p">,</span>
+                <span class="n">critics</span><span class="o">=</span><span class="n">critics</span><span class="p">,</span>
+                <span class="n">attempts_per_N</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">iterations</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

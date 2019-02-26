@@ -18,7 +18,7 @@ class State():
     @property
     def as_array(self):
         return reshape(
-                    array([self.x, self.y])
+                    array([self.x, self.y]),
                     (2, 1))
 
 class DeepSea(gym.Env):
@@ -55,16 +55,16 @@ class DeepSea(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
 
+        self.steps += 1
+
         action = self.action_state_handler(action)
         self.transition(action)
         reward = self.reward_calculator()
 
-        if self.steps > self.max_steps:
+        if self.steps >= self.max_steps:
             done = True
         else:
             done = False
-
-        self.steps += 1
 
         return self.state.as_array, reward, done, {}
 
