@@ -14,7 +14,21 @@ def experiment(
         methods,
         critics,
         attempts_per_N):
+    """ Runs a group of agents on an environment with an increasing size.
 
+        Combines all the critics and methods to create a set of agents. Each agent
+        gets a set number of attempts on each environment size. The method records 
+        and plots the average number of episodes required to learn each environment
+        size for each agent.
+
+        args:  
+            environment (gym.Env): Test enviroment class.  
+            N_list ([int]): List of environment sizes to use.  
+            methods ([fn]): List of methods to use (For example, q_learning).  
+            critics ([CriticTemplate]): List of critics to use.  
+            attempts_per_N (int): Number of attempts per agent on each environment size.
+    """
+    
     names, agents = create_critics(methods, critics)
     results = create_result_df(names, N_list)
 
