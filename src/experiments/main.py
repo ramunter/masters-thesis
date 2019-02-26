@@ -1,11 +1,15 @@
 from absl import flags, app
-
 from numpy import arange
 
-from experiment import experiment
+from src.experiments.experiment import experiment
 
-from q_learner_critics import EGreedyCritic, UBECritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic
-from envs.corridor import Corridor
+from src.envs.corridor import Corridor
+
+from src.agents.q_learner import q_learner
+from src.agents.g_learner import g_learner
+
+from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic
+
 
 flags.DEFINE_integer("iterations", 5, "Number of attempts per chain length")
 flags.DEFINE_integer("longest_chain", 10, "Longest chain attempted")
@@ -13,11 +17,10 @@ flags.DEFINE_integer("longest_chain", 10, "Longest chain attempted")
 FLAGS = flags.FLAGS 
 
 def main(argv):
-
         methods = {"Q-learning": q_learner,
                    "G-learning": g_learner}
 
-        agents = {"Gaussian Prior": GaussianBayesCritic,
+        critics = {"Gaussian Prior": GaussianBayesCritic,
                    "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic}
 
         experiment(

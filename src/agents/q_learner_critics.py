@@ -5,20 +5,36 @@ from numpy.random import binomial
 
 from sklearn.linear_model import SGDRegressor
 
-from q_learner import CriticTemplate
-from util import featurizer, GaussianRegression
+from src.agents.q_learner import CriticTemplate
+from src.agents.util import featurizer, GaussianRegression
 
 class EGreedyCritic(CriticTemplate):
+    """ A regular E greedy agent with a constant E.
+    """
+    
+    def __init__(self, eps=0.2, lr=0.01):
+        """ Initializes a linear model.
 
-    def __init__(self, lr=0.01, gamma=0.9):
+        args:
+            eps (float): Probability of choosing a random action.
+            lr (float): Learning rate used by the linear model. 
+        
+        """
+        self.eps = eps
 
         self.model = SGDRegressor(learning_rate="constant", eta0=lr)
-    
-    def init_model(self, state):
-        features = featurizer(state, 0)
+        features = featurizer(state, action=0)
         self.model.partial_fit(features, np.array([0])) # SKlearn needs partial fit to be run once before use
 
     def get_action(self, state):
+        """ Gets an action using the E greedy approach.
+
+        args:
+            state (np.array)
+        
+        returns:
+            action (int)
+        """
 
         if binomial(1,0.2):
             return binomial(1, 0.5)
@@ -26,26 +42,55 @@ class EGreedyCritic(CriticTemplate):
             return self.best_action(state)
 
     def get_target_action_and_q_value(self, state):
+        """ Calculates the optimal action and Q-value
+
+        args:
+            state (np.array)
+
+        returns:
+            action (int)
+            q-value (float)
+        """
         left_value = self.q_value(state, 0)
         right_value = self.q_value(state, 1)
         if left_value > right_value:
             return 0, left_value
         return 1, right_value
 
-    def update(self, state, action, target):       
+    def update(self, state, action, target):
+        """ Takes one optimzation step for the linear model.
+
+        args;
+            state (np.array)
+            action (int)
+            target (float): Target Q-value.
+        """
         features = featurizer(state, action)
         self.model.partial_fit(features, target)
 
     def q_value(self, state, action):
+        """ Caclulates Q-value given state and actio
+
+        args:
+            state (np.array)
+            action (int)
+
+        returns:
+            q-value (float)
+
+        """
         features = featurizer(state, action)
         return self.model.predict(features)[0]
 
     def print_parameters(self):
         print('Coefficients: \n', self.model.coef_)
 
-class UBECritic(CriticTemplate):
 
-    def __init__(self, lr=0.01, gamma=0.9):
+class UBECritic(CriticTemplate):
+    """ The uncertainty bellman equation method without propagating uncertainty
+    """
+
+    def __init__(self, lr=0.01):
 
         self.model = SGDRegressor(learning_rate="constant", eta0=lr)
         self.sigma = [np.eye(1)]*2 # 2 is num actions
@@ -112,6 +157,8 @@ class UBECritic(CriticTemplate):
 
 
 class SampleTargetUBECritic(UBECritic):
+    """ Same method as TargetUBECritic but samples the target Q aswell.
+    """
 
     def get_target_action_and_q_value(self, state):
         Q_left = self.sample_q(state, 0)
@@ -120,9 +167,14 @@ class SampleTargetUBECritic(UBECritic):
             return 0, Q_left
         return 1, Q_right
 
-class GaussianBayesCritic(CriticTemplate):
 
-    def __init__(self, lr=0.01, gamma=0.9):
+class GaussianBayesCritic(CriticTemplate):
+    """ Bayesian linear model using a gaussian prior with known variance.
+    
+    Samples both the Q- and target Q-value by sampling the parameters per step.
+    """
+
+    def __init__(self, lr=0.01):
                 
         self.model = GaussianRegression()
 
@@ -170,12 +222,14 @@ class GaussianBayesCritic(CriticTemplate):
         print("Mean:\n", self.model.mean)
         print("Cov:\n", self.model.cov)
 
+
 class DeepGaussianBayesCritic(GaussianBayesCritic):
-    """
-    Deep exploration
+    """ Bayesian linear model using a gaussian prior with known variance.
+    
+    Samples both the Q- and target Q-value by sampling the parameters per episode.
     """
 
-    def __init__(self, lr=0.01, gamma=0.9):
+    def __init__(self, lr=0.01):
                 
         self.model = GaussianRegression()
         self.coef = self.sample_coef()

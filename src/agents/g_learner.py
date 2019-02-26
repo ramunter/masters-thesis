@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from util import featurizer
+from src.agents.util import featurizer
 from numpy import array
 
 def g_learner(env, Critic, episodes=10000, gamma=1, verbose=False):

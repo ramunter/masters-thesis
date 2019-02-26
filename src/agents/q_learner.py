@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from util import featurizer
+from src.agents.util import featurizer
 from numpy import array
 
 def calculate_target(gamma, reward, next_q_value, done):
@@ -43,9 +43,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
     """
     
     state = env.reset()
-    critic = Critic()
-
-    critic.init_model(state)
+    critic = Critic(state)
 
     average_regret = 1
 
