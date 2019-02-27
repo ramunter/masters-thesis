@@ -13,19 +13,22 @@ RIGHT = 1
 
 
 class Corridor(gym.Env):
-    """Corridor environment
+    """
+    Corridor environment.  
     This game is allows the reproduction of the example used to explain 
     policy gradients in Sutton on page 323 and the chain example used by 
-    Osband.
-    * N: The environment consists of a N long corridor where the agent can move
-     left or right.
-    * K: In a K number of states, the direction traveled when given is the
-     opposite of the expected. I.e. action left will cause the agent to move right.
-    * p: Probability of success when moving right. 1-p probability of moving left
-      instead.
-    * Reaching the goal gives a reward of +1
+    Osband. Reaching the goal gives a reward of +1.  
 
-    Code built from the Chain environment in AI GYM
+    args:  
+        N: The environment consists of a N long corridor where the agent can
+           move left or right.  
+        K: In a K number of states, the direction traveled when given is the
+           opposite of the expected. I.e. action left will cause the agent to
+           move right.    
+        p: Probability of success when moving right. 1-p probability of moving
+           left instead.  
+
+    Code built based on the Chain environment in AI GYM
     """
 
     def __init__(self, N=3, K=0, p=1):

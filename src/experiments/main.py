@@ -15,21 +15,23 @@ from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetU
 flags.DEFINE_integer("iterations", 5, "Number of attempts per chain length")
 flags.DEFINE_integer("longest_chain", 10, "Longest chain attempted")
 
-FLAGS = flags.FLAGS 
+FLAGS = flags.FLAGS
+
 
 def main(argv):
-        methods = {"Q-learning": q_learner,
-                   "G-learning": g_learner}
+    methods = {"Q-learning": q_learner,
+               "G-learning": g_learner}
 
-        critics = {"Gaussian Prior": GaussianBayesCritic,
-                   "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic}
+    critics = {"Gaussian Prior": GaussianBayesCritic,
+               "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic}
 
-        experiment(
-                environment=DeepSea,#Corridor,
-                N_list=arange(4, FLAGS.longest_chain, 2),
-                methods=methods,
-                critics=critics,
-                attempts_per_N=FLAGS.iterations)
+    experiment(
+        environment=Corridor,  # DeepSea,
+        N_list=arange(4, FLAGS.longest_chain, 2),
+        methods=methods,
+        critics=critics,
+        attempts_per_N=FLAGS.iterations)
+
 
 if __name__ == '__main__':
     app.run(main)

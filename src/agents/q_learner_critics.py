@@ -8,9 +8,10 @@ from sklearn.linear_model import SGDRegressor
 from src.agents.q_learner import CriticTemplate
 from src.agents.util import featurizer, GaussianRegression
 
+
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
-    
+
     def __init__(self, state, eps=0.2, lr=0.01):
         """
         Initializes a linear model.
@@ -22,17 +23,19 @@ class EGreedyCritic(CriticTemplate):
         """
         self.eps = eps
         self.model = self.setup_model(state, lr)
-       
+
     def setup_model(self, state, lr):
-        model = SGDRegressor(learning_rate="constant", eta0=lr, fit_intercept=False)
+        model = SGDRegressor(learning_rate="constant",
+                             eta0=lr, fit_intercept=False)
         features = featurizer(state, action=0)
-        model.partial_fit(features, np.array([0])) # SKlearn needs partial fit to be run once before use
+        # SKlearn needs partial fit to be run once before use
+        model.partial_fit(features, np.array([0]))
         return model
 
     def get_action(self, state):
         """ Gets an action using the E greedy approach."""
 
-        if binomial(1,0.2):
+        if binomial(1, 0.2):
             return binomial(1, 0.5)
         else:
             return self.best_action(state)
@@ -48,7 +51,7 @@ class EGreedyCritic(CriticTemplate):
 
     def update(self, state, action, target):
         """Takes one optimization step for the linear model."""
-        
+
         features = featurizer(state, action)
         self.model.partial_fit(features, target)
 
@@ -72,14 +75,16 @@ class UBECritic(CriticTemplate):
             state : State from the environment of interest.
             lr    : Learning rate used by the linear model. 
         """
-        self.model = setup_model(state, lr)
-        self.sigma = [np.eye(1)]*2 # 2 is num actions
+        self.model = self.setup_model(state, lr)
+        self.sigma = [np.eye(1)]*2  # 2 is num actions
         self.beta = 6
 
     def setup_model(self, state, lr):
-        model = SGDRegressor(learning_rate="constant", eta0=lr, fit_intercept=False)
+        model = SGDRegressor(learning_rate="constant",
+                             eta0=lr, fit_intercept=False)
         features = featurizer(state, 0)
-        self.model.partial_fit(features, np.array([0])) # SKlearn needs partial fit to be run once before use
+        # SKlearn needs partial fit to be run once before use
+        self.model.partial_fit(features, np.array([0]))
         return model
 
     def get_action(self, state):
@@ -110,7 +115,7 @@ class UBECritic(CriticTemplate):
         Q_left = self.sample_q(state, 0)
         Q_right = self.sample_q(state, 1)
         if Q_left > Q_right:
-            return 0    
+            return 0
         return 1
 
     def sample_q(self, state, action):
@@ -119,7 +124,7 @@ class UBECritic(CriticTemplate):
         mean_q = self.model.predict(features)[0]
         var_q = self.action_variance(state, action)
         sample = np.random.standard_normal(size=1)
-        
+
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
         return sample_q
 
@@ -131,12 +136,12 @@ class UBECritic(CriticTemplate):
 
     def update_sigma(self, features):
         """Update the Covariance matrix."""
-        action = features[0,-1]
-        features = features[0,:-1]
+        action = features[0, -1]
+        features = features[0, :-1]
 
         sigma = self.sigma[action]
         change_numerator = sigma * features * \
-                                features * sigma
+            features * sigma
 
         change_denominator = 1 + features * sigma * features
         self.sigma[action] -= change_numerator/change_denominator
@@ -160,7 +165,7 @@ class SampleTargetUBECritic(UBECritic):
 class GaussianBayesCritic(CriticTemplate):
     """
     Bayesian linear model using a gaussian prior with known variance.
-    
+
     Samples both the Q- and target Q-value by sampling the parameters per step.
     """
 
@@ -172,7 +177,11 @@ class GaussianBayesCritic(CriticTemplate):
             state : State from the environment of interest.
             lr    : Learning rate used by the linear model. 
         """
-        feature_size = len(state) + 2 # Add bias term and action term.
+        if type(state) is int:
+            feature_size = 3
+        else:
+            feature_size = len(state) + 2  # Add bias term and action term.
+
         self.model = GaussianRegression(dim=feature_size)
 
     def get_action(self, state):
@@ -195,7 +204,8 @@ class GaussianBayesCritic(CriticTemplate):
         """Calculate posterior and update prior."""
         if type(state) == list:
             X = np.array([state, action, [1]*len(state)]).T
-            target =  np.repeat(np.array(target, ndmin=2), repeats=len(state), axis=0)
+            target = np.repeat(np.array(target, ndmin=2),
+                               repeats=len(state), axis=0)
 
         else:
             X = featurizer(state, action)
@@ -203,13 +213,15 @@ class GaussianBayesCritic(CriticTemplate):
         inv_cov = np.linalg.inv(self.model.cov)
         self.model.mean = np.linalg.inv(X.T @ X + self.model.noise * inv_cov) @ \
             (X.T @ target + inv_cov@self.model.mean)
-        self.model.cov = np.linalg.inv(self.model.noise**(-2) * X.T @ X + inv_cov)
-        
+        self.model.cov = np.linalg.inv(
+            self.model.noise**(-2) * X.T @ X + inv_cov)
+
     def sample_coef(self):
         """Sample regression coefficients from the posterior."""
-        coef = np.random.multivariate_normal(self.model.mean[:,0], self.model.cov)
-        return coef 
-    
+        coef = np.random.multivariate_normal(
+            self.model.mean[:, 0], self.model.cov)
+        return coef
+
     def q_value(self, state, action, coef):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
@@ -224,7 +236,7 @@ class GaussianBayesCritic(CriticTemplate):
 class DeepGaussianBayesCritic(GaussianBayesCritic):
     """
     Bayesian linear model using a gaussian prior with known variance.
-    
+
     Samples both the Q- and target Q-value by sampling the parameters per episode.
     """
 
@@ -250,4 +262,3 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
     def reset(self):
         """Samples coefficients on episode reset."""
         self.coef = self.sample_coef()
-

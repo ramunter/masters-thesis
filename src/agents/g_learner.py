@@ -2,21 +2,22 @@ from abc import ABC, abstractmethod
 from src.agents.util import featurizer
 from numpy import array
 
+
 def g_learner(
-        env, 
-        Critic, 
-        episodes=10000, 
-        gamma=1, 
+        env,
+        Critic,
+        episodes=10000,
+        gamma=1,
         verbose=False):
     """
     Runs a Q-learner experiment trained on the MC return using the
     given environment and agent.  
- 
+
     This experiment must use a critic agent. The experiment is run until a
     running average of the regret falls below a given threshold or the maximum
     number of episodes is reached. Note that this function assumes the optimal
     reward is 1.  
- 
+
     args:  
         env : The environment to test on.  
         Critic : The class of the agent to use. Has to be a critic.  
@@ -32,7 +33,7 @@ def g_learner(
 
     average_regret = 1
 
-    for episode in range(1,episodes+1):
+    for episode in range(1, episodes+1):
 
         state = env.reset()
         critic.reset()
@@ -41,8 +42,8 @@ def g_learner(
         done = False
         steps = 0
 
-        states=[state]
-        actions=[action]
+        states = [state]
+        actions = [action]
 
         while not done:
 
@@ -61,8 +62,8 @@ def g_learner(
 
         critic.update(states, actions, [reward])
 
-        if average_regret < 0.01*1: # What should "learned" be? 
-            break # Check that this does not remove episode
+        if average_regret < 0.01*1:  # What should "learned" be?
+            break  # Check that this does not remove episode
 
     if verbose:
         print("Final Parameters")

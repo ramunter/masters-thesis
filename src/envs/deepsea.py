@@ -24,10 +24,12 @@ class State():
 
 
 class DeepSea(gym.Env):
-    """DeepSea environment
-    This game is based on the deep sea environment introduce by Osband.
-    * N: The environment consists of a NxN grid where the agent can move left or right.
-    * Reaching the goal gives a reward of +1.
+    """
+    DeepSea environment.
+
+    This game is based on the deep sea environment introduce by Osband. Reaching
+    the goal gives a reward of +1.  
+        N: The environment consists of a NxN grid where the agent can move left or right.  
 
     Code built from the Chain environment in AI GYM.
     """
