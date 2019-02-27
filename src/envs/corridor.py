@@ -11,6 +11,7 @@ from gym.utils import seeding
 LEFT = 0
 RIGHT = 1
 
+
 class Corridor(gym.Env):
     """Corridor environment
     This game is allows the reproduction of the example used to explain 
@@ -23,19 +24,19 @@ class Corridor(gym.Env):
     * p: Probability of success when moving right. 1-p probability of moving left
       instead.
     * Reaching the goal gives a reward of +1
-        
+
     Code built from the Chain environment in AI GYM
     """
 
     def __init__(self, N=3, K=0, p=1):
         self.seed()
         self.N = N
-        
+
         self.reverse_states = choice(arange(N), size=K, replace=False)
         self.p = p
 
         self.state = 0  # Start at beginning of the chain
-        self.steps = 0
+        self.steps = 1
         self.max_steps = N
 
         self.action_space = spaces.Discrete(2)
@@ -44,39 +45,39 @@ class Corridor(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-        
+
     def step(self, action):
         assert self.action_space.contains(action)
+
+        self.steps += 1
 
         action = self.env_changes_to_actions(action)
         self.transition(action)
         reward = self.reward_calculator()
 
-        if self.steps > self.max_steps:
+        if self.steps >= self.max_steps:
             done = True
         else:
             done = False
-
-        self.steps += 1
 
         return self.state, reward, done, {}
 
     def env_changes_to_actions(self, action):
 
         # If in a reverse state swap action.
-        if self.state in self.reverse_states: 
+        if self.state in self.reverse_states:
             action = 1 - action
 
         # If trying to move right there is a prob of moving left
         if action == RIGHT:
-            action = binomial(1, p=self.p) # p prob of right
+            action = binomial(1, p=self.p)  # p prob of right
 
         return action
 
     def transition(self, action):
 
         if action == LEFT:
-            if self.state != 0: 
+            if self.state != 0:
                 self.state -= 1
 
         elif action == RIGHT and self.state < self.N - 1:  # 'forwards action'
@@ -88,7 +89,7 @@ class Corridor(gym.Env):
             reward = 1
         else:
             reward = 0
-            
+
         return reward
 
     def reset(self):
