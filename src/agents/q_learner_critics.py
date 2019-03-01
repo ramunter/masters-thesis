@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections import namedtuple
 
 import numpy as np
@@ -5,23 +6,67 @@ from numpy.random import binomial
 
 from sklearn.linear_model import SGDRegressor
 
-from src.agents.q_learner import CriticTemplate
 from src.agents.util import featurizer, GaussianRegression
+
+
+class CriticTemplate(ABC):
+    """
+    Template for a critic agent that can be used with the Q-learner
+    experiment above.
+    """
+
+    # Functionality
+
+    @abstractmethod
+    def get_action(self, state):
+        pass
+
+    @abstractmethod
+    def get_target_action_and_q_value(self, state):
+        pass
+
+    @abstractmethod
+    def update(self, state, action, target):
+        pass
+
+    def reset(self):
+        pass
+
+    def best_action(self, state):
+        action, q_value = self.get_target_action_and_q_value(state)
+        return action
+
+    # Debug functions
+
+    @abstractmethod
+    def print_parameters(self):
+        pass
+
+    def print_policy(self, num_states):
+        print("Policy ", end='')
+        for state in range(0, num_states):
+            if self.best_action(state):
+                print("r", end=' ')
+            else:
+                print("l", end=' ')
+        print()
 
 
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, eps=0.2, lr=0.01):
+    def __init__(self, state, batch=False, eps=0.2, lr=0.01):
         """
         Initializes a linear model.
 
         args:
             state : State from the environment of interest.
             eps   : Probability of choosing a random action.
-            lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
+            lr    : Learning rate used by the linear model.
         """
         self.eps = eps
+        self.batch = batch
         self.model = self.setup_model(state, lr)
 
     def setup_model(self, state, lr):
@@ -35,7 +80,7 @@ class EGreedyCritic(CriticTemplate):
     def get_action(self, state):
         """ Gets an action using the E greedy approach."""
 
-        if binomial(1, 0.2):
+        if binomial(1, self.eps):
             return binomial(1, 0.5)
         else:
             return self.best_action(state)
@@ -52,7 +97,7 @@ class EGreedyCritic(CriticTemplate):
     def update(self, state, action, target):
         """Takes one optimization step for the linear model."""
 
-        features = featurizer(state, action)
+        features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
 
     def q_value(self, state, action):
@@ -67,24 +112,26 @@ class EGreedyCritic(CriticTemplate):
 class UBECritic(CriticTemplate):
     """ The uncertainty bellman equation method without propagating uncertainty"""
 
-    def __init__(self, state, lr=0.01):
+    def __init__(self, state, batch=False, lr=0.01):
         """
         Initializes a linear model.
 
         args:
             state : State from the environment of interest.
             lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
         """
+        self.batch = batch
         self.model = self.setup_model(state, lr)
-        self.sigma = [np.eye(1)]*2  # 2 is num actions
+        self.sigma = np.eye(featurizer(state, 0, False).shape[1])
         self.beta = 6
 
     def setup_model(self, state, lr):
         model = SGDRegressor(learning_rate="constant",
                              eta0=lr, fit_intercept=False)
-        features = featurizer(state, 0)
+        features = featurizer(state, action=0)
         # SKlearn needs partial fit to be run once before use
-        self.model.partial_fit(features, np.array([0]))
+        model.partial_fit(features, np.array([0]))
         return model
 
     def get_action(self, state):
@@ -102,13 +149,14 @@ class UBECritic(CriticTemplate):
     def mean_q_value(self, state, action):
         """Estimate the expected Q-value"""
         features = featurizer(state, action)
-        return self.model.predict(features)[0]
+        prediction = self.model.predict(features)
+        return np.asscalar(prediction)
 
     def action_variance(self, state, action):
         """Caclulate the Q-value variance based on the equation in the UBE paper."""
-        var_action = state*self.sigma[action]*state
-
-        return(var_action)
+        features = featurizer(state, action)
+        var_action = features@self.sigma@features.T
+        return np.asscalar(var_action)
 
     def sample_action(self, state):
         """Samples action based on sampled Q-values."""
@@ -123,28 +171,30 @@ class UBECritic(CriticTemplate):
         features = featurizer(state, action)
         mean_q = self.model.predict(features)[0]
         var_q = self.action_variance(state, action)
+
         sample = np.random.standard_normal(size=1)
 
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
-        return sample_q
+        return np.asscalar(sample_q)
 
     def update(self, state, action, target):
         """Train the model using Q-learning TD update."""
-        features = featurizer(state, action)
+        features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
-        self.update_sigma(features)
+
+        num_samples = features.shape[0]
+
+        for i in range(0, num_samples):
+            self.update_sigma(features[i, :])
 
     def update_sigma(self, features):
         """Update the Covariance matrix."""
-        action = features[0, -1]
-        features = features[0, :-1]
 
-        sigma = self.sigma[action]
-        change_numerator = sigma * features * \
-            features * sigma
+        change_numerator = self.sigma * features.T * \
+            features * self.sigma
 
-        change_denominator = 1 + features * sigma * features
-        self.sigma[action] -= change_numerator/change_denominator
+        change_denominator = 1 + features @ self.sigma @ features.T
+        self.sigma -= change_numerator/change_denominator
 
     def print_parameters(self):
         print('Coefficients: \n', self.model.coef_)
@@ -169,14 +219,18 @@ class GaussianBayesCritic(CriticTemplate):
     Samples both the Q- and target Q-value by sampling the parameters per step.
     """
 
-    def __init__(self, state, lr=0.01):
+    def __init__(self, state, batch=False, lr=0.01):
         """
         Initializes a bayesian linear model.
 
         args:
             state : State from the environment of interest.
             lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
         """
+
+        self.batch = batch
+
         if type(state) is int:
             feature_size = 3
         else:
@@ -202,13 +256,7 @@ class GaussianBayesCritic(CriticTemplate):
 
     def update(self, state, action, target):
         """Calculate posterior and update prior."""
-        if type(state) == list:
-            X = np.array([state, action, [1]*len(state)]).T
-            target = np.repeat(np.array(target, ndmin=2),
-                               repeats=len(state), axis=0)
-
-        else:
-            X = featurizer(state, action)
+        X = featurizer(state, action, self.batch)
 
         inv_cov = np.linalg.inv(self.model.cov)
         self.model.mean = np.linalg.inv(X.T @ X + self.model.noise * inv_cov) @ \
@@ -225,7 +273,8 @@ class GaussianBayesCritic(CriticTemplate):
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
-        return features@self.coef
+        prediction = features@self.coef
+        return np.asscalar(prediction)
 
     def print_parameters(self):
         print("Coefficients")
@@ -240,15 +289,16 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
     Samples both the Q- and target Q-value by sampling the parameters per episode.
     """
 
-    def __init__(self, state, lr=0.01):
+    def __init__(self, state, batch=False, lr=0.01):
         """
         Initializes a bayesian linear model.
 
         args:
             state : State from the environment of interest.
             lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
         """
-        super().__init__(state, lr)
+        super().__init__(state, batch, lr)
         self.coef = self.sample_coef()
 
     def get_target_action_and_q_value(self, state):

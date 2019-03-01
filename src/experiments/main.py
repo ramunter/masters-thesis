@@ -14,12 +14,13 @@ from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetU
 
 flags.DEFINE_integer("iterations", 5, "Number of attempts per chain length")
 flags.DEFINE_integer("longest_chain", 10, "Longest chain attempted")
+flags.DEFINE_string("plot_name", None, "Plot file name")
 
 FLAGS = flags.FLAGS
 
 
 def main(argv):
-    methods = {"Q-learning": q_learner}  # , "G-learning": g_learner}
+    methods = {"Q-learning": q_learner}
 
     critics = {
         "E Greedy": EGreedyCritic,
@@ -34,7 +35,8 @@ def main(argv):
         N_list=arange(4, FLAGS.longest_chain, 2),
         methods=methods,
         critics=critics,
-        attempts_per_N=FLAGS.iterations)
+        attempts_per_N=FLAGS.iterations,
+        filename=FLAGS.plot_name)
 
 
 if __name__ == '__main__':

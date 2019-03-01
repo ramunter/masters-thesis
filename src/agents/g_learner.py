@@ -29,7 +29,7 @@ def g_learner(
     """
 
     state = env.reset()
-    critic = Critic(state)
+    critic = Critic(state, batch=True)
 
     average_regret = 1
 
@@ -60,7 +60,7 @@ def g_learner(
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        critic.update(states, actions, [reward])
+        critic.update(states, actions, [reward]*len(states))
 
         if average_regret < 0.01*1:  # What should "learned" be?
             break

@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from src.agents.util import featurizer
 from numpy import array
 
@@ -90,66 +89,3 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
         print("Episodes used: ", episode)
 
     return episode
-
-
-class CriticTemplate(ABC):
-    """
-    Template for a critic agent that can be used with the Q-learner
-    experiment above.
-    """
-
-    # Functionality
-
-    @abstractmethod
-    def get_action(self, state):
-        pass
-
-    @abstractmethod
-    def get_target_action_and_q_value(self, state):
-        pass
-
-    @abstractmethod
-    def update(self, state, action, reward, next_q_value, done):
-        pass
-
-    def reset(self):
-        pass
-
-    def best_action(self, state):
-        action, q_value = self.get_target_action_and_q_value(state)
-        return action
-
-    def is_policy_optimal(self, num_states):
-        policy = [self.best_action(
-            state) == 1 for state in range(0, num_states)]
-        return all(policy)
-
-    # Debug functions
-
-    @abstractmethod
-    def print_parameters(self):
-        pass
-
-    def print_q_values(self, num_states):
-        print("Left ", end='')
-        for state in range(0, num_states):
-            print(
-                round(self.q_value(state, 0), 2),
-                end=' ')
-        print()
-
-        print("Right ", end='')
-        for state in range(0, num_states):
-            print(
-                round(self.q_value(state, 1), 2),
-                end=' ')
-        print()
-
-    def print_policy(self, num_states):
-        print("Policy ", end='')
-        for state in range(0, num_states):
-            if self.best_action(state):
-                print("r", end=' ')
-            else:
-                print("l", end=' ')
-        print()
