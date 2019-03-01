@@ -63,7 +63,7 @@ def g_learner(
         critic.update(states, actions, [reward])
 
         if average_regret < 0.01*1:  # What should "learned" be?
-            break  # Check that this does not remove episode
+            break
 
     if verbose:
         print("Final Parameters")

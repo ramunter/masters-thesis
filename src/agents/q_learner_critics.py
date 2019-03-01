@@ -193,9 +193,9 @@ class GaussianBayesCritic(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        coef = self.sample_coef()
-        Q_left = self.q_value(state, 0, coef)
-        Q_right = self.q_value(state, 1, coef)
+        self.coef = self.sample_coef()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
@@ -222,10 +222,10 @@ class GaussianBayesCritic(CriticTemplate):
             self.model.mean[:, 0], self.model.cov)
         return coef
 
-    def q_value(self, state, action, coef):
+    def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
-        return features@coef
+        return features@self.coef
 
     def print_parameters(self):
         print("Coefficients")

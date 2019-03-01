@@ -19,11 +19,15 @@ FLAGS = flags.FLAGS
 
 
 def main(argv):
-    methods = {"Q-learning": q_learner,
-               "G-learning": g_learner}
+    methods = {"Q-learning": q_learner}  # , "G-learning": g_learner}
 
-    critics = {"Gaussian Prior": GaussianBayesCritic,
-               "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic}
+    critics = {
+        "E Greedy": EGreedyCritic,
+        "UBE": UBECritic,
+        "Sample Target UBE": SampleTargetUBECritic,
+        "Gaussian Prior": GaussianBayesCritic,
+        "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic
+    }
 
     experiment(
         environment=Corridor,  # DeepSea,
