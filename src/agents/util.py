@@ -11,6 +11,7 @@ def featurizer(state, action, batch=False):
         batch  : Is this a batch update?
     """
     if batch:
+        state = np.squeeze(state)
         bias = [1]*len(state)
         features = np.column_stack((state, action, bias))
     else:

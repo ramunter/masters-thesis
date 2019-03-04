@@ -31,7 +31,7 @@ def main(argv):
     }
 
     experiment(
-        environment=Corridor,  # DeepSea,
+        environment=DeepSea,
         N_list=arange(4, FLAGS.longest_chain, 2),
         methods=methods,
         critics=critics,
