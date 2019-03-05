@@ -6,7 +6,7 @@ from src.experiments.experiment import experiment
 from src.envs.corridor import Corridor
 from src.envs.deepsea import DeepSea
 
-from src.agents.q_learner import q_learner
+from src.agents.q_learner_ import q_learner
 from src.agents.g_learner import g_learner
 
 from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic
@@ -20,7 +20,7 @@ FLAGS = flags.FLAGS
 
 
 def main(argv):
-    methods = {"Q-learning": q_learner}
+    methods = {"G-learning": g_learner}
 
     critics = {
         "E Greedy": EGreedyCritic,

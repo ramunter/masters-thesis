@@ -15,7 +15,8 @@ def featurizer(state, action, batch=False):
         bias = [1]*len(state)
         features = np.column_stack((state, action, bias))
     else:
-        features = np.append(state, [1, action]).reshape(1, -1)
+        features = np.append(
+            state, [1, action, action**2, action**3]).reshape(1, -1)
     return features
 
 

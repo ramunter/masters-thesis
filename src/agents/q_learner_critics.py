@@ -55,7 +55,7 @@ class CriticTemplate(ABC):
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, batch=False, eps=0.2, lr=0.01):
+    def __init__(self, state, batch=False, eps=0.05, lr=0.01):
         """
         Initializes a linear model.
 
@@ -99,6 +99,7 @@ class EGreedyCritic(CriticTemplate):
 
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
+        return features, target
 
     def q_value(self, state, action):
         """Caclulates Q-value given state and action."""
@@ -187,6 +188,8 @@ class UBECritic(CriticTemplate):
         for i in range(0, num_samples):
             self.update_sigma(features[i, :])
 
+        return features, target
+
     def update_sigma(self, features):
         """Update the Covariance matrix."""
 
@@ -230,7 +233,6 @@ class GaussianBayesCritic(CriticTemplate):
         """
 
         self.batch = batch
-
         if type(state) is int:
             feature_size = 3
         else:
@@ -263,6 +265,8 @@ class GaussianBayesCritic(CriticTemplate):
             (X.T @ target + inv_cov@self.model.mean)
         self.model.cov = np.linalg.inv(
             self.model.noise**(-2) * X.T @ X + inv_cov)
+
+        return X, target
 
     def sample_coef(self):
         """Sample regression coefficients from the posterior."""
