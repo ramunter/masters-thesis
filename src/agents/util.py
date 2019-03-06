@@ -36,8 +36,7 @@ class GaussianRegression2():
         self.b = 1.0
 
     def update_posterior(self, X, y, n):
-        self.print_parameters()
-        print("Y is", y)
+
         y = y.reshape((n, 1))
 
         mean_0 = self.mean
