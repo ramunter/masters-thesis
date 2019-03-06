@@ -6,7 +6,7 @@ output: pdf_document
 corridor_names = c("index", "state",  "bias", "action", "y")
 deepsea_names = c("index", "state", "y_state", "times", "squarex", "squarey", "bias", "action", "y")
 df = read.csv("test.csv")
-names(df) = deepsea_names
+names(df) = corridor_names
 head(df)
 ```
 
@@ -31,7 +31,7 @@ ggplot(data=action_1_df) +
 max_index = dim(df)[1]
 p = ggplot()
 
-section = 5000
+section = 500
 action_1_df = action_1_df
 action_1_df$section = floor(action_1_df$index/section)
 
@@ -52,18 +52,4 @@ ggplot(data=action_0_df, aes(x=state, y=y, color=index)) +
     scale_colour_continuous(type = 2) +
     labs(title="Action 0")
 
-```
-
-## Train regression model
-
-```{r}
-model = lm(y ~ . , data=action_0_df)
-action_0_df$model <- stats::predict(model, newdata=action_0_df)
-ggplot(action_0_df) +
-    geom_tile(aes(x=state, y=y_state, fill=model))
-
-model = lm(y ~ . , data=action_1_df)
-action_1_df$model <- stats::predict(model, newdata=action_1_df)
-ggplot(action_1_df) +
-    geom_tile(aes(x=state, y=y_state, fill=model))
 ```

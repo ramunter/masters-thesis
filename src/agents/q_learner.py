@@ -25,7 +25,7 @@ def calculate_target(gamma, reward, next_q_value, done):
     return target
 
 
-def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
+def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     """
     Runs a Q-learning experiment using the given environment and agent.
 

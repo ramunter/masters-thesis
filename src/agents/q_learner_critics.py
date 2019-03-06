@@ -6,7 +6,7 @@ from numpy.random import binomial
 
 from sklearn.linear_model import SGDRegressor
 
-from src.agents.util import featurizer, GaussianRegression
+from src.agents.util import featurizer, GaussianRegression, GaussianRegression2
 
 
 class CriticTemplate(ABC):
@@ -55,7 +55,7 @@ class CriticTemplate(ABC):
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, batch=False, eps=0.05, lr=0.01):
+    def __init__(self, state, batch=False, eps=0.1, lr=0.01):
         """
         Initializes a linear model.
 
@@ -261,10 +261,14 @@ class GaussianBayesCritic(CriticTemplate):
         X = featurizer(state, action, self.batch)
 
         inv_cov = np.linalg.inv(self.model.cov)
+
         self.model.mean = np.linalg.inv(X.T @ X + self.model.noise * inv_cov) @ \
             (X.T @ target + inv_cov@self.model.mean)
         self.model.cov = np.linalg.inv(
             self.model.noise**(-2) * X.T @ X + inv_cov)
+
+        # self.model.mean = self.model.cov@(
+        #     inv_cov@self.model.mean + self.model.noise**-1*X.T@target)
 
         return X, target
 
@@ -316,3 +320,67 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
     def reset(self):
         """Samples coefficients on episode reset."""
         self.coef = self.sample_coef()
+
+
+class GaussianBayesCritic2(CriticTemplate):
+    """
+    Bayesian linear model using a gaussian prior with unknown variance.
+
+    Samples both the Q- and target Q-value by sampling the parameters per step.
+    """
+
+    def __init__(self, state, batch=False, lr=0.01):
+        """
+        Initializes a bayesian linear model.
+
+        args:
+            state : State from the environment of interest.
+            lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
+        """
+
+        self.batch = batch
+        if type(state) is int:
+            feature_size = 3
+        else:
+            feature_size = len(state) + 2  # Add bias term and action term.
+
+        self.model = GaussianRegression2(dim=feature_size)
+
+    def get_action(self, state):
+        action, _ = self.get_target_action_and_q_value(state)
+        return action
+
+    def get_target_action_and_q_value(self, state):
+        """
+        Samples an action by sampling coefficients and choosing the highest
+        resulting Q-value.
+        """
+        self.coef, self.noise = self.sample_coef()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0, Q_left
+        return 1, Q_right
+
+    def update(self, state, action, target):
+        """Calculate posterior and update prior."""
+        X = featurizer(state, action, self.batch)
+        self.model.update_posterior(X, target, 1)
+        return X, target
+
+    def sample_coef(self):
+        """Sample regression coefficients from the posterior."""
+        coef, noise = self.model.sample()
+        return coef, noise
+
+    def q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = featurizer(state, action)
+        prediction = features@self.coef + self.noise
+        return np.asscalar(prediction)
+
+    def print_parameters(self):
+        print("Coefficients")
+        print("Mean:\n", self.model.mean)
+        print("Cov:\n", self.model.invcov)
