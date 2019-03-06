@@ -377,7 +377,7 @@ class GaussianBayesCritic2(CriticTemplate):
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
-        prediction = features@self.coef + self.noise
+        prediction = features@self.coef + np.random.normal(0, self.noise)
         return np.asscalar(prediction)
 
     def print_parameters(self):
