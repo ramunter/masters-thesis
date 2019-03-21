@@ -103,6 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-
 # vscode 
 .vscode/
+
+# Temp ignore docs folder
+docs/
