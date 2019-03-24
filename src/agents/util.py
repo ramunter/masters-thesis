@@ -17,7 +17,7 @@ def featurizer(state, action, batch=False):
         features = np.column_stack((state, action, bias))
     else:
         features = np.append(
-            state, [1, action]).reshape(1, -1)
+            state, [action, 1]).reshape(1, -1)
     return features
 
 
@@ -32,7 +32,7 @@ class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
         self.invcov = np.eye(dim)
-        self.a = 3.0
+        self.a = 1.0
         self.b = 1.0
 
     def update_posterior(self, X, y, n):
@@ -42,8 +42,6 @@ class GaussianRegression2():
         mean_0 = self.mean
         self.mean = np.linalg.inv(
             X.T@X + self.invcov)@(X.T@y + self.invcov@mean_0)
-
-        self.mean = np.clip(self.mean, -1, 1)
 
         invcov_0 = self.invcov
         self.invcov = X.T@X + self.invcov
