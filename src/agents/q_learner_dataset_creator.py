@@ -73,9 +73,10 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
 
             # Update parameters
             target = calculate_target(gamma, reward, next_q_value, done)
-            X, y = critic.update(state, action, target)
+            X = critic.update(state, action, target)
 
-            dataset.append(np.append(X, y))
+            dataset.append(
+                np.append(X, [target[0], critic.q_value(state, action)]))
 
             # Reset loop
             state = next_state

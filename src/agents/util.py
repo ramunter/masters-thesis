@@ -30,7 +30,7 @@ class GaussianRegression():
 
 class GaussianRegression2():
     def __init__(self, dim=3):
-        self.mean = np.zeros((dim, 1))
+        self.mean = np.zeros((dim, 1))*0.99
         self.invcov = np.eye(dim)
         self.a = 1.0
         self.b = 1.0
