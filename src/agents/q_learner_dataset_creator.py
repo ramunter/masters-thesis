@@ -1,5 +1,7 @@
 from src.agents.util import featurizer
 from numpy import array
+import numpy as np
+import pandas as pd
 
 
 def calculate_target(gamma, reward, next_q_value, done):
@@ -49,6 +51,8 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
 
     average_regret = 1
 
+    dataset = []
+
     for episode in range(1, episodes+1):
 
         state = env.reset()
@@ -69,7 +73,9 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
 
             # Update parameters
             target = calculate_target(gamma, reward, next_q_value, done)
-            critic.update(state, action, target)
+            X, y = critic.update(state, action, target)
+
+            dataset.append(np.append(X, y))
 
             # Reset loop
             state = next_state
@@ -79,13 +85,15 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        if average_regret < 0.01*1:  # What should "learned" be?
-            break  # Check that this does not remove episode
-
     if verbose:
         print("Final Parameters")
         critic.print_parameters()
         critic.print_policy(num_states=env.N)
         print("Episodes used: ", episode)
+
+    dataset = pd.DataFrame(dataset)
+    print(dataset)
+    print("Average regret is ", average_regret)
+    dataset.to_csv("test.csv")
 
     return episode

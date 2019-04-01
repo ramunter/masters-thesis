@@ -9,7 +9,7 @@ from src.envs.deepsea import DeepSea
 from src.agents.q_learner import q_learner
 from src.agents.g_learner import g_learner
 
-from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic
+from src.agents.q_learner_critics import EGreedyCritic, UBECritic, SampleTargetUBECritic, GaussianBayesCritic, DeepGaussianBayesCritic, GaussianBayesCritic2
 
 
 flags.DEFINE_integer("iterations", 5, "Number of attempts per chain length")
@@ -23,15 +23,16 @@ def main(argv):
     methods = {"Q-learning": q_learner}
 
     critics = {
-        "E Greedy": EGreedyCritic,
-        "UBE": UBECritic,
-        "Sample Target UBE": SampleTargetUBECritic,
+        # "E Greedy": EGreedyCritic,
+        # "UBE": UBECritic,
+        # "Sample Target UBE": SampleTargetUBECritic,
         "Gaussian Prior": GaussianBayesCritic,
-        "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic
+        # "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic,
+        "Gaussian Prior 2": GaussianBayesCritic2
     }
 
     experiment(
-        environment=Corridor,  # DeepSea,
+        environment=Corridor,
         N_list=arange(4, FLAGS.longest_chain, 2),
         methods=methods,
         critics=critics,

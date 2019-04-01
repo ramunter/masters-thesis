@@ -19,8 +19,8 @@ class State():
     @property
     def as_array(self):
         return reshape(
-            array([self.x, self.y]),
-            (2, 1))
+            array([self.x, self.y, self.x*self.y, self.x**2, self.y**2]),
+            (5, 1))
 
 
 class DeepSea(gym.Env):

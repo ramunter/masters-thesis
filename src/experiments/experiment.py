@@ -2,6 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
+from statistics import median
 from collections import namedtuple
 
 plt.style.use('ggplot')
@@ -63,15 +64,15 @@ def run_all_attempts(env, agent, N, attempts):
         N        : Size of environment.  
         attempts : Number of attempts.  
     """
-    sum_steps_to_learn = 0
+    list_steps_to_learn = []
 
-    for _ in trange(0, attempts):
+    for _ in range(0, attempts):
 
         steps_to_learn = agent.method(
             env, agent.critic, episodes=1000, verbose=False)
-        sum_steps_to_learn += steps_to_learn
+        list_steps_to_learn += [steps_to_learn]
 
-    average_steps_to_learn = sum_steps_to_learn/attempts
+    average_steps_to_learn = median(list_steps_to_learn)
     return average_steps_to_learn
 
 
