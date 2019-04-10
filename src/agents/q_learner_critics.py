@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import numpy as np
 from numpy.random import binomial
 
 from sklearn.linear_model import SGDRegressor
+from filterpy.kalman import KalmanFilter
 
 from src.agents.util import featurizer, GaussianRegression, GaussianRegression2
 
@@ -55,7 +56,7 @@ class CriticTemplate(ABC):
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, batch=False, eps=0.1, lr=0.01):
+    def __init__(self, state, batch=False, final_eps=0.01, lr=0.01):
         """
         Initializes a linear model.
 
@@ -65,7 +66,9 @@ class EGreedyCritic(CriticTemplate):
             batch : Batch or single updates?
             lr    : Learning rate used by the linear model.
         """
-        self.eps = eps
+        self.final_eps = final_eps
+        self.eps = 1
+        self.eps_decay = (1-final_eps)/200
         self.batch = batch
         self.model = self.setup_model(state, lr)
 
@@ -99,7 +102,7 @@ class EGreedyCritic(CriticTemplate):
 
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
-        return features, target
+        return features
 
     def q_value(self, state, action):
         """Caclulates Q-value given state and action."""
@@ -108,6 +111,10 @@ class EGreedyCritic(CriticTemplate):
 
     def print_parameters(self):
         print('Coefficients: \n', self.model.coef_)
+
+    def reset(self):
+        if self.eps > self.final_eps:
+            self.eps -= self.eps_decay
 
 
 class UBECritic(CriticTemplate):
@@ -188,7 +195,7 @@ class UBECritic(CriticTemplate):
         for i in range(0, num_samples):
             self.update_sigma(features[i, :])
 
-        return features, target
+        return features
 
     def update_sigma(self, features):
         """Update the Covariance matrix."""
@@ -267,10 +274,7 @@ class GaussianBayesCritic(CriticTemplate):
         self.model.cov = np.linalg.inv(
             self.model.noise**(-2) * X.T @ X + inv_cov)
 
-        # self.model.mean = self.model.cov@(
-        #     inv_cov@self.model.mean + self.model.noise**-1*X.T@target)
-
-        return X, target
+        return X
 
     def sample_coef(self):
         """Sample regression coefficients from the posterior."""
@@ -367,7 +371,8 @@ class GaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update_posterior(X, target, 1)
-        return X, target
+        # self.print_parameters()
+        return X
 
     def sample_coef(self):
         """Sample regression coefficients from the posterior."""
@@ -377,10 +382,81 @@ class GaussianBayesCritic2(CriticTemplate):
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
-        prediction = features@self.coef + np.random.normal(0, np.sqrt(self.noise))
+        prediction = features@self.coef + \
+            np.random.normal(0, np.sqrt(self.noise))
+        return np.asscalar(prediction)
+
+    def print_parameters(self):
+        self.model.print_parameters()
+
+    def reset(self):
+        self.model.print_parameters()
+
+
+class KalmanFilterCritic(CriticTemplate):
+    """
+    Kalman filtered regression.
+    """
+
+    def __init__(self, state, batch=False, lr=0.01):
+        """
+        Initializes a bayesian linear model.
+
+        args:
+            state : State from the environment of interest.
+            lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
+        """
+        self.eps = 1
+        self.final_eps = 0.01
+        self.eps_decay = (1-self.final_eps)/200
+        self.batch = batch
+        if type(state) is int:
+            feature_size = 3
+        else:
+            feature_size = len(state) + 2  # Add bias term and action term.
+
+        self.model = KalmanFilter(dim_x=feature_size, dim_z=1)
+        self.model.x = np.zeros((feature_size,))
+        self.model.F = np.eye(feature_size)  # x = Fx
+        self.model.H = None  # y = Hx
+
+    def get_action(self, state):
+        """ Gets an action using the E greedy approach."""
+
+        if binomial(1, self.eps):
+            return binomial(1, 0.5)
+        else:
+            action, _ = self.get_target_action_and_q_value(state)
+        return action
+
+    def get_target_action_and_q_value(self, state):
+        """
+        Samples an action by sampling coefficients and choosing the highest
+        resulting Q-value.
+        """
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0, Q_left
+        return 1, Q_right
+
+    def update(self, state, action, target):
+        """Calculate posterior and update prior."""
+        X = featurizer(state, action, self.batch)
+        self.model.update(target, H=X)
+        return X
+
+    def q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = featurizer(state, action)
+        prediction = features@self.model.x_post
         return np.asscalar(prediction)
 
     def print_parameters(self):
         print("Coefficients")
-        print("Mean:\n", self.model.mean)
-        print("Cov:\n", self.model.invcov)
+        print(self.model.predict())
+
+    def reset(self):
+        if self.eps > self.final_eps:
+            self.eps -= self.eps_decay

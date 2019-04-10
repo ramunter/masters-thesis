@@ -62,7 +62,6 @@ class Corridor(gym.Env):
             done = True
         else:
             done = False
-
         return self.state, reward, done, {}
 
     def env_changes_to_actions(self, action):
