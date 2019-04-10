@@ -24,16 +24,16 @@ def featurizer(state, action, batch=False):
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)
+        self.cov = np.eye(dim)*1000
         self.noise = noise
 
 
 class GaussianRegression2():
     def __init__(self, dim=3):
-        self.mean = np.zeros((dim, 1))*0.99
-        self.invcov = np.eye(dim)
-        self.a = 1.0
-        self.b = 1.0
+        self.mean = np.zeros((dim, 1))
+        self.invcov = np.eye(dim)*0.0001
+        self.a = 0.001
+        self.b = 0.001
 
     def update_posterior(self, X, y, n):
 
@@ -51,9 +51,9 @@ class GaussianRegression2():
                                   self.mean.T@self.invcov@self.mean)
 
     def sample(self):
-        noise = stats.invgamma.rvs(self.a, scale=1/self.b)
+        noise = stats.invgamma.rvs(self.a, scale=1./self.b)
         sample = stats.multivariate_normal.rvs(
-            np.squeeze(self.mean), np.linalg.inv(self.invcov)*noise)
+            np.squeeze(self.mean), np.linalg.inv((self.invcov+self.invcov.T)/2.)*noise)
         return sample, noise
 
     def print_parameters(self):

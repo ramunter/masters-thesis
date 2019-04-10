@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import numpy as np
 from numpy.random import binomial
@@ -394,75 +394,6 @@ class GaussianBayesCritic2(CriticTemplate):
 
 
 class KalmanFilterCritic(CriticTemplate):
-    """
-    Kalman filtered regression.
-    """
-
-    def __init__(self, state, batch=False, lr=0.01):
-        """
-        Initializes a bayesian linear model.
-
-        args:
-            state : State from the environment of interest.
-            lr    : Learning rate used by the linear model. 
-            batch : Batch or single updates?
-        """
-        self.eps = 1
-        self.final_eps = 0.01
-        self.eps_decay = (1-self.final_eps)/200
-        self.batch = batch
-        if type(state) is int:
-            feature_size = 3
-        else:
-            feature_size = len(state) + 2  # Add bias term and action term.
-
-        self.model = KalmanFilter(dim_x=feature_size, dim_z=1)
-        self.model.x = np.zeros((feature_size,))
-        self.model.F = np.eye(feature_size)  # x = Fx
-        self.model.H = None  # y = Hx
-
-    def get_action(self, state):
-        """ Gets an action using the E greedy approach."""
-
-        if binomial(1, self.eps):
-            return binomial(1, 0.5)
-        else:
-            action, _ = self.get_target_action_and_q_value(state)
-        return action
-
-    def get_target_action_and_q_value(self, state):
-        """
-        Samples an action by sampling coefficients and choosing the highest
-        resulting Q-value.
-        """
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
-        if Q_left > Q_right:
-            return 0, Q_left
-        return 1, Q_right
-
-    def update(self, state, action, target):
-        """Calculate posterior and update prior."""
-        X = featurizer(state, action, self.batch)
-        self.model.update(target, H=X)
-        return X
-
-    def q_value(self, state, action):
-        """Caclulate Q-value based on sampled coefficients."""
-        features = featurizer(state, action)
-        prediction = features@self.model.x_post
-        return np.asscalar(prediction)
-
-    def print_parameters(self):
-        print("Coefficients")
-        print(self.model.predict())
-
-    def reset(self):
-        if self.eps > self.final_eps:
-            self.eps -= self.eps_decay
-
-
-class KalmanGaussianCritic(CriticTemplate):
     """
     Kalman filtered regression.
     """
