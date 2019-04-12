@@ -1,0 +1,109 @@
+%===================================== CHAP 5 =================================
+\chapter{BDQN}{\label{ch:ube}}
+
+\section{Linear bayesian Q learning}
+
+\subsection{Linear Q learning}
+
+In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model can then be defined as
+
+\begin{equation*}
+Q = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
+\end{equation*}
+
+with the response value defined as 
+
+\begin{equation*}
+Q(s,a) = r_t + \argmax_{a'}Q(s',a').
+\end{equation*}
+
+The ordinary least squares solution to the $\beta$ coefficients can then be found using the normal equation which in matrix form is
+
+\begin{equation*}
+\beta = [X^TX]^{-1}X^TQ
+\end{equation*}
+
+\subsection{Linear Bayesian Q learning}
+
+Since thompson sampling is known to give the exploration in a bandit setting it is of interest to view the regression from a bayesian setting where all parameters are viewed as random variables. Following the notation from linear regression the target Q-value is then defined by the following likelihood function
+
+\begin{equation*}
+p(Q|X,\beta, \sigma^2) \propto (\sigma^2)^{-\frac{n}{2}}exp\bigg(-\frac{1}{2\sigma^2}(y-X\beta)^T(y-X\beta)\bigg).
+\end{equation*}
+
+$X$, the design matrix, is given by the agents experiences. However both $\beta$ and $\sigma^2$ needs a prior distribution. By definition $\varepsilon$ is conditionally independent of $X\beta$ leaving $p(\beta, \sigma^2) = p(\beta|\sigma^2)p(\sigma^2)$.
+
+To simplfy calculations and implementation we want to select conjugate priors. In literature it is common to use a gaussian distribution over $\beta$ and an inverse-gamma distribution over $\sigma^2$.
+
+\begin{align*}
+&p(\sigma^2) = \text{InvGamma}(\alpha, b) \\
+&p(\beta|\sigma^2) = \text{N}(\mu, \sigma^2\Sigma)
+\end{align*}
+
+Note that this prior assumption is purely based on its conjugate priors, not any aspects of regression or reinforcement learning task.
+
+\todo I'm going to skip how to derive the posterior for now
+
+The posterior is then defined as
+
+\begin{align*}
+\Lambda_n &= (X^TX + \Lambda_0)\\
+\mu_n &= \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ)\\
+\alpha_n &= \alpha_0 + \frac{n}{2}\\
+b_n &= b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n)
+\end{align*}
+
+\subsection{Propagating uncertainty}
+
+In order to complete this bayesian regression the target must also be defined. Keeping stability in mind it could be a good choice to simply use the MAP estimate of $\beta$ when calculating the target $Q$.
+
+\begin{equation*}
+    Q(s,a) = r_t + \argmax_{a'}\mu_nx_{t+1}^T.
+\end{equation*}
+
+This is what is done in \cite{azziz_2018}. However this will understimate the variance of the Q value. This is because the bayesian regression setup above does not consider the variance in Q that is found in $\mu_nx_{t+1}^T$ in the target.
+
+\todo Compare to regression on average of observations instead of actual observations
+
+To encorporate this uncertainty one can also sample the target using
+
+\begin{equation*}
+    Q(s,a) = r(t) + \argmax_{a'} \beta x_{t+1}^T
+\end{equation*}
+
+where $\beta$ is a sample from $N(\mu_n, \sigma^2\Sigma)$.
+
+\section{Bayesian Deep Q Network}
+
+\todo this section assumes DQN has been explained
+
+In order to use the linear bayesian Q-learning with the DQN setup two points must be addressed.
+
+\begin{itemize}
+    \item How to encorporate the bayesian updates in a neural network.
+    \item How to handle the non-stationary regresion problem
+    \item How to run bayesian updates in a batch update setting.
+\end{itemize}
+
+\todo some point earlier I need to mention that Q-learning is non-stationary due to the unknown policy.
+
+\subsection{Bayesian linear layer}
+
+In DQN the final layer is a linear combination of the previous layer. Lets denote the previous layers encoding of the state as $\phi_\theta(x)$ where $\theta$ represents the neural network parameters. One way to combine bayesian regression and neural networks is to assume the uncertainty in the neural network encoding is 0 and replace the final linear combination with the bayesian linear regression method. To do this one simply replaces $x_t$ in the linear regression setting with $\phi_\theta(x_t)$.
+
+Training the neural network then uses the following update
+
+\begin{equation*}
+\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\beta^T\phi_\theta(x_t)]\big)^2.
+\end{equation*}
+
+\subsection{Non-stationary data}
+
+To deal with non-stationary data \cite{azziz_2018} retrains the bayesian regression from scratch every T training steps, where T is a hyperparameter.
+
+\subsection{Batch update}
+
+If we want to batch update correctly one should sample new coefficients for every single experience used. Implementing this is slighlty tricky and can be computationally expensive. The current implementation instead retrains the bayesian regression using batches. For each batch new weights are sampled. This allows a balance between a more correct variance estimate and run time.
+
+
+\cleardoublepage
