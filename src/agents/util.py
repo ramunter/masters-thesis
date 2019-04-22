@@ -24,16 +24,16 @@ def featurizer(state, action, batch=False):
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)*1000
+        self.cov = np.eye(dim)*10
         self.noise = noise
 
 
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*0.0001
-        self.a = 0.001
-        self.b = 0.001
+        self.invcov = np.eye(dim)*1
+        self.a = 1
+        self.b = 1
 
     def update_posterior(self, X, y, n):
 

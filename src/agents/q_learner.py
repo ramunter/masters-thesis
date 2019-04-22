@@ -68,7 +68,11 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
                 next_state)
 
             # Update parameters
-            target = calculate_target(gamma, reward, next_q_value, done)
+            if not done:
+                target = calculate_target(gamma, reward, next_q_value, done)
+            else:
+                target = reward
+
             critic.update(state, action, target)
 
             # Reset loop

@@ -1,0 +1,145 @@
+digraph G {
+
+        rankdir=LR;
+        labelloc=b;
+        fontsize=20;
+	splines=line;
+        nodesep=.2;
+        ranksep=1;
+        color=white;
+
+        node [label="", style=solid, shape=circle, size=10];
+        edge [arrowhead="none"];
+
+        subgraph cluster_0 {
+		x1 x2 x3 x4;
+		label = "\nInput State";
+	}
+
+	subgraph cluster_1 {
+		a12 a22 a32 a42 a52 a62 a72 a82 a92 a102 a112 a122;
+		label = "Hidden Layer";
+	}
+
+	subgraph cluster_2a {
+		a13 a23;
+		label = "\nAdvantage";
+	}
+
+	subgraph cluster_2b {
+		a33;
+		label = "\nValue";
+	}
+
+	subgraph cluster_3 {
+		node [label="+"];
+		O1 O2;
+		label= "\nOutput Q-values";
+	}
+
+        edge [minlen=2];
+
+        x1 -> a12;
+        x1 -> a22;
+        x1 -> a32;
+        x1 -> a42;
+        x1 -> a52;
+        x1 -> a62;
+        x1 -> a72;
+        x1 -> a82;
+        x1 -> a102;
+        x1 -> a92;
+        x1 -> a112;
+        x1 -> a122;
+
+        edge [minlen=1];
+
+        x2 -> a12;
+        x2 -> a22;
+        x2 -> a32;
+        x2 -> a42;
+        x2 -> a52;
+        x2 -> a62;
+        x2 -> a72;
+        x2 -> a82;
+        x2 -> a92;
+        x2 -> a102;
+        x2 -> a112;
+        x2 -> a122;
+
+        x3 -> a12;
+        x3 -> a22;
+        x3 -> a32;
+        x3 -> a42;
+        x3 -> a52;
+        x3 -> a62;
+        x3 -> a72;
+        x3 -> a82;
+        x3 -> a92;
+        x3 -> a102;
+        x3 -> a112;
+        x3 -> a122;
+
+        x4 -> a12;
+        x4 -> a22;
+        x4 -> a32;
+        x4 -> a42;
+        x4 -> a52;
+        x4 -> a62;
+        x4 -> a72;
+        x4 -> a82;
+        x4 -> a92;
+        x4 -> a102;
+        x4 -> a112;
+        x4 -> a122;
+
+        a12  -> a13;
+        a22  -> a13;
+        a32  -> a13;
+        a42  -> a13;
+        a52  -> a13;
+        a62  -> a13;
+        a72  -> a13;
+        a82  -> a13;
+        a92  -> a13;
+        a102 -> a13;
+        a112 -> a13;
+        a122 -> a13;
+
+        a12  -> a23;
+        a22  -> a23;
+        a32  -> a23;
+        a42  -> a23;
+        a52  -> a23;
+        a62  -> a23;
+        a72  -> a23;
+        a82  -> a23;
+        a92  -> a23;
+        a102 -> a23;
+        a112 -> a23;
+        a122 -> a23;
+
+        a12  -> a33;
+        a22  -> a33;
+        a32  -> a33;
+        a42  -> a33;
+        a52  -> a33;
+        a62  -> a33;
+        a72  -> a33;
+        a82  -> a33;
+        a92  -> a33;
+        a102 -> a33;
+        a112 -> a33;
+        a122 -> a33;
+
+        a13 -> O1;
+        a33 -> O1;
+
+        a23 -> O2;
+        a33 -> O2;
+
+
+
+
+
+}
