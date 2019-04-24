@@ -1,9 +1,9 @@
 %===================================== CHAP 5 =================================
-\chapter{BDQN}{\label{ch:ube}}
+\chapter{Bayesian Q Learning}{\label{ch:bdqn}}
 
-\section{Linear bayesian Q learning}
+In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context before attempting to extend the most successful methods to neural networks.
 
-\subsection{Linear Q learning}
+\section{Linear Q learning}
 
 In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model can then be defined as
 
@@ -24,28 +24,59 @@ The ordinary least squares solution to the $\beta$ coefficients can then be foun
 	\beta = [X^TX]^{-1}X^TQ
 \end{equation*}
 
-\subsection{Linear Bayesian Q learning}
+Given this model the agent can take an action by acting greedily over the models $Q(s,a)$ values in a given state. Since this purely an exploitation strategy, it is often coupled with the $\varepsilon$-greedy policy.
 
-Since thompson sampling is known to give the exploration in a bandit setting it is of interest to view the regression from a bayesian setting where all parameters are viewed as random variables. Following the notation from linear regression the target Q-value is then defined by the following likelihood function
+\section{Bayesian Linear Q learning}
+
+To extend linear Q learning methods to follow a Thompson sampling policy a bayesian perspective is required. In a RL perspective the goal is to model the posterior
 
 \begin{equation*}
-    p(\mathbf {Q} |\mathbf {X} ,{\boldsymbol {\beta }},\sigma ^{2})\propto (\sigma ^{2})^{-{\frac {v}{2}}}\exp \left(-{\frac {vs^{2}}{2{\sigma }^{2}}}\right)(\sigma ^{2})^{-{\frac {n-v}{2}}}\exp \left(-{\frac {1}{2{\sigma }^{2}}}({\boldsymbol {\beta }}-{\hat {\boldsymbol {\beta }}})^{\rm {T}}(\mathbf {X} ^{\rm {T}}\mathbf {X} )({\boldsymbol {\beta }}-{\hat {\boldsymbol {\beta }}})\right)
+p(Q|\theta, X_{t}) \propto p(\theta|X_{t}, A_{t}, R, X_{t+1})p(\theta)
 \end{equation*}
 
-$X$, the design matrix, is given by the agents experiences. However both $\beta$ and $\sigma^2$ needs a prior distribution. By definition $\varepsilon$ is conditionally independent of $X\beta$ leaving $p(\beta, \sigma^2) = p(\beta|\sigma^2)p(\sigma^2)$.
+where $Q$ is a vector of all Q-values given the state $X_t$ and $\theta$ denotes all parameters.
 
-To simplify calculations and implementation we want to select conjugate priors. In literature it is common to use a gaussian distribution over $\beta$ and an inverse-gamma distribution over $\sigma^2$.
+The calculation of an arbitrary posterior is computationally heavy which is ill-suited to the already long running reinforcement learning methods. To keep computation costs low this thesis will only consider conjugate priors which have an analytical solution.
+
+\subsection{Normal Prior with Known noise}
+
+There are multiple ways to setup a bayesian regression model using conjugate priors. First consider the case used in \cite{azziz_2018} which creates one model per action and assumes the noise variance is known. The known noise variance is then treated as a hyperparameter. In this case the posterior can be expressed as 
+
+$$
+p(\beta_a|\sigma_{\varepsilon_a}, X_{t}, A_{t}, R, X_{t+1}) \propto p(Q_a|\beta_a, \sigma_{\varepsilon_a}, X_{t})p(\beta_a)
+$$
+
+In literature it is common to use a gaussian prior for $\beta$
+
+$$
+	  p(\beta) = \text{N}(\mu, \sigma_\varepsilon\Lambda^{-1}) 
+$$
+
+where $\Lambda$ is the precision matrix. This results in the following posterior update
 
 \begin{align*}
-	  & p(\sigma^2) = \text{InvGamma}(\alpha, b)          \\
-	  & p(\beta|\sigma^2) = \text{N}(\mu, \sigma^2\Sigma) 
+	\Lambda_n & = X^TX + \Lambda_0 \\
+	\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
 \end{align*}
 
-Note that this prior assumption is purely based on its conjugate priors, not any aspects of regression or reinforcement learning task.
+To calculate the target $Q$-value the MAP estimate of $\beta$ is used which in this case is $\mu$. 
 
-\todo I'm going to skip how to derive the posterior for now
+\subsection{Normal Prior with Unknown noise}
 
-The posterior is then defined as
+To avoid the noise variance as a hyperparameter it can be included as an unknown parameter.
+
+$$
+p(\beta_a, \sigma_{\varepsilon_a}| X_{t}, A_{t}, R, X_{t+1})\propto p(Q_a|\beta_a, \sigma_{\varepsilon_a}, X_{t})p(\beta_a|\sigma^2_{\varepsilon_a}) p(\sigma^2_{\varepsilon_a})
+$$
+
+The conjugate priors for this setup are
+
+\begin{align*}
+    & p(\sigma^2) = \text{InvGamma}(\alpha, b)          \\
+    & p(\beta|\sigma^2) = \text{N}(\mu, \sigma^2\Sigma) 
+\end{align*}
+
+with the posterior update
 
 \begin{align*}
 	\Lambda_n & = (X^TX + \Lambda_0)                                         \\
@@ -54,7 +85,81 @@ The posterior is then defined as
 	b_n       & = b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n) 
 \end{align*}
 
-Finally the choice of $\beta$ in the target(eq \ref{eq:q_target}) remains. In \cite{azziz_2018} the MAP estimate of $\beta$ is used. For the above priors this is $\mu_n$, the mean $\beta$ value. However this method ignores the variance in the target and so does not propagate the uncertainty between states. To incorporate this uncertainty one can also sample the $\beta$ used for target calculation. In this way the bayesian regression model must take into account the variance in the target.
+Once again $\mu$, the MAP estimate of $\beta$ is used to calculate the target Q-value.
+
+\todo: Insert results for linear methods on chain environment?
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{results_no_prop.png}
+    \caption{WIP: \textbf{Performance on chain environment} Guassian Prior 2 includes the noise as a parameter}
+    \label{fig:results_no_propr}
+\end{figure}
+
+
+\subsection{Propagating Uncertainty}
+
+One possible issue with the two above methods is training using the MAP estimate of $\beta$. Using the MAP estimate means that the targets come from the following process:
+
+$$
+y = R + \max_a X_{t+1}\mu_a.
+$$
+
+Though this does incorporate the variance in the reward process through $R$ it does not convey the variance in the Q-value estimate of the next state. Even in a deterministic environment the policy shifts during training mean that there is an uncertainty in the Q-value of the next state. Quoting \cite{moerland_2017},  "\dots repeatedly visiting a state-action pair should not makes us certain about its value if we are still uncertain about what to do next."
+
+One possible method to include this uncertainty is to sample the $\beta$ posterior when calculating the target value.
+
+\todo Here is where I want stronger argumentation of why this should work (other than intuition).
+
+\todo Insert results for linear methods on chain environment
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{results_with_prop.png}
+    \caption{WIP: \textbf{Performance on chain environment} Guassian Prior 2 includes the noise as a parameter}
+    \label{fig:results_no_propr}
+\end{figure}
+
+\subsection{\textcolor{red}{Temporary} Why sampling might not be good enough}
+
+I've tried to get down my concerns with sampling the posterior for the target.
+ 
+\subsubsection{Sensitivy of the Q-value}
+
+I said at an earlier meeting that adding weak priors worked well on the chain environment. However this was a few weeks after I ran these tests, so I'd forgotten that it worked well for known noise case, but crashes for the unknown noise case. The crash is caused by samples from the weak inverse gamma prior $\text{InvGamma}(0.001, 0.001)$. This distribution can generate samples that are extremely large which causes the Q-value to explode and eventually overflow.
+
+This can be countered by using a less weak prior but I do think it highlights the issue of using samples from the posterior when there is little data.
+
+I think the issue is best illustrated if we consider a normal distribution. A weak normal distribution will have a large variance and spit out a wide range of values. The intuition is that this doesn't cause problems because we are as likely to sample an extremely large positive or negative number, so the magnitude cancels out.
+
+However in a reinforcement learning setting the sample effects the next target. This means if the first sampled value is a large positive value we move the prior towards this value reducing the probability that the next target is a large negative number. To make matters worse the target is chosen to be the max value among the sampled Q-values so this effect scales with the number of actions. These factors push the Q-values to be large and leads to stability issues.
+
+Summary: Posterior samples based on little data and weak priors lead to instability.
+
+\subsubsection{Propagating Uncertainty}
+
+This section was supposed to be about the hunch I had that sampling the target isn't actually propagating the uncertainty properly. 
+
+However writing this I think I found a simple reason it doesn't. Maybe I'm overlooking something obvious, but consider the posterior update for the known noise case.
+
+\begin{align}
+\Lambda_n & = X^TX + \Lambda_0 \\
+\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
+\end{align}
+
+Note that $X^TX$ is always positive meaning $\Lambda$ increases regardless of the data provided. Even more importantly $\Lambda$ is completely independent of the target. This means that visiting a state decreases our variance even if the variance of the next state is large.
+
+I think the issue is that regular bayesian linear regression assumes that the problem is non-stationary, so no matter what data you get in it should always decrease variance.
+
+How can we fix it? Three possibilities
+
+\begin{itemize}
+    \item \textbf{Filter}: The difficulty is how this should be setup.
+    \item \textbf{Include the policy}: Given the distributions we can calculate the probability of doing different actions. Maybe this can be included in the model to make the problem stationary? 
+    \item \textbf{Include the Q-value dependencies in the bayesian model}: Maybe it's possible to setup a bayesian regression that includes the information that the Q-value target is dependent on the $\beta$ values. Note that this will most likely require multivariate bayesian regression.
+\end{itemize}
+
+I want to attempt one of these before stopping any further developments on the masters. This is something we can discuss next meeting in more detail.
 
 \section{Bayesian Deep Q Network}
 
