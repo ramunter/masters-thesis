@@ -34,16 +34,16 @@ section = 500
 df$section = floor(df$index/section)
 df$action = factor(df$action)
 
-ggplot(data=df, aes(x=state, y=estimate, color=action)) + 
-    facet_wrap(~section) + 
-    geom_point() + 
-    geom_smooth(method="loess") + 
+ggplot(data=df, aes(x=state, y=estimate, color=action)) +
+    facet_wrap(~section) +
+    geom_point() +
+    geom_smooth(method="loess") +
     labs(title="Estimate")
 
-ggplot(data=df, aes(x=state, y=y, color=action)) + 
-    facet_wrap(~section) + 
-    geom_point() + 
-    geom_smooth(method="loess") + 
+ggplot(data=df, aes(x=state, y=y, color=action)) +
+    facet_wrap(~section) +
+    geom_point() +
+    geom_smooth(method="loess") +
     labs(title="Target")
 
 ```

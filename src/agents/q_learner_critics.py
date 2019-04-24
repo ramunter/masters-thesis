@@ -4,7 +4,7 @@ from collections import namedtuple, deque
 import numpy as np
 from numpy.random import binomial
 
-from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import SGDRegressor, SGDClassifier
 from filterpy.kalman import KalmanFilter
 
 from src.agents.util import featurizer, GaussianRegression, GaussianRegression2
@@ -248,15 +248,18 @@ class GaussianBayesCritic(CriticTemplate):
         self.model = GaussianRegression(dim=feature_size)
 
     def get_action(self, state):
-        action, _ = self.get_target_action_and_q_value(state)
-        return action
+        self.coef = self.model.sample()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
 
     def get_target_action_and_q_value(self, state):
         """
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        self.coef = self.sample_coef()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
@@ -265,27 +268,21 @@ class GaussianBayesCritic(CriticTemplate):
 
     def update(self, state, action, target):
         """Calculate posterior and update prior."""
+                
         X = featurizer(state, action, self.batch)
-
-        inv_cov = np.linalg.inv(self.model.cov)
-
-        self.model.mean = np.linalg.inv(X.T @ X + self.model.noise * inv_cov) @ \
-            (X.T @ target + inv_cov@self.model.mean)
-        self.model.cov = np.linalg.inv(
-            self.model.noise**(-2) * X.T @ X + inv_cov)
-
+        self.model.update_posterior(X, target, 1)
         return X
-
-    def sample_coef(self):
-        """Sample regression coefficients from the posterior."""
-        coef = np.random.multivariate_normal(
-            self.model.mean[:, 0], self.model.cov)
-        return coef
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
         prediction = features@self.coef
+        return np.asscalar(prediction)
+
+    def mean_q_value(self, state, action):
+        """Caclulate Q-value based on mean coefficients."""
+        features = featurizer(state, action)
+        prediction = features@self.model.mean[:,0]
         return np.asscalar(prediction)
 
     def print_parameters(self):
@@ -311,7 +308,7 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
             batch : Batch or single updates?
         """
         super().__init__(state, batch, lr)
-        self.coef = self.sample_coef()
+        self.coef = self.model.sample()
 
     def get_target_action_and_q_value(self, state):
         """Samples an action by picking the largest Q-value."""
@@ -323,7 +320,7 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
 
     def reset(self):
         """Samples coefficients on episode reset."""
-        self.coef = self.sample_coef()
+        self.coef = self.model.sample()
 
 
 class GaussianBayesCritic2(CriticTemplate):
@@ -352,17 +349,20 @@ class GaussianBayesCritic2(CriticTemplate):
         self.model = GaussianRegression2(dim=feature_size)
 
     def get_action(self, state):
-        action, _ = self.get_target_action_and_q_value(state)
-        return action
+        self.coef, self.noise = self.model.sample()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
 
     def get_target_action_and_q_value(self, state):
         """
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        self.coef, self.noise = self.sample_coef()
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
@@ -374,11 +374,6 @@ class GaussianBayesCritic2(CriticTemplate):
         # self.print_parameters()
         return X
 
-    def sample_coef(self):
-        """Sample regression coefficients from the posterior."""
-        coef, noise = self.model.sample()
-        return coef, noise
-
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
@@ -386,11 +381,101 @@ class GaussianBayesCritic2(CriticTemplate):
             np.random.normal(0, np.sqrt(self.noise))
         return np.asscalar(prediction)
 
+    def mean_q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = featurizer(state, action)
+        prediction = features@self.model.mean[:,0]
+        return np.asscalar(prediction)
+
     def print_parameters(self):
         self.model.print_parameters()
 
     def reset(self):
+        # self.model.print_parameters()
+        pass
+
+class TestCritic(CriticTemplate):
+    """
+    Bayesian linear model using a gaussian prior with unknown variance.
+
+    Samples both the Q- and target Q-value by sampling the parameters per step.
+    """
+
+    def __init__(self, state, batch=False, lr=0.01):
+        """
+        Initializes a bayesian linear model.
+
+        args:
+            state : State from the environment of interest.
+            lr    : Learning rate used by the linear model. 
+            batch : Batch or single updates?
+        """
+
+        self.batch = batch
+        if type(state) is int:
+            feature_size = 4
+        else:
+            feature_size = len(state)*2 + 2  # Add bias term and action term.
+
+
+        self.policy = self.setup_model(state, lr)
+        self.model = GaussianRegression(dim=feature_size)
+
+    def setup_model(self, state, lr):
+        model = SGDClassifier(learning_rate="constant",
+                             eta0=lr)
+        # SKlearn needs partial fit to be run once before use
+        model.partial_fit(np.array(state).reshape(1, -1),
+                          np.array([0]), classes=np.array([0,1]))
+        return model
+
+    def get_action(self, state):
+        self.coef = self.model.sample()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
+
+    def get_target_action_and_q_value(self, state):
+        """
+        Samples an action by sampling coefficients and choosing the highest
+        resulting Q-value.
+        """
+        self.coef = self.model.sample()
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
+        if Q_left > Q_right:
+            return 0, Q_left
+        return 1, Q_right
+
+    def update(self, state, action, target):
+        """Calculate posterior and update prior."""
+        X = self.featurizer(state, action)
+        self.model.update_posterior(X, target, 1)
+        self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
+        # self.print_parameters()
+        return X
+
+    def q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = self.featurizer(state, action)
+        prediction = features@self.coef
+        return np.asscalar(prediction)
+    
+    def mean_q_value(self, state, action):
+        features = self.featurizer(state, action)
+        prediction = features@self.model.mean[:,0]
+        return np.asscalar(prediction)
+
+    def featurizer(self, state, action):
+        return np.append([state, action,1], self.policy.coef_).reshape(1,-1)
+
+    def print_parameters(self):
         self.model.print_parameters()
+
+    def reset(self):
+        pass
 
 
 class KalmanFilterCritic(CriticTemplate):
