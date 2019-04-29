@@ -120,6 +120,48 @@ One possible method to include this uncertainty is to sample the $\beta$ posteri
     \label{fig:results_no_propr}
 \end{figure}
 
+\subsection{Investigating propagation}
+
+To ensure that these methods are propagating uncertainty we can consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution.
+
+If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. To test the following setup was usedThe priors for the known noise models were set to
+
+\begin{align*}
+    \beta &\sim N(0,1)\\
+    \sigma^2 &= 1
+\end{align*}
+
+and the priors for the unknown noise models were set to
+
+\begin{align*}
+    \beta &\sim N(0,1) \\
+    \sigma^2 &\sim InvGamma(1,1).
+\end{align*}
+
+Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1, 10)$ respectively. The results are seen in figure \ref{fig:proptest}.
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[width=0.5\textwidth]{100iterations01.png}
+    }
+    \subfloat[UBE]{
+        \includegraphics[width=0.5\textwidth]{100iterations1.png}
+    }
+    \\
+    \subfloat[Test]{
+        \includegraphics[width=0.5\textwidth]{100iterations10.png}
+    }
+    \caption{\textbf{Variance Propagation On Toy Example}: The known noise models only work if the "known" noise is exactly the noise in the MDP. The unknown noise model seems to propagate the variance if the target is sampled. However it underestimates the low variance posterior and overestimates the variance of the high variance posterior.}
+    \label{fig:proptest}
+\end{figure}
+
+Based on these results focus is placed on the unknown noise model with sampled targets.
+
+
+
+
+
 \subsection{\textcolor{red}{Temporary} Why sampling might not be good enough}
 
 I've tried to get down my concerns with sampling the posterior for the target.

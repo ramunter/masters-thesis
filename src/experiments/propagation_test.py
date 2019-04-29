@@ -32,7 +32,7 @@ models_sample[1].posterior = norm(loc=models_sample[1].mean,
                                       models_sample[1].b/(models_sample[1].a-1)))
 
 
-x = linspace(0,2, 10000)
+x = linspace(0, 2, 10000)
 
 def plot_posterior(model, plot_index, title):
     plt.subplot(plot_index)

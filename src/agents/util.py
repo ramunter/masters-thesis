@@ -68,16 +68,16 @@ class GaussianRegression2():
         self.cov = np.linalg.inv(self.invcov)
 
         self.a += n/2
-        scale = self.b/(self.a-1)#*(1-1/np.max(self.invcov))
+        scale = self.b/(self.a-1)
         
         self.b += 1/scale*0.5*np.asscalar(y.T@y + mean_0.T@invcov_0@mean_0 -
             self.mean.T@self.invcov@self.mean)
 
     def sample(self):
-        noise = stats.invgamma.rvs(self.a, scale=1/self.b)
-        sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], np.linalg.inv((self.invcov+self.invcov.T)/2.)*noise)
-        return sample, noise
+        sigma_2 = stats.invgamma.rvs(self.a, scale=1/self.b)
+        beta_sample = stats.multivariate_normal.rvs(
+            self.mean[:,0], np.linalg.inv((self.invcov+self.invcov.T)/2.)*sigma_2)
+        return beta_sample, sigma_2
 
     def print_parameters(self):
         print("Mean\n", self.mean)

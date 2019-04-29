@@ -361,6 +361,7 @@ class GaussianBayesCritic2(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
+        self.coef, self.noise = self.model.sample()
 
         Q_left = self.target_q_value(state, 0)
         Q_right = self.target_q_value(state, 1)
@@ -426,6 +427,7 @@ class TestCritic(CriticTemplate):
             lr    : Learning rate used by the linear model. 
             batch : Batch or single updates?
         """
+        self.count = 0
 
         self.batch = batch
         if type(state) is int:
@@ -435,7 +437,7 @@ class TestCritic(CriticTemplate):
 
         self.policy = self.setup_model(state, lr)
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
-
+        
     def setup_model(self, state, lr):
         policy = SGDClassifier(loss='log', learning_rate="constant",
                              eta0=lr)
@@ -463,11 +465,24 @@ class TestCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target):
+    def update(self, state, action, next_state, next_action, done, target):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        self.models[action].update_posterior(X, target, 1)
-        self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
+        X_2 = self.featurizer(next_state)
+
+        var1 = X@self.models[action].cov@X.T +\
+             self.models[action].b/(self.models[action].a - 1)
+
+        var2 = X_2@self.models[next_action].cov@X_2.T +\
+             self.models[next_action].b/(self.models[next_action].a - 1)
+        # print(var2)
+        if var2 < var1 or done:
+            self.models[action].update_posterior(X, target, 1)
+            # self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
+        else:
+            self.count += 1
+            print(self.count)
+
         return X
 
     def q_value(self, state, action):
@@ -482,13 +497,8 @@ class TestCritic(CriticTemplate):
         """Caclulate Q-value based on sampled coefficients."""
         features = self.featurizer(state)
 
-        var = features@self.models[action].cov@features.T + self.models[action].b/(self.models[action].a - 1)
-        if var < 10:
-            prediction = features@self.coef + \
-                np.random.normal(0, np.sqrt(self.noise))
-
-        else:
-            prediction = features@self.models[action].mean[:,0]
+        prediction = features@self.coef + \
+            np.random.normal(0, np.sqrt(self.noise))
 
         return np.asscalar(prediction)
 

@@ -1,16 +1,20 @@
 from numpy import array, linspace, max
+import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from src.agents.util import GaussianRegression, GaussianRegression2
 
-scale=1
+scale=0.1
 state_2_posterior = norm(loc=1, scale=scale)
 
 model1 = GaussianRegression2(dim=1)
 model2 = GaussianRegression2(dim=1)
 
-for i in range(100):
+T=1000
+n=1
+
+for i in range(int(T/n)):
     model1.posterior = norm(loc=model1.mean,
                         scale=(model1.b/(model1.a-1) + 
                                 1/model1.invcov*
@@ -20,11 +24,25 @@ for i in range(100):
                         scale=(model2.b/(model2.a-1) + 
                                 1/model2.invcov*
                                 model2.b/(model2.a-1)))
-    model1.update_posterior(array([1]), model2.posterior.rvs(), n=1)
-    model2.update_posterior(array([1]), state_2_posterior.rvs(), n=1)
 
 
-x = linspace(0.5, 1.5, 10000)
+    var1 = array([1]*n)@model1.cov@array([1]*n).T +\
+            model1.b/(model1.a - 1)
+    var2 = array([1]*n)@model2.cov@array([1]*n).T +\
+            model2.b/(model2.a - 1)
+    print("1", var1)
+    print("2", var2)
+    if abs(var2-var1)>1e-2:
+        target = model2.posterior.rvs(n)
+        model1.update_posterior(array([1]*n),target, n=n) #model2.posterior.rvs(n), n=n)
+
+    # else:
+    #     target = array([model1.mean[:,0]])
+
+    model2.update_posterior(array([1]*n), state_2_posterior.rvs(n), n=n)
+
+
+x = linspace(0, 2, 10000)
 
 def plot_posterior(model, plot_index, title):
     plt.subplot(plot_index)
