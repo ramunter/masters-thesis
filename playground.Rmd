@@ -3,7 +3,7 @@ output: pdf_document
 ---
 
 ```{r}
-corridor_names = c("index", "state", "action", "bias","y", "estimate")
+corridor_names = c("index", "state", "bias", "action","y", "estimate")
 df = read.csv("test.csv")
 names(df) = corridor_names
 head(df)

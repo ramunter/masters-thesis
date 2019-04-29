@@ -1,5 +1,0 @@
-model_checkpoint_path: "/tmp/bdqn/checkpoints/tf_ckpt-15"
-all_model_checkpoint_paths: "/tmp/bdqn/checkpoints/tf_ckpt-12"
-all_model_checkpoint_paths: "/tmp/bdqn/checkpoints/tf_ckpt-13"
-all_model_checkpoint_paths: "/tmp/bdqn/checkpoints/tf_ckpt-14"
-all_model_checkpoint_paths: "/tmp/bdqn/checkpoints/tf_ckpt-15"

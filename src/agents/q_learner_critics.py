@@ -381,7 +381,7 @@ class GaussianBayesCritic2(CriticTemplate):
         features = featurizer(state, action)
 
         var = features@self.model.cov@features.T + self.model.b/(self.model.a - 1)
-        if var < 1:
+        if var < 10:
             prediction = features@self.coef + \
                 np.random.normal(0, np.sqrt(self.noise))
 
@@ -457,8 +457,8 @@ class TestCritic(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
+        Q_left = self.target_q_value(state, 0)
+        Q_right = self.target_q_value(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
@@ -478,10 +478,18 @@ class TestCritic(CriticTemplate):
             np.random.normal(0, np.sqrt(self.noise))
         return np.asscalar(prediction)
 
-    def mean_q_value(self, state, action):
+    def target_q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = self.featurizer(state)
-        prediction = features@self.models[action].mean[:,0]
+
+        var = features@self.models[action].cov@features.T + self.models[action].b/(self.models[action].a - 1)
+        if var < 10:
+            prediction = features@self.coef + \
+                np.random.normal(0, np.sqrt(self.noise))
+
+        else:
+            prediction = features@self.models[action].mean[:,0]
+
         return np.asscalar(prediction)
 
     def featurizer(self, state):
