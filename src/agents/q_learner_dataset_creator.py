@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def calculate_target(q_value, gamma, reward, next_q_value, done):
+def calculate_target(gamma, reward, next_q_value, done):
     """
     Caclulates the target Q-value using temporal differencing.
 
@@ -72,8 +72,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
                 next_state)
 
             # Update parameters
-            target = calculate_target(critic.q_value(state, action), gamma, reward, next_q_value, done)
-
+            target = calculate_target(gamma, reward, next_q_value, done)
             X = critic.update(state, action, target)
 
             dataset.append(

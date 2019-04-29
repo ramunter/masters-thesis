@@ -3,7 +3,7 @@ output: pdf_document
 ---
 
 ```{r}
-corridor_names = c("index", "state",  "action", "bias", "y", "estimate")
+corridor_names = c("index", "state", "action", "bias","y", "estimate")
 df = read.csv("test.csv")
 names(df) = corridor_names
 head(df)
@@ -30,7 +30,7 @@ ggplot(data=action_1_df) +
 max_index = dim(df)[1]
 p = ggplot()
 
-section = 500
+section = 5000
 df$section = floor(df$index/section)
 df$action = factor(df$action)
 

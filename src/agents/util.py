@@ -24,7 +24,7 @@ def featurizer(state, action, batch=False):
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)*100
+        self.cov = np.eye(dim)*1e-3
         self.noise = noise
 
     def update_posterior(self, X, y, n):
@@ -50,8 +50,9 @@ class GaussianRegression():
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*1
-        self.a = 1
+        self.invcov = np.eye(dim)*1e-3
+        self.cov = np.linalg.inv(self.invcov)
+        self.a = 1 + 1e-6
         self.b = 1
 
     def update_posterior(self, X, y, n):
@@ -64,13 +65,16 @@ class GaussianRegression2():
 
         invcov_0 = self.invcov
         self.invcov = X.T@X + self.invcov
+        self.cov = np.linalg.inv(self.invcov)
 
         self.a += n/2
-        self.b += 0.5*np.asscalar(y.T@y + mean_0.T@invcov_0@mean_0 -
-                                  self.mean.T@self.invcov@self.mean)
+        scale = self.b/(self.a-1)#*(1-1/np.max(self.invcov))
+        
+        self.b += 1/scale*0.5*np.asscalar(y.T@y + mean_0.T@invcov_0@mean_0 -
+            self.mean.T@self.invcov@self.mean)
 
     def sample(self):
-        noise = stats.invgamma.rvs(self.a, scale=1./self.b)
+        noise = stats.invgamma.rvs(self.a, scale=1/self.b)
         sample = stats.multivariate_normal.rvs(
             self.mean[:,0], np.linalg.inv((self.invcov+self.invcov.T)/2.)*noise)
         return sample, noise

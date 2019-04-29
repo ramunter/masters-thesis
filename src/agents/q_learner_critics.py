@@ -361,8 +361,10 @@ class GaussianBayesCritic2(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.mean_q_value(state, 0)
-        Q_right = self.mean_q_value(state, 1)
+
+        Q_left = self.target_q_value(state, 0)
+        Q_right = self.target_q_value(state, 1)
+ 
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
@@ -374,24 +376,38 @@ class GaussianBayesCritic2(CriticTemplate):
         # self.print_parameters()
         return X
 
+    def target_q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = featurizer(state, action)
+
+        var = features@self.model.cov@features.T + self.model.b/(self.model.a - 1)
+        if var < 1:
+            prediction = features@self.coef + \
+                np.random.normal(0, np.sqrt(self.noise))
+
+        else:
+            prediction = features@self.model.mean[:,0]
+
+        return np.asscalar(prediction)
+
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
         prediction = features@self.coef + \
             np.random.normal(0, np.sqrt(self.noise))
+
         return np.asscalar(prediction)
 
-    def mean_q_value(self, state, action):
-        """Caclulate Q-value based on sampled coefficients."""
-        features = featurizer(state, action)
-        prediction = features@self.model.mean[:,0]
-        return np.asscalar(prediction)
+    # def mean_q_value(self, state, action):
+    #     """Caclulate Q-value based on sampled coefficients."""
+    #     features = featurizer(state, action)
+    #     prediction = features@self.model.mean[:,0]
+    #     return np.asscalar(prediction)
 
     def print_parameters(self):
         self.model.print_parameters()
 
     def reset(self):
-        # self.model.print_parameters()
         pass
 
 class TestCritic(CriticTemplate):
@@ -413,24 +429,23 @@ class TestCritic(CriticTemplate):
 
         self.batch = batch
         if type(state) is int:
-            feature_size = 4
+            feature_size = 2
         else:
-            feature_size = len(state)*2 + 2  # Add bias term and action term.
-
+            feature_size = len(state) + 1  # Add bias term.
 
         self.policy = self.setup_model(state, lr)
-        self.model = GaussianRegression(dim=feature_size)
+        self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
 
     def setup_model(self, state, lr):
-        model = SGDClassifier(learning_rate="constant",
+        policy = SGDClassifier(loss='log', learning_rate="constant",
                              eta0=lr)
         # SKlearn needs partial fit to be run once before use
-        model.partial_fit(np.array(state).reshape(1, -1),
+        policy.partial_fit(np.array(state).reshape(1, -1),
                           np.array([0]), classes=np.array([0,1]))
-        return model
+
+        return policy
 
     def get_action(self, state):
-        self.coef = self.model.sample()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
@@ -442,39 +457,44 @@ class TestCritic(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        self.coef = self.model.sample()
-        Q_left = self.mean_q_value(state, 0)
-        Q_right = self.mean_q_value(state, 1)
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
     def update(self, state, action, target):
         """Calculate posterior and update prior."""
-        X = self.featurizer(state, action)
-        self.model.update_posterior(X, target, 1)
+        X = self.featurizer(state)
+        self.models[action].update_posterior(X, target, 1)
         self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
-        # self.print_parameters()
         return X
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
-        features = self.featurizer(state, action)
-        prediction = features@self.coef
-        return np.asscalar(prediction)
-    
-    def mean_q_value(self, state, action):
-        features = self.featurizer(state, action)
-        prediction = features@self.model.mean[:,0]
+        self.coef, self.noise = self.models[action].sample()
+        features = self.featurizer(state)
+        prediction = features@self.coef + \
+            np.random.normal(0, np.sqrt(self.noise))
         return np.asscalar(prediction)
 
-    def featurizer(self, state, action):
-        return np.append([state, action,1], self.policy.coef_).reshape(1,-1)
+    def mean_q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = self.featurizer(state)
+        prediction = features@self.models[action].mean[:,0]
+        return np.asscalar(prediction)
+
+    def featurizer(self, state):
+        #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
+        return np.array([state, 1]).reshape(1,-1)
 
     def print_parameters(self):
-        self.model.print_parameters()
+        for action in range(2):
+            print("Action ", action)
+            self.models[action].print_parameters()
 
     def reset(self):
+        # self.print_parameters()
         pass
 
 
