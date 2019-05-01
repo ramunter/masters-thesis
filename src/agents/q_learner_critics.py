@@ -349,7 +349,7 @@ class GaussianBayesCritic2(CriticTemplate):
         self.model = GaussianRegression2(dim=feature_size)
 
     def get_action(self, state):
-        self.coef, self.noise = self.model.sample()
+        self.coef, self.noise = self.model.sample_params()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
@@ -361,10 +361,10 @@ class GaussianBayesCritic2(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        self.coef, self.noise = self.model.sample()
+        self.coef, self.noise = self.model.sample_params()
 
-        Q_left = self.target_q_value(state, 0)
-        Q_right = self.target_q_value(state, 1)
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
  
         if Q_left > Q_right:
             return 0, Q_left
@@ -374,41 +374,20 @@ class GaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update_posterior(X, target, 1)
-        # self.print_parameters()
         return X
-
-    def target_q_value(self, state, action):
-        """Caclulate Q-value based on sampled coefficients."""
-        features = featurizer(state, action)
-
-        var = features@self.model.cov@features.T + self.model.b/(self.model.a - 1)
-        if var < 10:
-            prediction = features@self.coef + \
-                np.random.normal(0, np.sqrt(self.noise))
-
-        else:
-            prediction = features@self.model.mean[:,0]
-
-        return np.asscalar(prediction)
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = featurizer(state, action)
-        prediction = features@self.coef + \
-            np.random.normal(0, np.sqrt(self.noise))
+        prediction = self.model.sample_y(features, self.coef, self.noise)
 
         return np.asscalar(prediction)
-
-    # def mean_q_value(self, state, action):
-    #     """Caclulate Q-value based on sampled coefficients."""
-    #     features = featurizer(state, action)
-    #     prediction = features@self.model.mean[:,0]
-    #     return np.asscalar(prediction)
 
     def print_parameters(self):
         self.model.print_parameters()
 
     def reset(self):
+        # self.coef, self.noise = self.model.sample_params()
         pass
 
 class TestCritic(CriticTemplate):

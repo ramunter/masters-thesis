@@ -23,13 +23,13 @@ def main(argv):
     methods = {"Q-learning": q_learner}
 
     critics = {
-        # "E Greedy": EGreedyCritic,
+        "E Greedy": EGreedyCritic,
         # "UBE": UBECritic,
         # "Sample Target UBE": SampleTargetUBECritic,
         # "Gaussian Prior": GaussianBayesCritic,
         # "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic,
-        # "Gaussian Prior 2": GaussianBayesCritic2,
-        "Test Critic": TestCritic,
+        "Gaussian Prior 2": GaussianBayesCritic2,
+        # "Test Critic": TestCritic,
         # "Kalman Filter": KalmanFilterCritic,
     }
 
