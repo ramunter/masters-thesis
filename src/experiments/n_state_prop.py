@@ -14,51 +14,63 @@ flags.DEFINE_string("plot_name", None, "Plot file name")
 
 FLAGS = flags.FLAGS
 
+plt.rcParams.update({'font.size': 16})
+
 def n_state_prop(models, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
     T=10000
     n=1
-
     for i in range(int(T/n)):
 
         for m, model in enumerate(models[0:-1]):
-            var = np.array([1]*n)@model.cov@np.array([1]*n).T +\
-                model.b/(model.a - 1) 
-            vartar = np.array([1]*n)@models[m+1].cov@np.array([1]*n).T +\
-                    models[m+1].b/(models[m+1].a - 1) 
+            # var = np.array([1]*n)@model.cov@np.array([1]*n).T +\
+            #     model.b/(model.a - 1) 
+            # vartar = np.array([1]*n)@models[m+1].cov@np.array([1]*n).T +\
+            #         models[m+1].b/(models[m+1].a - 1) 
 
-            if True:#vartar < var:
-                target = np.array([models[m+1].sample(np.array([1])) for _ in range(n)])
-                model.update_posterior(np.array([1]*n), target, n=n) 
+            # if var < vartar:
+            target = np.array([models[m+1].sample(np.array([1])) for _ in range(n)])
+            # else:
+            #     target = np.array([models[m+1].mean]*n)
+
+            model.update_posterior(np.array([1]*n), target, n=n) 
 
         models[-1].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n=n)
 
 
-    def plot_posterior(model, index):
+    ## Plotting code
+
+    def plot_posterior(ax, model, index):
 
         x = np.linspace(1-3*target_scale, 1+3*target_scale, 10000)
 
-        plt.subplot(1, len(models), index)
+        ## Plot sampled posterior distribution
+        # samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
+        # sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
 
-        samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
-        sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False)
-        plt.plot(x, [model.pdf(i, np.array([1])) for i in x], label="Posterior PDF")
-        plt.plot(x, final_state_posterior.pdf(x), label="Target")
+        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], label="Posterior PDF")
+        ax.plot(x, final_state_posterior.pdf(x), label="Target")
 
-        plt.title("State" + str(index))
-        plt.xlim(1-3*target_scale, 1+3*target_scale)
-        plt.xlabel('State Value')
-        plt.ylabel('Probability')
+        ax.set_title("State" + str(index))
+        ax.set_xlim(1-3*target_scale, 1+3*target_scale)
 
-    plt.subplots_adjust(wspace=0.000, hspace=0.000)
     number_of_subplots=len(models)
+    fig, axs = plt.subplots(1, number_of_subplots, sharex=True, sharey=True)
+    plt.subplots_adjust(wspace=0.01)
 
     for i, model in enumerate(models):
-        plot_posterior(model, i+1)
+        plot_posterior(axs[i], model, i+1)
 
     plt.legend(loc='best', frameon=False)
+
+    fig.add_subplot(111, frameon=False)
+    # hide tick and tick label of the big axes
+    plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+    plt.grid(False)
+    plt.xlabel('State Value')
+    plt.ylabel('Probability')
     plt.show()
 
     for i, model in enumerate(models):
