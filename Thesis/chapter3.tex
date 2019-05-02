@@ -5,10 +5,10 @@ In an attempt to find a better balance between exploration and exploitation this
 
 \section{Linear Q learning}
 
-In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model can then be defined as
+In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model for a single action can then be defined as
 
 \begin{equation*}
-	Q = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
+	Q(X,a) = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
 \end{equation*}
 
 with the response value defined as 
@@ -30,26 +30,28 @@ Given this model the agent can take an action by acting greedily over the models
 
 To extend linear Q learning methods to follow a Thompson sampling policy a bayesian perspective is required. In a RL perspective the goal is to model the posterior
 
-\begin{equation*}
-p(Q|\theta, X_{t}) \propto p(\theta|X_{t}, A_{t}, R, X_{t+1})p(\theta)
-\end{equation*}
+\begin{align*}
+p(\theta |Q, \mathcal{F}) &\propto p(Q| \theta, \mathcal{F})p(\theta) \\
+p(Q) &= \int p(Q|\theta, \mathcal{F}), p(\theta) d\theta
+\end{align*}
 
-where $Q$ is a vector of all Q-values given the state $X_t$ and $\theta$ denotes all parameters.
+where $Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. In RL the value of interest are samples from $p(Q|\theta, \mathcal{F})$, not it's actual value.
 
-The calculation of an arbitrary posterior is computationally heavy which is ill-suited to the already long running reinforcement learning methods. To keep computation costs low this thesis will only consider conjugate priors which have an analytical solution.
+The calculation of an arbitrary posterior is computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to start off this thesis will consider conjugate priors which have an analytical solution.
 
 \subsection{Normal Prior with Known noise}
 
 There are multiple ways to setup a bayesian regression model using conjugate priors. First consider the case used in \cite{azziz_2018} which creates one model per action and assumes the noise variance is known. The known noise variance is then treated as a hyperparameter. In this case the posterior can be expressed as 
 
-$$
-p(\beta_a|\sigma_{\varepsilon_a}, X_{t}, A_{t}, R, X_{t+1}) \propto p(Q_a|\beta_a, \sigma_{\varepsilon_a}, X_{t})p(\beta_a)
-$$
+\begin{align*}
+    p(\beta_a |Q_a, \sigma_{\varepsilon_a}, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
+    p(Q_a|\sigma_{\varepsilon_a}, \mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a)d\beta_a
+\end{align*}
 
 In literature it is common to use a gaussian prior for $\beta$
 
 $$
-	  p(\beta) = \text{N}(\mu, \sigma_\varepsilon\Lambda^{-1}) 
+p(\beta) = \text{N}(\mu, \sigma_\varepsilon\Lambda^{-1}) 
 $$
 
 where $\Lambda$ is the precision matrix. This results in the following posterior update
@@ -59,15 +61,16 @@ where $\Lambda$ is the precision matrix. This results in the following posterior
 	\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
 \end{align*}
 
-To calculate the target $Q$-value the MAP estimate of $\beta$ is used which in this case is $\mu$. 
+Note that when picking actions the sampled $Q$-value is used. However when calculating the target $Q$-value the MAP estimate of $\beta$ is used instead. In this case the MAP estimate is $\mu$. 
 
 \subsection{Normal Prior with Unknown noise}
 
 To avoid the noise variance as a hyperparameter it can be included as an unknown parameter.
 
-$$
-p(\beta_a, \sigma_{\varepsilon_a}| X_{t}, A_{t}, R, X_{t+1})\propto p(Q_a|\beta_a, \sigma_{\varepsilon_a}, X_{t})p(\beta_a|\sigma^2_{\varepsilon_a}) p(\sigma^2_{\varepsilon_a})
-$$
+\begin{align*}
+    p(\beta_a, \sigma_{\varepsilon_a}|Q_a, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
+    p(Q_a|\mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a, \sigma_{\varepsilon_a})d\beta_a d\sigma_{\varepsilon_a}
+\end{align*}
 
 The conjugate priors for this setup are
 

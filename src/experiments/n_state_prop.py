@@ -13,13 +13,13 @@ flags.DEFINE_float("scale", 1, "SD of target")
 
 FLAGS = flags.FLAGS
 
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 28})
 
 def n_state_prop(models, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
-    T=10000
+    T=1000
     n=1
     for i in range(int(T/n)):
 
@@ -49,10 +49,11 @@ def n_state_prop(models, target_scale):
         # samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
         # sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
 
-        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], label="Posterior PDF")
-        ax.plot(x, final_state_posterior.pdf(x), label="Target")
+        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
+        ax.plot(x, final_state_posterior.pdf(x), linewidth=2, label="Target")
 
         ax.set_title("State" + str(index))
+        ax.set_xticks(np.linspace(1-3*target_scale, 1+3*target_scale, 5)[1:-1]) 
         ax.set_xlim(1-3*target_scale, 1+3*target_scale)
 
     number_of_subplots=len(models)
