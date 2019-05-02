@@ -66,7 +66,6 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
             # Best next action
             next_action, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
-
             # Update parameters
             target = calculate_target(gamma, reward, next_q_value, done)
             critic.update(state, action, target)
