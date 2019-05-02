@@ -10,7 +10,6 @@ from src.agents.util import GaussianRegression2
 
 flags.DEFINE_integer("states", 5, "Number of states")
 flags.DEFINE_float("scale", 1, "SD of target")
-flags.DEFINE_string("plot_name", None, "Plot file name")
 
 FLAGS = flags.FLAGS
 
