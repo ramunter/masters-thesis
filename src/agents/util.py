@@ -68,8 +68,8 @@ class GaussianRegression2():
         self.mean = np.zeros((dim, 1))
         self.invcov = np.eye(dim)*1e-3
         self.cov = np.linalg.inv(self.invcov)
-        self.a = 0.1
-        self.b = 1e-12
+        self.a = 1+1e-6
+        self.b = 1e-6
         self.dim = dim
 
     def update_posterior(self, X, y, n):
