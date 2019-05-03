@@ -90,7 +90,7 @@ with the posterior update
 
 Once again $\mu$, the MAP estimate of $\beta$ is used to calculate the target Q-value.
 
-\todo: Insert results for linear methods on chain environment?
+\todo: These results are outdated
 
 \begin{figure}[H]
     \centering
@@ -114,7 +114,7 @@ One possible method to include this uncertainty is to sample the $\beta$ posteri
 
 \todo Here is where I want stronger argumentation of why this should work (other than intuition).
 
-\todo Insert results for linear methods on chain environment
+\todo These results are outdated
 
 \begin{figure}[H]
     \centering
@@ -182,6 +182,9 @@ Based on these results focus is placed on the unknown noise model with sampled t
     \label{fig:3stateproptest}
 \end{figure}
 
+One reason the 0.01 standard deviation posterior is harder to approximate than the 1 sd is that the sensitivity of the posterior to the $\alpha$ and $\beta$ parameters. Small changes in these for a distribution with low variance leads to large changes (\todo: Confirm that this is actually the case)
+
+
 \begin{figure}[H]
     \centering
     \subfloat[6 States with $N(0.01,1^2)$]{
@@ -192,25 +195,23 @@ Based on these results focus is placed on the unknown noise model with sampled t
         \includegraphics[width=0.8\textwidth]{11State10000iterationsSD1.png}
     }
 
-    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occuring closer to the initial state.}
-    \label{fig:proptest}
+    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occurring closer to the initial state.}
+    \label{fig:longproptest}
 \end{figure}
 
-\subsection{\textcolor{red}{Temporary} Why sampling might not be good enough}
+\subsection{\textcolor{red}{Temporary} Stability is (maybe) not a problem, propagation is just slow}
 
-I've tried to get down my concerns with sampling the posterior for the target.
- 
 \subsubsection{Sensitivy of the Q-value}
 
-I said at an earlier meeting that adding weak priors worked well on the chain environment. However this was a few weeks after I ran these tests, so I'd forgotten that it worked well for known noise case, but crashes for the unknown noise case. The crash is caused by samples from the weak inverse gamma prior $\text{InvGamma}(0.001, 0.001)$. This distribution can generate samples that are extremely large which causes the Q-value to explode and eventually overflow.
+With better priors stability doesn't seem to be a problem. I was using a suggested weak prior from Gelman which was $\alpha=0.001$ and $\beta=0.001$ which leads to inf values in the Scipy library. Essentially But I'm leaving this here cause the reasoning behind this does cause issues. In addition I was using the wrong Invgamma parameterization. This probably caused some instability as well.
 
-This can be countered by using a less weak prior but I do think it highlights the issue of using samples from the posterior when there is little data.
+\subsubsection{Slow propagation}
 
-I think the issue is best illustrated if we consider a normal distribution. A weak normal distribution will have a large variance and spit out a wide range of values. The intuition is that this doesn't cause problems because we are as likely to sample an extremely large positive or negative number, so the magnitude cancels out.
+A problem is the "speed" of propagation. The issues shown in figure \ref{fig:longproptest} are dealt with by just training for a longer time. However, the amount of training required for good results seems to grow exponentially with the number of states to propagate over.
 
-However in a reinforcement learning setting the sample effects the next target. This means if the first sampled value is a large positive value we move the prior towards this value reducing the probability that the next target is a large negative number. To make matters worse the target is chosen to be the max value among the sampled Q-values so this effect scales with the number of actions. These factors push the Q-values to be large and leads to stability issues.
+Keep in mind that the next state which is used as the current states target. I think the slow propagation is due to the wrong target values used to train the bayesian regression before the next states posterior is correct. The further away from the actual environment return, the longer time it takes before the next states posterior is correct which means the model is trained on more bad data.
 
-Summary: Posterior samples based on little data and weak priors lead to instability.
+I think retraining the model from scratch at certain intervals fixes the second part of the issue. To speed up the time it takes for the uncertainty to propagate we can also consider using n-step updates.
 
 \section{Bayesian Deep Q Network}
 
