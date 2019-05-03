@@ -156,7 +156,7 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
     \subfloat[$N(1,10^2)$]{
         \includegraphics[width=0.8\textwidth]{1000iterationsSD10.png}
     }
-    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The known noise models only work if the "known" noise is exactly the noise in the MDP. The unknown noise model seems is the only model that seems to correctly propagate the variance if the target is sampled.}
+    \caption{\textbf{Variance Propagation On 2 State Toy Example}: It is clear that the known noise models result in a normal distribution around the correct mean but with the assumed noise level for variance. The unknown noise model using the mean target leads to a variance that heads towards 0. The only model that is able to correctly model the posterior is the unknown noise model with sampled targets.}
     \label{fig:proptest}
 \end{figure}
 
@@ -179,7 +179,7 @@ Based on these results focus is placed on the unknown noise model with sampled t
         \includegraphics[width=0.5\textwidth]{3State10000iterationsSD001.png}
     }
     \caption{\textbf{Variance Propagation On 3 State Toy Example}: For larger variance targets the propagation correctly updates the state 1 variance. However the low variance targets results in an overestimation over the variance which worsens further away from the known posterior.}
-    \label{fig:proptest}
+    \label{fig:3stateproptest}
 \end{figure}
 
 \begin{figure}[H]
@@ -195,8 +195,6 @@ Based on these results focus is placed on the unknown noise model with sampled t
     \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occuring closer to the initial state.}
     \label{fig:proptest}
 \end{figure}
-
-
 
 \subsection{\textcolor{red}{Temporary} Why sampling might not be good enough}
 
