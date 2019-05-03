@@ -146,14 +146,15 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
 \begin{figure}[H]
     \centering
     \subfloat[$N(1,0.1^2)$]{
-        \includegraphics[width=0.5\textwidth]{1000iterationsSD01.png}
+        \includegraphics[width=0.8\textwidth]{1000iterationsSD01.png}
     }
+    \\
     \subfloat[$N(1,1^2)$]{
-        \includegraphics[width=0.5\textwidth]{1000iterationsSD1.png}
+        \includegraphics[width=0.8\textwidth]{1000iterationsSD1.png}
     }
     \\
     \subfloat[$N(1,10^2)$]{
-        \includegraphics[width=0.5\textwidth]{1000iterationsSD10.png}
+        \includegraphics[width=0.8\textwidth]{1000iterationsSD10.png}
     }
     \caption{\textbf{Variance Propagation On 2 State Toy Example}: The known noise models only work if the "known" noise is exactly the noise in the MDP. The unknown noise model seems is the only model that seems to correctly propagate the variance if the target is sampled.}
     \label{fig:proptest}
@@ -165,19 +166,33 @@ Based on these results focus is placed on the unknown noise model with sampled t
     \centering
 
     \subfloat[$N(1,1^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State1000iterationsSD1.png}
+        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD1.png}
     }
     \subfloat[$N(1,10^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State1000iterationsSD10.png}
+        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD10.png}
     }
     \\
     \subfloat[$N(1,0.1^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State1000iterationsSD01.png}
+        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD01.png}
     }
     \subfloat[$N(1,0.01^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State1000iterationsSD001.png}
+        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD001.png}
     }
     \caption{\textbf{Variance Propagation On 3 State Toy Example}: For larger variance targets the propagation correctly updates the state 1 variance. However the low variance targets results in an overestimation over the variance which worsens further away from the known posterior.}
+    \label{fig:proptest}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfloat[6 States with $N(0.01,1^2)$]{
+        \includegraphics[width=0.8\textwidth]{6State10000iterationsSD001.png}
+    }
+    \\
+    \subfloat[11 States with $N(1,1^2)$ target]{
+        \includegraphics[width=0.8\textwidth]{11State10000iterationsSD1.png}
+    }
+
+    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occuring closer to the initial state.}
     \label{fig:proptest}
 \end{figure}
 

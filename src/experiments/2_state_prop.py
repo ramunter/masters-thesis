@@ -6,6 +6,8 @@ import seaborn as sns
 
 from src.agents.util import GaussianRegression, GaussianRegression2
 
+plt.rcParams.update({'font.size': 24})
+
 scale=10
 state_2_posterior = norm(loc=1, scale=scale)
 
@@ -21,29 +23,42 @@ for i in range(1000):
 
 x = linspace(1-3*scale, 1+3*scale, 50000)
 
-def plot_posterior(model, plot_index, title, known_noise=True):
-    plt.subplot(plot_index)
-    param_samples = [model.sample() for _ in range(len(x))]
+def plot_posterior(model, ax, title, known_noise=True):
+    ax.set_title(title)
+    ax.set_xticks(np.linspace(1-3*scale, 1+3*scale, 5)[1:-1])
+    ax.set_xlim(1-3*scale, 1+3*scale)
+    ax.set_ylim(0, norm.pdf(0, 0, scale)*1.1)
 
-    if known_noise:
-        samples = np.array([p + np.random.normal(0, np.sqrt(model.noise)) for p in param_samples])
+    # param_samples = [model.sample() for _ in range(len(x))]
 
-    else:
-        samples = np.array([p[0] + np.random.normal(0, np.sqrt(p[1])) for p in param_samples])
+    # if known_noise:
+    #     samples = np.array([p + np.random.normal(0, np.sqrt(model.noise)) for p in param_samples])
 
-    sns.kdeplot(samples.reshape(-1), label="State 1 posterior estimate", legend=False)
-    sns.lineplot(x, state_2_posterior.pdf(x), label="State 2 posterior", legend=False)
-    plt.title(title)
-    plt.xlim((1-3*scale, 1+3*scale))
-    plt.xlabel('State Value')
-    plt.ylabel('Probability')
+    # else:
+    #     samples = np.array([p[0] + np.random.normal(0, np.sqrt(p[1])) for p in param_samples])
 
-plot_posterior(models_mean[0], 221, title="Known Noise - Mean Target")
-plot_posterior(models_sample[0], 222, title="Known Noise - Sample Target")
-plot_posterior(models_mean[1], 223, title="Unknown Noise - Mean Target", known_noise=False)
-plot_posterior(models_sample[1], 224, title="Unknown Noise - Sample Target", known_noise=False)
+    ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="State 1 Posterior PDF")
+    ax.plot(x, state_2_posterior.pdf(x), linewidth=2, label="State 2 posterior")
 
-plt.legend(loc='best', frameon=False)
+
+fig, axs = plt.subplots(1,4)
+plt.subplots_adjust(bottom=0.15, wspace=0.4)
+
+
+plot_posterior(models_mean[0], axs[0], title="Known Noise\nMean Target")
+plot_posterior(models_sample[0], axs[1], title="Known Noise\nSample Target")
+plot_posterior(models_mean[1], axs[2], title="Unknown Noise\nMean Target", known_noise=False)
+plot_posterior(models_sample[1], axs[3], title="Unknown Noise\nSample Target", known_noise=False)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), frameon=False)
+
+fig.add_subplot(111, frameon=False)
+
+# hide tick and tick label of the big axes
+plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+plt.grid(False)
+plt.xlabel('State Value')
+plt.ylabel('Probability', labelpad=80)
+plt.show()
 
 models_sample[1].print_parameters()
 

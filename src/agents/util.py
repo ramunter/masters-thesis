@@ -42,6 +42,8 @@ class GaussianRegression():
         self.mean = np.zeros((dim, 1))
         self.cov = np.eye(dim)*1e3
         self.noise = noise
+        self.dim = dim
+
 
     def update_posterior(self, X, y, n):
         y = y.reshape((n, 1))
@@ -58,6 +60,9 @@ class GaussianRegression():
             self.mean[:, 0], self.cov)
         return coef
 
+    def pdf(self, x, X):
+        return np.squeeze(stats.norm.pdf(x, X@self.mean, (np.eye(self.dim)+X@self.cov@X.T)*self.noise))
+
     def print_parameters(self):
         print("Mean\n", self.mean)
         print("Cov\n", self.cov)
@@ -68,7 +73,7 @@ class GaussianRegression2():
         self.mean = np.zeros((dim, 1))
         self.invcov = np.eye(dim)*1e-3
         self.cov = np.linalg.inv(self.invcov)
-        self.a = 1+1e-6
+        self.a = 1 + 1e-6
         self.b = 1e-6
         self.dim = dim
 
