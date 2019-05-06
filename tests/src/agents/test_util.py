@@ -35,7 +35,7 @@ class TestUtil(unittest.TestCase):
         model = GaussianRegression2(dim)
         verify_model_parameters(model)
 
-        model.sample()
+        model.sample(np.array([1,2]))
         verify_model_parameters(model)
 
         data = np.array([1, 2]).reshape(1, dim)

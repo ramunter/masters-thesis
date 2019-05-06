@@ -36,9 +36,10 @@ class TestCritics(unittest.TestCase):
         critic.update(state, 0, np.array([0]))
         action = critic.best_action(state)
 
-        # Check batch update
-        critic.batch = True
-        critic.update([state]*10, [0]*10, np.array([0]*10))
+        # # Check batch update
+        # # This is no longer supported
+        # critic.batch = True
+        # critic.update([state]*10, [0]*10, np.array([0]*10))
 
     def test_all_critics_run_with_int_state(self):
         """

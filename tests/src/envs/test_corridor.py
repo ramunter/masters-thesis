@@ -32,10 +32,20 @@ class TestCorridor(unittest.TestCase):
             # All rewards before this are 0
             self.assertEqual(sum(reward_list[0:-1]), 0)
             # Correct state
-            self.assertEqual(env.state, env.N-1)
+            self.assertEqual(env.state, env.N)
             # Correct number of steps
             self.assertEqual(env.steps, env.N)
 
         check_correct_rewards(self.corridor_0)
         check_correct_rewards(self.corridor_1)
-        check_correct_rewards(self.corridor_2)
+        check_correct_rewards(self.corridor_2) 
+
+        # Check that after reset this still works
+        self.corridor_0.reset()
+        self.corridor_1.reset()
+        self.corridor_2.reset()
+        
+        check_correct_rewards(self.corridor_0)
+        check_correct_rewards(self.corridor_1)
+        check_correct_rewards(self.corridor_2) 
+        
