@@ -1,7 +1,7 @@
 from enum import Enum
 
 from numpy.random import choice, binomial
-from numpy import arange
+from numpy import arange, zeros
 
 import gym
 from gym import spaces
@@ -38,7 +38,7 @@ class Corridor(gym.Env):
         self.reverse_states = choice(arange(N), size=K, replace=False)
         self.p = p
 
-        self.state = 0  # Start at beginning of the chain
+        self.state = 1  # Start at beginning of the chain
         self.steps = 1
         self.max_steps = N
 
@@ -62,7 +62,11 @@ class Corridor(gym.Env):
             done = True
         else:
             done = False
-        return self.state, reward, done, {}
+
+        state = zeros(self.N)
+        state[self.state-1] = 1
+
+        return state, reward, done, {}
 
     def env_changes_to_actions(self, action):
 
@@ -79,15 +83,15 @@ class Corridor(gym.Env):
     def transition(self, action):
 
         if action == LEFT:
-            if self.state != 0:
+            if self.state != 1:
                 self.state -= 1
 
-        elif action == RIGHT and self.state < self.N - 1:  # 'forwards action'
+        elif action == RIGHT and self.state < self.N:  # 'forwards action'
             self.state += 1
 
     def reward_calculator(self):
 
-        if self.state == self.N - 1:
+        if self.state == self.N:
             reward = 1
         else:
             reward = 0
@@ -95,7 +99,9 @@ class Corridor(gym.Env):
         return reward
 
     def reset(self):
-        self.state = 0
-        self.steps = 0
+        self.state = 1
+        self.steps = 1
 
-        return self.state
+        state = zeros(self.N)
+        state[self.state-1] = 1
+        return state

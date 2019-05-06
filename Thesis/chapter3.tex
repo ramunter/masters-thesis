@@ -44,7 +44,7 @@ The calculation of an arbitrary posterior is computationally heavy which is ill-
 There are multiple ways to setup a bayesian regression model using conjugate priors. First consider the case used in \cite{azziz_2018} which creates one model per action and assumes the noise variance is known. The known noise variance is then treated as a hyperparameter. In this case the posterior can be expressed as 
 
 \begin{align*}
-    p(\beta_a |Q_a, \sigma_{\varepsilon_a}, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
+    p(\beta_a |Q_a, \sigma_{\varepsilon_a}, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\beta_a) \\
     p(Q_a|\sigma_{\varepsilon_a}, \mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a)d\beta_a
 \end{align*}
 

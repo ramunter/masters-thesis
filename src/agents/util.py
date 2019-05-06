@@ -80,6 +80,7 @@ class GaussianRegression2():
     def update_posterior(self, X, y, n):
 
         y = y.reshape((n, 1))
+
         mean_0 = self.mean
         invcov_0 = self.invcov
         
@@ -97,9 +98,6 @@ class GaussianRegression2():
 
     def sample(self, X):
         beta_sample, sigma_2 = self.sample_params()
-        beta_sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], np.linalg.inv(self.invcov)*sigma_2)
-
         return self.sample_y(X, beta_sample, sigma_2)
 
     def sample_params(self):

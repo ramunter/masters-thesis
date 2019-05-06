@@ -30,7 +30,7 @@ ggplot(data=action_1_df) +
 max_index = dim(df)[1]
 p = ggplot()
 
-section = 5000
+section = 1000
 df$section = floor(df$index/section)
 df$action = factor(df$action)
 
