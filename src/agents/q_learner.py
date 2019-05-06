@@ -1,8 +1,10 @@
 from src.agents.util import featurizer
 from numpy import array
+from collections import namedtuple
 
+Transition = namedtuple('Transition', ['state', 'action', 'reward', 'done'])
 
-def calculate_target(gamma, reward, next_q_value, done):
+def calculate_target(episode, transitions, gamma, next_q_value):
     """
     Caclulates the target Q-value using temporal differencing.
 
@@ -18,14 +20,26 @@ def calculate_target(gamma, reward, next_q_value, done):
     returns:
         target (float): The Q-value target.
     """
-    target = reward
-    if not done:
-        target += gamma*next_q_value
-    target = array([target]).reshape((1,))
+    n_step = len(transitions)
+
+    discounted_rewards = [transition.reward*gamma**i for i, transition in enumerate(transitions)]
+    reward_sum = sum(discounted_rewards)
+
+    if not transitions[-1].done:
+        target = reward_sum + gamma**n_step*next_q_value
+        target = array([target]).reshape((1,))
+        return target
+
+    target = [reward_sum]
+    for i in range(1,n_step):
+        discounted_rewards = [transition.reward*gamma**n for n, transition in enumerate(transitions[-i:])]
+        target.append(sum(discounted_rewards))
+        
+    target = array([target]).reshape((-1,1))
     return target
 
 
-def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
+def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
     """
     Runs a Q-learning experiment using the given environment and agent.
 
@@ -48,27 +62,39 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     critic = Critic(state)
 
     average_regret = 1
+    n_step = 5
+    steps = 0
+    transitions = []
 
     for episode in range(1, episodes+1):
+
 
         state = env.reset()
         critic.reset()
 
         action = critic.get_action(state)
         done = False
-        steps = 0
+
 
         while not done:
 
             # Perform step
             next_state, reward, done, _ = env.step(action)
+            transitions += [Transition(state, action, reward, done)]
 
             # Best next action
-            next_action, next_q_value = critic.get_target_action_and_q_value(
+            _, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
+
             # Update parameters
-            target = calculate_target(gamma, reward, next_q_value, done)
-            critic.update(state, action, target)
+            if steps > n_step:
+                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
+            
+                if len(target) == 1:
+                    critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
+                else:
+                    for i in range(len(target)):
+                        critic.update(transitions[-(n_step-i)].state, transitions[-(n_step-i)].action, target[i])
 
             # Reset loop
             state = next_state

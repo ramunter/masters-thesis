@@ -374,6 +374,7 @@ class GaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update_posterior(X, target, 1)
+        X = np.array([np.argmax(state)+1, action, 1])
         return X
 
     def q_value(self, state, action):
@@ -387,7 +388,6 @@ class GaussianBayesCritic2(CriticTemplate):
         self.model.print_parameters()
 
     def reset(self):
-        # self.coef, self.noise = self.model.sample_params()
         pass
 
 class TestCritic(CriticTemplate):
@@ -414,17 +414,7 @@ class TestCritic(CriticTemplate):
         else:
             feature_size = len(state) + 1  # Add bias term.
 
-        self.policy = self.setup_model(state, lr)
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
-        
-    def setup_model(self, state, lr):
-        policy = SGDClassifier(loss='log', learning_rate="constant",
-                             eta0=lr)
-        # SKlearn needs partial fit to be run once before use
-        policy.partial_fit(np.array(state).reshape(1, -1),
-                          np.array([0]), classes=np.array([0,1]))
-
-        return policy
 
     def get_action(self, state):
         Q_left = self.q_value(state, 0)
@@ -438,52 +428,29 @@ class TestCritic(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.target_q_value(state, 0)
-        Q_right = self.target_q_value(state, 1)
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, next_state, next_action, done, target):
+    def update(self, state, action, target):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        X_2 = self.featurizer(next_state)
-
-        var1 = X@self.models[action].cov@X.T +\
-             self.models[action].b/(self.models[action].a - 1)
-
-        var2 = X_2@self.models[next_action].cov@X_2.T +\
-             self.models[next_action].b/(self.models[next_action].a - 1)
-        # print(var2)
-        if var2 < var1 or done:
-            self.models[action].update_posterior(X, target, 1)
-            # self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
-        else:
-            self.count += 1
-            print(self.count)
-
+        self.models[action].update_posterior(X, target, 1)
+        X = np.array([np.argmax(state)+1, action, 1])
         return X
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
-        self.coef, self.noise = self.models[action].sample()
         features = self.featurizer(state)
-        prediction = features@self.coef + \
-            np.random.normal(0, np.sqrt(self.noise))
-        return np.asscalar(prediction)
-
-    def target_q_value(self, state, action):
-        """Caclulate Q-value based on sampled coefficients."""
-        features = self.featurizer(state)
-
-        prediction = features@self.coef + \
-            np.random.normal(0, np.sqrt(self.noise))
+        prediction = self.models[action].sample(features)
 
         return np.asscalar(prediction)
 
     def featurizer(self, state):
         #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
-        return np.array([state, 1]).reshape(1,-1)
+        return np.append(state, [1]).reshape(1,-1)
 
     def print_parameters(self):
         for action in range(2):
