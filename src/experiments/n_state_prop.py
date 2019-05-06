@@ -23,22 +23,16 @@ def n_state_prop(models, target_scale):
 
     T=10000
     n=1
+    step = 3
     for i in range(int(T/n)):
 
-        for m, model in enumerate(models[0:-1]):
-            # var = np.array([1]*n)@model.cov@np.array([1]*n).T +\
-            #     model.b/(model.a - 1) 
-            # vartar = np.array([1]*n)@models[m+1].cov@np.array([1]*n).T +\
-            #         models[m+1].b/(models[m+1].a - 1) 
+        for m, model in enumerate(models):
+            if m+step < len(models):
+                target = np.array([models[m+step].sample(np.array([1])) for _ in range(n)])
+                model.update_posterior(np.array([1]*n), target, n=n) 
 
-            # if var < vartar:
-            target = np.array([models[m+1].sample(np.array([1])) for _ in range(n)])
-            # else:
-            #     target = np.array([models[m+1].mean]*n)
-
-            model.update_posterior(np.array([1]*n), target, n=n) 
-
-        models[-1].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n=n)
+            else:
+                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n=n)
 
 
     ## Plotting code
