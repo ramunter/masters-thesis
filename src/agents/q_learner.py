@@ -62,7 +62,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
     critic = Critic(state)
 
     average_regret = 1
-    n_step = 5
+    n_step = 1
     steps = 0
     transitions = []
 
@@ -86,15 +86,19 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
             _, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
 
-            # Update parameters
-            if steps > n_step:
-                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
+                       # Update parameters
+            if done:
+                num_updates = min(n_step, steps)
+                target = calculate_target(episode, transitions[-num_updates:], gamma, next_q_value)
+
+                for i in range(num_updates):
+                    index = -(num_updates-i)
+                    critic.update(transitions[index].state, transitions[index].action, target[i])
             
-                if len(target) == 1:
-                    critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
-                else:
-                    for i in range(len(target)):
-                        critic.update(transitions[-(n_step-i)].state, transitions[-(n_step-i)].action, target[i])
+            elif steps >= n_step:
+                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)            
+                assert(len(target) == 1)
+                critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
 
             # Reset loop
             state = next_state

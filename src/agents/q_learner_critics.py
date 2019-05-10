@@ -102,7 +102,8 @@ class EGreedyCritic(CriticTemplate):
 
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
-        return features
+        X = np.array([np.argmax(state)+1, action, 1])
+        return X
 
     def q_value(self, state, action):
         """Caclulates Q-value given state and action."""
@@ -344,18 +345,19 @@ class GaussianBayesCritic2(CriticTemplate):
         if type(state) is int:
             feature_size = 3
         else:
-            feature_size = len(state) + 2  # Add bias term and action term.
+            feature_size = len(state) + 2  # Add bias term and 2 action terms.
 
         self.model = GaussianRegression2(dim=feature_size)
 
     def get_action(self, state):
+
         self.coef, self.noise = self.model.sample_params()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
-
+    
     def get_target_action_and_q_value(self, state):
         """
         Samples an action by sampling coefficients and choosing the highest
@@ -374,7 +376,7 @@ class GaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update_posterior(X, target, 1)
-        X = np.array([np.argmax(state)+1, action, 1])
+        # X = np.append(state, [action, 1])
         return X
 
     def q_value(self, state, action):
@@ -410,11 +412,21 @@ class TestCritic(CriticTemplate):
 
         self.batch = batch
         if type(state) is int:
-            feature_size = 2
+            feature_size = 2 + 1
         else:
-            feature_size = len(state) + 1  # Add bias term.
+            feature_size = 2*len(state) + 1 #Add bias term.
 
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
+        self.policy = self.setup_model(state, lr) 
+         
+    def setup_model(self, state, lr): 
+        policy = SGDClassifier(loss='log', learning_rate="constant", 
+                             eta0=lr) 
+        # SKlearn needs partial fit to be run once before use 
+        policy.partial_fit(np.array(state).reshape(1, -1), 
+                          np.array([0]), classes=np.array([0,1])) 
+ 
+        return policy
 
     def get_action(self, state):
         Q_left = self.q_value(state, 0)
@@ -438,19 +450,18 @@ class TestCritic(CriticTemplate):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
-        X = np.array([np.argmax(state)+1, action, 1])
-        return X
+        self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action])) 
+        return np.concatenate([state, self.policy.coef_[0,:], np.array([action]), np.array([1])])
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = self.featurizer(state)
         prediction = self.models[action].sample(features)
-
         return np.asscalar(prediction)
 
     def featurizer(self, state):
-        #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
-        return np.append(state, [1]).reshape(1,-1)
+        return np.concatenate([state, self.policy.coef_[0,:], np.array([1])]).reshape(1,-1)
+        # return np.append(state, [1]).reshape(1,-1)
 
     def print_parameters(self):
         for action in range(2):

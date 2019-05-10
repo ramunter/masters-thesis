@@ -252,11 +252,17 @@ In this case the target is based on the estimated value of the next state and th
 
 One issue that remains with the aforementioned methods is that they are \textit{on-policy}. This means that in order to update the value function of a policy one has to use transition samples following the policy. This means that if the policy is changed, a new set of transition samples are required to keep training. This means that an agent must be given direct access to the environment to learn new policies and decreases the amount of data that can be used for training. 
 
-\cite{watkins_dayan_1992} marked a large step forward in reinforcement learning through the development of an off-policy temporal difference method. The method is based on the action-value function (\ref{eq:act_value_function}) and is called Q-learning.
+\cite{watkins_dayan_1992} marked a large step forward in reinforcement learning through the development of an off-policy temporal difference method. The method is based on the action-value function (\ref{eq:act_value_function}) and is called Q-learning. First the action-value is defined in a different way by rewriting equation \ref{eq:act_value_function} to
+
+\begin{equation}
+    Q(s, a) = r_t(a) + \gamma\mathbb{E}\big[\argmax_{a'} Q(s',a')|S_t=s_t, A_t = a\big]
+\end{equation}
+
+which results in temporal difference update
 
 \begin{equation}
     \label{eq:td_q_learning}
-    Q(S_t, A_t) = Q(S_t, A_t) + \alpha\big[R_{t+1} + \gamma \max_a Q(S_{t+1}, a) - Q(S_t, A_t)]
+    Q(S_t, A_t) = Q(S_t, A_t) + \alpha\big[R_{t+1} + \gamma \max_a Q(S_{t+1}, a) - Q(S_t, A_t)].
 \end{equation}
 
 Note that this equation is completely independent of the policy followed when generating the sample. This means in contrast to an on-policy method, Q-learning can be trained on transition samples from any policy regardless of what the Q-learning policy is.

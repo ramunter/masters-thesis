@@ -1,7 +1,7 @@
 from enum import Enum
 
 from numpy.random import choice, binomial
-from numpy import arange, zeros
+from numpy import arange, zeros, array
 
 import gym
 from gym import spaces
@@ -63,10 +63,7 @@ class Corridor(gym.Env):
         else:
             done = False
 
-        state = zeros(self.N)
-        state[self.state-1] = 1
-
-        return state, reward, done, {}
+        return array([self.state, self.steps]), reward, done, {}
 
     def env_changes_to_actions(self, action):
 
@@ -102,6 +99,4 @@ class Corridor(gym.Env):
         self.state = 1
         self.steps = 1
 
-        state = zeros(self.N)
-        state[self.state-1] = 1
-        return state
+        return array([self.state, self.steps])

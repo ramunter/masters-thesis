@@ -71,7 +71,7 @@ class GaussianRegression():
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*1e-3
+        self.invcov = np.eye(dim)*1e-6
         self.cov = np.linalg.inv(self.invcov)
         self.a = 1 + 1e-6
         self.b = 1e-6
@@ -87,14 +87,12 @@ class GaussianRegression2():
         self.invcov = X.T@X + self.invcov
         self.cov = np.linalg.inv(self.invcov)
 
-        self.mean = np.linalg.inv(
-            X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
+        self.mean = np.linalg.inv(X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
 
         self.a = self.a + n/2
         
         self.b = self.b + 0.5*np.asscalar(y.T@y + mean_0.T@invcov_0@mean_0 -
             self.mean.T@self.invcov@self.mean)
-        
 
     def sample(self, X):
         beta_sample, sigma_2 = self.sample_params()
@@ -103,7 +101,7 @@ class GaussianRegression2():
     def sample_params(self):
         sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
         beta_sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], np.linalg.inv(self.invcov)*sigma_2)
+            self.mean[:,0], self.cov*sigma_2)
         return beta_sample, sigma_2
 
     def sample_y(self, X, beta_sample, sigma_2):
