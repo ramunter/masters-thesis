@@ -374,7 +374,7 @@ class GaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update_posterior(X, target, 1)
-        X = np.array([np.argmax(state)+1, action, 1])
+        # X = np.array([np.argmax(state)+1, action, 1])
         return X
 
     def q_value(self, state, action):
@@ -438,7 +438,7 @@ class TestCritic(CriticTemplate):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
-        X = np.array([np.argmax(state)+1, action, 1])
+        X = np.array(np.append(state, [action, 1]))
         return X
 
     def q_value(self, state, action):

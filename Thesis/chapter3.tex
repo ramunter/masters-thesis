@@ -199,6 +199,25 @@ One reason the 0.01 standard deviation posterior is harder to approximate than t
     \label{fig:longproptest}
 \end{figure}
 
+\subsection{\textcolor{red}{Temporary} Why doesn't corridor work?}
+
+Consider the case where the current position in the corridor is the only input and the terminal state is position 5. If the agent is in position 4 it should learn that action right will give one return. In position 3 it should prefer action right, but it does not know if it will reach the end of the corridor in time. The total return will either be 0 or 1. This means the expected value of the action should be 0.5. 
+
+\begin{align}
+    \label{eq:reg1}
+    G &= X\beta_g + \sigma_g \\
+    \label{eq:reg2}
+    Q &= X\beta_q + \sigma_q \\
+    \label{eq:reg3}
+    E[Q] &= X\beta_q \\
+    \label{eq:reg4}
+    E[G] &= X\beta_q + \sigma_q = X\beta_g
+\end{align}
+
+A target consisting of the Monte Carlo total return will result in the regression in equation \ref{eq:reg1}. A target consisting only of Q-values will result in the regression in equation \ref{eq:reg2}. However the actual target $r + Q(s',a')$ is a mix between the two so given a stochastic reward equation \ref{eq:reg2} will over estimate the variance.
+
+However this cannot be the problem in the corridor example since the reward is deterministic so $E[r|x] = R$.
+
 \subsection{\textcolor{red}{Temporary} Stability is (maybe) not a problem, propagation is just slow}
 
 \subsubsection{Sensitivy of the Q-value}

@@ -40,7 +40,7 @@ def featurizer(state, action, batch=False):
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)*1e3
+        self.cov = np.eye(dim)
         self.noise = noise
         self.dim = dim
 
@@ -71,7 +71,7 @@ class GaussianRegression():
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*1e-3
+        self.invcov = np.eye(dim)*1
         self.cov = np.linalg.inv(self.invcov)
         self.a = 1 + 1e-6
         self.b = 1e-6
@@ -113,7 +113,6 @@ class GaussianRegression2():
         return multivariate_student_t(
             x, X@self.mean, self.b/self.a*(np.eye(self.dim)+X@self.cov@X.T), 2*self.a)
 
-        # return stats.t.pdf(x, 2*self.a, X@self.mean, self.b/self.a*(np.eye(self.dim)+X@self.cov@X.T)).reshape(-1)
 
     def print_parameters(self):
         print("Mean\n", self.mean)

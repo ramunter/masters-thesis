@@ -3,7 +3,7 @@ output: pdf_document
 ---
 
 ```{r}
-corridor_names = c("index", "state", "action", "bias","y", "estimate")
+corridor_names = c("index", "steps", "state", "action", "bias","y", "estimate")
 df = read.csv("test.csv")
 names(df) = corridor_names
 head(df)
@@ -18,11 +18,11 @@ action_1_df = df %>% filter(action==1)
 
 ggplot(data=action_0_df) + 
     geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2)
+    scale_colour_continuous(type = 2)+ ylim(c(-0.5,0.5))
 
 ggplot(data=action_1_df) + 
     geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2)
+    scale_colour_continuous(type = 2) + ylim(c(-0.5,0.5))
 
 ```
 
@@ -30,7 +30,7 @@ ggplot(data=action_1_df) +
 max_index = dim(df)[1]
 p = ggplot()
 
-section = 1000
+section = 10000
 df$section = floor(df$index/section)
 df$action = factor(df$action)
 
