@@ -92,7 +92,7 @@ class Corridor(gym.Env):
     def reward_calculator(self):
 
         if self.state == self.N:
-            reward = 100
+            reward = 1
         else:
             reward = 0
 

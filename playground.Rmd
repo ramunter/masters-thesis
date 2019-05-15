@@ -18,11 +18,11 @@ action_1_df = df %>% filter(action==1)
 
 ggplot(data=action_0_df) + 
     geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2)+ ylim(c(-0.5,0.5))
+    scale_colour_continuous(type = 2) + ylim(c(-0.5,2))
 
 ggplot(data=action_1_df) + 
     geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2) + ylim(c(-0.5,0.5))
+    scale_colour_continuous(type = 2) + ylim(c(-0.5,2))
 
 ```
 
