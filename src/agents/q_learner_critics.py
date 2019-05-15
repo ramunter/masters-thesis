@@ -7,7 +7,7 @@ from numpy.random import binomial
 from sklearn.linear_model import SGDRegressor, SGDClassifier
 from filterpy.kalman import KalmanFilter
 
-from src.agents.util import featurizer, GaussianRegression, GaussianRegression2
+from src.agents.util import featurizer, GaussianRegression, GaussianRegression2, BayesTestRegression
 
 
 class CriticTemplate(ABC):
@@ -101,6 +101,7 @@ class EGreedyCritic(CriticTemplate):
         """Takes one optimization step for the linear model."""
 
         features = featurizer(state, action, self.batch)
+        target = target.reshape((-1,))
         self.model.partial_fit(features, target)
         X = np.array([np.argmax(state)+1, action, 1])
         return X
@@ -246,10 +247,9 @@ class GaussianBayesCritic(CriticTemplate):
         else:
             feature_size = len(state) + 2  # Add bias term and action term.
 
-        self.model = GaussianRegression(dim=feature_size)
-
+        self.model = BayesTestRegression(dim=feature_size)#GaussianRegression(dim=feature_size)# 
     def get_action(self, state):
-        self.coef = self.model.sample()
+        self.coef = self.model.sample_params()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
@@ -271,7 +271,7 @@ class GaussianBayesCritic(CriticTemplate):
         """Calculate posterior and update prior."""
                 
         X = featurizer(state, action, self.batch)
-        self.model.update_posterior(X, target, 1)
+        self.model.update_posterior(X, target, len(target))
         return X
 
     def q_value(self, state, action):
@@ -375,7 +375,7 @@ class GaussianBayesCritic2(CriticTemplate):
     def update(self, state, action, target):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
-        self.model.update_posterior(X, target, 1)
+        self.model.update_posterior(X, target, len(target))
         # X = np.append(state, [action, 1])
         return X
 

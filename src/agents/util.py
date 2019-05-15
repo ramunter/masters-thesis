@@ -36,29 +36,35 @@ def featurizer(state, action, batch=False):
             state, [action, 1]).reshape(1, -1)
     return features
 
-
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)*1e3
+        self.cov = np.eye(dim)
         self.noise = noise
         self.dim = dim
-
 
     def update_posterior(self, X, y, n):
         y = y.reshape((n, 1))
 
         inv_cov = np.linalg.inv(self.cov)
-
-        self.mean = np.linalg.inv(X.T@X + self.noise * inv_cov) @ \
-            (X.T@y + inv_cov@self.mean)
         self.cov = np.linalg.inv(
-            self.noise**(-2) * X.T @ X + inv_cov)
+            self.noise**(-2)*X.T@X + inv_cov)
+        self.mean = self.cov @ \
+            (X.T@y + inv_cov@self.mean)
 
-    def sample(self):
-        coef = np.random.multivariate_normal(
-            self.mean[:, 0], self.cov)
+
+    def sample(self, X):
+        beta_sample = self.sample_params()
+        return self.sample_y(X, beta_sample)
+
+    def sample_params(self):
+        coef = stats.multivariate_normal.rvs(
+            self.mean[:,0],self.cov)
         return coef
+
+    def sample_y(self, X, beta_sample):
+        return X@stats.multivariate_normal.rvs(beta_sample, self.cov)
+
 
     def pdf(self, x, X):
         return np.squeeze(stats.norm.pdf(x, X@self.mean, (np.eye(self.dim)+X@self.cov@X.T)*self.noise))
@@ -71,7 +77,7 @@ class GaussianRegression():
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*1e-6
+        self.invcov = np.eye(dim)*1e-3
         self.cov = np.linalg.inv(self.invcov)
         self.a = 1 + 1e-6
         self.b = 1e-6
@@ -83,11 +89,13 @@ class GaussianRegression2():
 
         mean_0 = self.mean
         invcov_0 = self.invcov
-        
-        self.invcov = X.T@X + self.invcov
+        w = np.diag([1]*n)# +  np.diag([1]*(n-1), k=1) #+ np.diag([1]*(n-1), k=-1)
+        inv_w = np.linalg.inv(w)
+
+        self.invcov += X.T@X
         self.cov = np.linalg.inv(self.invcov)
 
-        self.mean = np.linalg.inv(X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
+        self.mean = self.cov@(X.T@y + invcov_0@mean_0)
 
         self.a = self.a + n/2
         
@@ -118,3 +126,40 @@ class GaussianRegression2():
         print("Inv Cov\n", self.invcov)
         print("Gamma shape", self.a)
         print("Gamma scale", self.b)
+class BayesTestRegression():
+    def __init__(self, dim=3):
+        self.mean = np.zeros((dim, 1))
+        self.cov = np.eye(dim)
+        self.invcov = np.linalg.inv(self.cov)
+        self.noise = 0.5
+
+        self.dim = dim
+
+    def update_posterior(self, X, y, n):
+        y = y.reshape((n, 1))
+        w = np.diag([1]*n) +  np.diag([1]*(n-1), k=1) #+ np.diag([1]*(n-1), k=-1)
+        inv_w = np.linalg.inv(w)
+        invcov_0 = self.invcov
+        self.invcov += X.T@inv_w@X
+        self.cov = np.linalg.inv(self.invcov)
+
+        self.mean = self.cov@(invcov_0@self.mean + X.T@inv_w@y)
+
+    def sample(self, X):
+        beta_sample = self.sample_params()
+        return self.sample_y(X, beta_sample)
+
+    def sample_params(self):
+        coef = stats.multivariate_normal.rvs(
+            self.mean[:,0],self.cov)
+        return coef
+
+    def sample_y(self, X, beta_sample):
+        return X@stats.multivariate_normal.rvs(beta_sample, self.cov)
+
+    def print_parameters(self):
+        print("Mean\n", self.mean)
+        print("Cov\n", self.cov)
+
+    def pdf(self, x, X):
+        return np.squeeze(stats.norm.pdf(x, X@self.mean, (np.eye(self.dim)+X@self.cov@X.T)*self.noise))

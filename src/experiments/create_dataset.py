@@ -9,5 +9,5 @@ from src.agents.q_learner_critics import *
 
 env = Corridor(N=5)
 steps_to_learn = q_learner(
-    env, TestCritic, episodes=1000, verbose=True)
+    env, GaussianBayesCritic2, episodes=1000, batch=True, verbose=True)
 print(steps_to_learn)

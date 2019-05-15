@@ -39,16 +39,16 @@ def n_state_prop(models, target_scale):
 
     def plot_posterior(ax, model, index):
 
-        x = np.linspace(1-3*target_scale, 1+3*target_scale, 10000)
+        x = np.linspace(1-3*target_scale, 1+3*target_scale, 1000)
 
         ## Plot sampled posterior distribution
-        # samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
-        # sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
+        samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
+        sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
         ax.set_title("State" + str(index))
         ax.set_xticks(np.linspace(1-3*target_scale, 1+3*target_scale, 3)[1:-1])
         ax.set_xlim(1-3*target_scale, 1+3*target_scale)
 
-        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
+        # ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
         ax.plot(x, final_state_posterior.pdf(x), linewidth=2, label="Target")
 
 

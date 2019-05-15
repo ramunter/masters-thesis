@@ -23,7 +23,6 @@ def calculate_target(episode, transitions, gamma, next_q_value):
         target (float): The Q-value target.
     """
     n_step = len(transitions)
-
     discounted_rewards = [transition.reward*gamma**i for i, transition in enumerate(transitions)]
     reward_sum = sum(discounted_rewards)
 
@@ -40,7 +39,7 @@ def calculate_target(episode, transitions, gamma, next_q_value):
     target = array([target]).reshape((-1,1))
     return target
 
-def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
+def q_learner(env, Critic, episodes=10000, gamma=0.9, batch=False, verbose=True):
     """
     Runs a Q-learning experiment using the given environment and agent.
 
@@ -60,7 +59,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
     """
 
     state = env.reset()
-    critic = Critic(state)
+    critic = Critic(state, batch=batch)
 
     average_regret = 1
 
@@ -76,6 +75,9 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
         action = critic.get_action(state)
         done = False
         steps = 1
+        batch_s = []
+        batch_a = []
+        batch_t = []
 
         while not done:
 
@@ -87,23 +89,36 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
             next_action, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
 
-            # Update parameters
-            if done:
-                num_updates = min(n_step, steps)
-                target = calculate_target(episode, transitions[-num_updates:], gamma, next_q_value)
 
-                for i in range(num_updates):
-                    index = -(num_updates-i)
-                    X = critic.update(transitions[index].state, transitions[index].action, target[i])
-                    dataset.append(
-                        np.append(X, [target[i,0], critic.q_value(transitions[index].state, transitions[index].action)]))
+            # Update parameters
+            # if done:
+            #     num_updates = min(n_step, steps)
+            #     target = calculate_target(episode, transitions[-num_updates:], gamma, next_q_value)
+
+            #     for i in range(num_updates):
+            #         index = -(num_updates-i)
+            #         X = critic.update(transitions[index].state, transitions[index].action, target[i])
+            #         dataset.append(
+            #             np.append(X, [target[i,0], critic.q_value(transitions[index].state, transitions[index].action)]))
             
-            elif steps >= n_step:
-                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)            
-                assert(len(target)==1)
-                X = critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
-                dataset.append(
-                    np.append(X, [target[0], critic.q_value(transitions[-n_step].state, transitions[-n_step].action)]))
+            # elif steps >= n_step:
+            #     target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)            
+            #     assert(len(target)==1)
+            #     X = critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
+            #     dataset.append(
+            #         np.append(X, [target[0], critic.q_value(transitions[-n_step].state, transitions[-n_step].action)]))
+            
+            # target = calculate_target(episode, transitions[-1:], gamma, next_q_value)
+            target = reward + gamma*next_q_value*(1-done)
+            dataset.append([state[0], state[1], action, 1, target, next_q_value])
+            batch_s.append(state)
+            batch_a.append(action)
+            batch_t.append(target)
+            if done:
+                critic.update(batch_s,batch_a, np.array(batch_t))
+                batch_s = []
+                batch_a = []
+                batch_t = []
 
             # Reset loop
             state = next_state
