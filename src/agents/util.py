@@ -91,7 +91,7 @@ class GaussianRegression2():
         
         self.invcov = X.T@X + self.invcov
         self.cov = np.linalg.inv(self.invcov)
-        self.mean = self.cov@(X.T@y + invcov_0@mean_0)
+        self.mean = np.linalg.inv(X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
 
         step = X[0,0]-1
         state = X[0,1]-1
@@ -101,7 +101,7 @@ class GaussianRegression2():
         self.a[step,state] += n/2
         
         self.b[step,state] += max(0.5*np.asscalar(y.T@y -
-            self.mean.T@self.invcov@self.mean + mean_0.T@invcov_0@mean_0), 1e-12)
+            self.mean.T@(X.T@X + invcov_0)@self.mean + mean_0.T@invcov_0@mean_0), 1e-12)
 
     def sample(self, X):
 

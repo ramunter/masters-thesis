@@ -66,7 +66,7 @@ class Corridor(gym.Env):
         state = zeros(self.N)
         state[self.state-1] = 1
 
-        return [self.steps, self.state], reward, done, {}
+        return [self.steps, self.state, self.state*self.steps, self.steps**2, self.state], reward, done, {}
 
     def env_changes_to_actions(self, action):
 
@@ -104,4 +104,4 @@ class Corridor(gym.Env):
 
         state = zeros(self.N)
         state[self.state-1] = 1
-        return [self.steps, self.state]
+        return [self.steps, self.state, self.state*self.steps, self.steps**2, self.state]

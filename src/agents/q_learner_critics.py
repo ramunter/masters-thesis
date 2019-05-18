@@ -358,11 +358,8 @@ class GaussianBayesCritic2(CriticTemplate):
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
 
     def get_action(self, state):
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
-        if Q_left > Q_right:
-            return 0
-        return 1
+        action, _ = self.get_target_action_and_q_value(state)
+        return action
 
     def get_target_action_and_q_value(self, state):
         """
@@ -380,10 +377,6 @@ class GaussianBayesCritic2(CriticTemplate):
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
 
-    def mean_q_value(self, state, action):
-        features = self.featurizer(state)
-        return features@self.models[action].mean
-
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
         features = self.featurizer(state)
@@ -392,7 +385,6 @@ class GaussianBayesCritic2(CriticTemplate):
         return np.asscalar(prediction)
 
     def featurizer(self, state):
-        #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
         return np.append(state, [1]).reshape(1,-1)
 
     def print_parameters(self):
