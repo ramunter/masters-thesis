@@ -2,7 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
-from statistics import median
+from statistics import median, mean
 from collections import namedtuple
 
 plt.style.use('ggplot')
@@ -72,7 +72,7 @@ def run_all_attempts(env, agent, N, attempts):
             env, agent.critic, episodes=1000, verbose=False)
         list_steps_to_learn += [steps_to_learn]
 
-    average_steps_to_learn = median(list_steps_to_learn)
+    average_steps_to_learn = mean(list_steps_to_learn)
     return average_steps_to_learn
 
 

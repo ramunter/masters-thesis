@@ -40,7 +40,7 @@ def calculate_target(episode, transitions, gamma, next_q_value):
     target = array([target]).reshape((-1,1))
     return target
 
-def q_learner(env, Critic, episodes=10000, gamma=1, verbose=True):
+def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
     """
     Runs a Q-learning experiment using the given environment and agent.
 
@@ -105,16 +105,22 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=True):
             #         dataset.append(
             #             np.append(X, [target[0], critic.q_value(transitions[-n_step].state, transitions[-n_step].action)]))
             target = reward + gamma*next_q_value*(1-done)
-            X = critic.update(state, action, np.array([target]))
-            dataset.append(np.append(X, [target, critic.q_value(state,action)]))
+            critic.update(state, action, np.array([target]))
 
+            X = np.array(np.append(state, [action, 1]))
+            dataset.append(np.append(X, [target, critic.q_value(state,action)]))
+        
             # Reset loop
-            state = next_state
-            action = critic.get_action(state)
-            steps += 1
+            if not done:
+                state = next_state
+                action = critic.get_action(state)
+                steps += 1
 
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
+
+        # if average_regret < 0.01*1:  # What should "learned" be?
+        #     break  # Check that this does not remove episode
 
     dataset = pd.DataFrame(dataset)
     dataset.to_csv("test.csv")
