@@ -3,6 +3,7 @@ from collections import namedtuple, deque
 
 import numpy as np
 from numpy.random import binomial
+import scipy.stats as stats
 
 from sklearn.linear_model import SGDRegressor, SGDClassifier
 from filterpy.kalman import KalmanFilter
@@ -100,9 +101,9 @@ class EGreedyCritic(CriticTemplate):
     def update(self, state, action, target):
         """Takes one optimization step for the linear model."""
 
-        features = featurizer(state, action, self.batch)
-        self.model.partial_fit(features, target)
-        return features
+        X = featurizer(state, action, self.batch)
+        self.model.partial_fit(X, np.array([target]).reshape(1,))
+        return X
 
     def q_value(self, state, action):
         """Caclulates Q-value given state and action."""
@@ -331,7 +332,7 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
         self.coef = self.model.sample()
 
 
-class GaussianBayesCritic2(CriticTemplate):
+class DeepGaussianBayesCritic2(CriticTemplate):
     """
     Bayesian linear model using a gaussian prior with unknown variance.
 
@@ -354,20 +355,27 @@ class GaussianBayesCritic2(CriticTemplate):
             feature_size = 2
         else:
             feature_size = len(state) + 1  # Add bias term.
-        
+
+        self.feature_size = feature_size
+
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
+        self.normal_samples = self.sample_standard_normal_vector()
+
 
     def get_action(self, state):
-        action, _ = self.get_target_action_and_q_value(state)
-        return action
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
 
     def get_target_action_and_q_value(self, state):
         """
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
+        Q_left = self.q_value(state,  0,  stats.norm.rvs(size=self.models[0].dim))
+        Q_right = self.q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
@@ -377,11 +385,13 @@ class GaussianBayesCritic2(CriticTemplate):
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
 
-    def q_value(self, state, action):
+    def q_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
-        features = self.featurizer(state)
-        prediction = self.models[action].sample(features)
+        if normal_samples is None:
+            normal_samples = self.normal_samples[action]
 
+        X = self.featurizer(state)
+        prediction = self.models[action].sample(X, normal_samples)
         return np.asscalar(prediction)
 
     def featurizer(self, state):
@@ -392,10 +402,23 @@ class GaussianBayesCritic2(CriticTemplate):
             print("Action ", action)
             self.models[action].print_parameters()
 
-    def reset(self):
-        # self.print_parameters()
-        pass
+    def sample_standard_normal_vector(self):
+        return [stats.norm.rvs(size=model.dim) for model in self.models]
 
+    def reset(self):
+        self.normal_samples = self.sample_standard_normal_vector()
+        [model.reset_var_params() for model in self.models]
+
+
+
+class GaussianBayesCritic2(DeepGaussianBayesCritic2):
+    def get_action(self, state):
+        self.normal_samples = self.sample_standard_normal_vector()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
 
 class KalmanFilterCritic(CriticTemplate):
     """

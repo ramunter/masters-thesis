@@ -3,34 +3,30 @@ output: pdf_document
 ---
 
 ```{r}
-corridor_names = c("index", "steps", "state", "action", "bias","y", "estimate")
+corridor_names_start = c("index", "step", "state")
+corridor_names_end = c("action", "bias", "y", "estimate")
 df = read.csv("test.csv")
-names(df) = corridor_names
+names(df)[1:3] = corridor_names_start
+names(df)[(length(df)-3):length(df)] = corridor_names_end
+
 head(df)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(ggplot2)
 library(dplyr)
 
-action_0_df = df %>% filter(action==0) 
-action_1_df = df %>% filter(action==1)
-
-ggplot(data=action_0_df) + 
-    geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2) + ylim(c(-0.5,2))
-
-ggplot(data=action_1_df) + 
-    geom_point(aes(x=state, y=estimate, color=index), position=position_dodge2(width = 0.5)) + 
-    scale_colour_continuous(type = 2) + ylim(c(-0.5,2))
-
+ggplot(data=df) + 
+    geom_point(aes(x=state, y=estimate, color=index), alpha=0.7, position=position_dodge2(width = 0.5)) + 
+    geom_point(aes(x=state, y=y), color="red", size=0.1, alpha=0.7, position=position_dodge2(width = 0.5)) + 
+    scale_colour_continuous(type=2) + facet_grid(step~action) + ylim(c(-2,2))
 ```
 
 ```{r message=FALSE, warning=FALSE}
 max_index = dim(df)[1]
 p = ggplot()
 
-section = 10000
+section = 1000
 df$section = floor(df$index/section)
 df$action = factor(df$action)
 

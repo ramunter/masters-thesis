@@ -27,9 +27,8 @@ def main(argv):
         # "UBE": UBECritic,
         # "Sample Target UBE": SampleTargetUBECritic,
         "Gaussian Prior": GaussianBayesCritic,
-        # "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic,
         "Gaussian Prior 2": GaussianBayesCritic2,
-        # "Test Critic": TestCritic,
+        "Deep Gaussian Prior 2": DeepGaussianBayesCritic2
         # "Kalman Filter": KalmanFilterCritic,
     }
 

@@ -27,7 +27,7 @@ def calculate_target(episode, transitions, gamma, next_q_value):
 
     if not transitions[-1].done:
         target = reward_sum + gamma**n_step*next_q_value
-        target = array([target]).reshape((1,))
+        target = array(target)
         return target
 
     target = [reward_sum]
@@ -35,11 +35,11 @@ def calculate_target(episode, transitions, gamma, next_q_value):
         discounted_rewards = [transition.reward*gamma**n for n, transition in enumerate(transitions[-i:])]
         target.append(sum(discounted_rewards))
         
-    target = array([target]).reshape((-1,1))
+    target = array([target]).reshape((-1,))
     return target
 
 
-def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
+def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     """
     Runs a Q-learning experiment using the given environment and agent.
 
@@ -62,7 +62,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
     critic = Critic(state)
 
     average_regret = 1
-    n_step = 5
+    n_step = 1
     steps = 0
     transitions = []
 
@@ -87,14 +87,22 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
                 next_state)
 
             # Update parameters
-            if steps > n_step:
+            if done:
+                num_updates = min(n_step, steps)
+                n_step_transitions = transitions[-num_updates:]
+                target = calculate_target(episode, n_step_transitions, gamma, next_q_value)
+
+                for i, transition in enumerate(n_step_transitions):
+                    state = transition.state
+                    action = transition.action
+
+                    critic.update(state, action, target[i])
+
+            elif steps >= n_step:
                 target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
-            
-                if len(target) == 1:
-                    critic.update(transitions[-n_step].state, transitions[-n_step].action, target)
-                else:
-                    for i in range(len(target)):
-                        critic.update(transitions[-(n_step-i)].state, transitions[-(n_step-i)].action, target[i])
+                state = transitions[-n_step].state
+                action =  transitions[-n_step].action
+                critic.update(state, action, target)
 
             # Reset loop
             state = next_state
@@ -104,7 +112,7 @@ def q_learner(env, Critic, episodes=10000, gamma=1, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        if average_regret < 0.01*1:  # What should "learned" be?
+        if average_regret < 0.1*1:  # What should "learned" be?
             break  # Check that this does not remove episode
 
     if verbose:

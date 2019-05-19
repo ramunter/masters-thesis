@@ -81,6 +81,18 @@ class GaussianRegression2():
         self.a = np.ones((20,20))*1
         self.b = np.ones((20,20))*1e-3
         self.dim = dim
+        self.counter = 0
+
+    def reset_var_params(self):
+        self.counter += 1
+        if self.counter==100:
+            self.mean = np.zeros((self.dim, 1))
+            
+            self.invcov = np.eye(self.dim)
+            self.cov = np.linalg.inv(self.invcov)
+            self.a = np.ones((20,20))*1
+            self.b = np.ones((20,20))*1e-3
+            self.counter = 0
 
     def update_posterior(self, X, y, n):
         
@@ -91,32 +103,30 @@ class GaussianRegression2():
         
         self.invcov = X.T@X + self.invcov
         self.cov = np.linalg.inv(self.invcov)
-        self.mean = np.linalg.inv(X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
+        self.mean = self.cov@(X.T@y + invcov_0@mean_0)
 
-        step = X[0,0]-1
-        state = X[0,1]-1
-        # step=0
-        # state=0
+        # step = int(X[0,0]-1)
+        # state = int(X[0,1]-1)
+
+        step=0
+        state=0
 
         self.a[step,state] += n/2
         
         self.b[step,state] += max(0.5*np.asscalar(y.T@y -
             self.mean.T@(X.T@X + invcov_0)@self.mean + mean_0.T@invcov_0@mean_0), 1e-12)
 
-    def sample(self, X):
+    def sample(self, X, normal_vector):
+        # step = int(X[0,0]-1)
+        # state = int(X[0,1]-1)
+        step=0
+        state=0
 
-        beta_sample, sigma_2 = self.sample_params(X)
+        sigma_2 = stats.invgamma.rvs(self.a[step, state], scale=self.b[step,state])
+        beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
+
         return self.sample_y(X, beta_sample, sigma_2)
 
-    def sample_params(self, X):
-        step = X[0,0]-1
-        state = X[0,1]-1
-        # step=0
-        # state=0
-        sigma_2 = stats.invgamma.rvs(self.a[step, state], scale=self.b[step,state])
-        beta_sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], self.cov*sigma_2)
-        return beta_sample, sigma_2
 
     def sample_y(self, X, beta_sample, sigma_2):
         return stats.norm.rvs(X@beta_sample.reshape(-1,1), np.sqrt(sigma_2))
@@ -128,7 +138,7 @@ class GaussianRegression2():
 
     def print_parameters(self):
         print("Mean\n", self.mean)
-        print("Inv Cov\n", self.invcov)
+        print("Cov\n", self.cov)
         print("Gamma shape", self.a)
         print("Gamma scale", self.b)
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 from numpy.random import choice, binomial
-from numpy import arange, zeros
+from numpy import arange, zeros, array
 
 import gym
 from gym import spaces
@@ -45,6 +45,10 @@ class Corridor(gym.Env):
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Discrete(self.N)
 
+    @property
+    def state_output(self):
+        return array([self.steps, self.state])
+
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -56,17 +60,15 @@ class Corridor(gym.Env):
 
         action = self.env_changes_to_actions(action)
         self.transition(action)
-        reward = self.reward_calculator()
+        reward = self.reward_calculator(action)
 
         if self.steps >= self.max_steps:
             done = True
         else:
             done = False
 
-        state = zeros(self.N)
-        state[self.state-1] = 1
 
-        return [self.steps, self.state, self.state*self.steps, self.steps**2, self.state], reward, done, {}
+        return self.state_output, reward, done, {}
 
     def env_changes_to_actions(self, action):
 
@@ -89,10 +91,12 @@ class Corridor(gym.Env):
         elif action == RIGHT and self.state < self.N:  # 'forwards action'
             self.state += 1
 
-    def reward_calculator(self):
+    def reward_calculator(self, action):
 
         if self.state == self.N:
             reward = 1
+        elif action == 0:
+            reward = 1/(10*self.N)
         else:
             reward = 0
 
@@ -102,6 +106,6 @@ class Corridor(gym.Env):
         self.state = 1
         self.steps = 1
 
-        state = zeros(self.N)
-        state[self.state-1] = 1
-        return [self.steps, self.state, self.state*self.steps, self.steps**2, self.state]
+        return self.state_output
+
+    
