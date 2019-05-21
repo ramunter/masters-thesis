@@ -1,7 +1,8 @@
 %===================================== CHAP 5 =================================
-\chapter{Bayesian Q Learning}{\label{ch:bdqn}}
+\chapter{Conjugate Bayesian Linear Q learning}{\label{ch:bdqn}}
 
-In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context before attempting to extend the most successful methods to neural networks.
+
+In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context to investigate what models to use and what factors are important in a reinforcement learning setting.
 
 \section{Linear Q learning}
 
@@ -24,22 +25,24 @@ The ordinary least squares solution to the $\beta$ coefficients can then be foun
 	\beta = [X^TX]^{-1}X^TQ
 \end{equation*}
 
-Given this model the agent can take an action by acting greedily over the models $Q(s,a)$ values in a given state. Since this purely an exploitation strategy, it is often coupled with the $\varepsilon$-greedy policy.
+Given this model the agent can take an action by acting greedily over the models $Q(s,a)$ values in a given state. Since this is purely an exploitation strategy, it is often coupled with the $\varepsilon$-greedy policy.
 
 \section{Bayesian Linear Q learning}
 
-To extend linear Q learning methods to follow a Thompson sampling policy a bayesian perspective is required. In a RL perspective the goal is to model the posterior
+To extend linear Q learning methods to Thompson sampling a bayesian perspective is required. To do this a prior distribution is placed over the regression parameters. Using bayes rule the posterior distribution of the parameters can be calculated and used to calculate the marginal distribution over Q.
 
 \begin{align*}
 p(\theta |Q, \mathcal{F}) &\propto p(Q| \theta, \mathcal{F})p(\theta) \\
-p(Q) &= \int p(Q|\theta, \mathcal{F}), p(\theta) d\theta
+p(Q) &= \int p(Q|\theta, \mathcal{F}) p(\theta) d\theta
 \end{align*}
 
-where $Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. In RL the value of interest are samples from $p(Q|\theta, \mathcal{F})$, not it's actual value.
+$Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. Since this is only used for Thompson sampling the value of the integral is not of interest. Instead it is the samples from $p(Q|\theta, \mathcal{F})$ that will be used to drive exploration.
 
-The calculation of an arbitrary posterior is computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to start off this thesis will consider conjugate priors which have an analytical solution.
+\section{Conjugate Bayesian Linear Q learning}
 
-\subsection{Normal Prior with Known noise}
+The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to this thesis will consider conjugate priors which have an analytical solution.
+
+\subsection{Gaussian Prior with Known noise}
 
 There are multiple ways to setup a bayesian regression model using conjugate priors. First consider the case used in \cite{azziz_2018} which creates one model per action and assumes the noise variance is known. The known noise variance is then treated as a hyperparameter. In this case the posterior can be expressed as 
 
@@ -56,16 +59,55 @@ $$
 
 where $\Lambda$ is the precision matrix. This results in the following posterior update
 
+\todo Add the development of these posterior updates to the appendix
+
+\begin{equation}
+    \begin{split}
+        \label{eq:known_noise_posterior_update}
+        \Lambda_n & = X^TX + \Lambda_0 \\
+        \mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
+    \end{split}
+\end{equation}
+
+Actions are picked by Thompson sampling. To sample However when calculating the target $Q$-value \cite{azziz_2018} uses the MAP estimate of $\beta$ instead. In this case the MAP estimate is $\mu$. 
+
+\subsection{Propagating Variance}
+
+Using the MAP estimate means that the targets are calculated by 
+
+$$
+y = r_t + \max_a X_{t+1}\mu_a.
+$$
+
+This does not correctly encorporate the target variance. To see why recall the definition of the Q-value
+
 \begin{align*}
-	\Lambda_n & = X^TX + \Lambda_0 \\
-	\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
+    Q_t &= \mathbb{E}[G_t] = \mathbb{E}[r_t + r_{t+1} + \dots] \\
+    &= \mathbb{E}[r_t + Q_{t+1}] = \mathbb{E}[r_t + Q_{t+1}]
 \end{align*}
 
-Note that when picking actions the sampled $Q$-value is used. However when calculating the target $Q$-value the MAP estimate of $\beta$ is used instead. In this case the MAP estimate is $\mu$. 
+This results in the regression problem $\mathbb{E}[r_t + Q_{t+1}] = X\beta_a$. However, since the expected reward is unknown this cannot be used. Instead one has access to the sample rewards from the environment. Asymptotically the mean of the samples approaches the expected value so this can be treated as a regression task with a noise term
+
+\begin{align*}
+    \mathbb{E}[r_t + Q_{t+1}] = X\beta_a \\
+    r_t + Q_{t+1} = X\beta_a + \varepsilon
+\end{align*}
+
+where $\varepsilon$ accounts for the difference between the sample and the mean, $r_t - \mathbb{E}[r_t] + Q_{t+1} - \mathbb{E}[Q_{t+1}]$. This implies that the target used must be a sample from the posterior of $Q_t$ not its expected value $X\mu_a$ as used in \cite{azziz_2018}. 
+
+The result of this is that the known noise model only includes the variance in the reward process through $r$. It does not convey the variance in the Q-value estimate of the next state. Even in a deterministic environment the policy shifts during training mean that there is an uncertainty in the Q-value of the next state. Quoting \cite{moerland_2017},  "\dots repeatedly visiting a state-action pair should not makes us certain about its value if we are still uncertain about what to do next."
+
+Based on the above a better choice of target is
+
+$$
+y = r_t + \max_a (X_{t+1}\beta + \varepsilon)
+$$
+
+where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian noise distribution. However the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to include $\sigma_{\varepsilon}$ as an unkown parameter.
 
 \subsection{Normal Prior with Unknown noise}
 
-To avoid the noise variance as a hyperparameter it can be included as an unknown parameter.
+Including $\sigma_{\varepsilon}$ as an unknown parameter resuts in the following:
 
 \begin{align*}
     p(\beta_a, \sigma_{\varepsilon_a}|Q_a, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
@@ -81,53 +123,22 @@ The conjugate priors for this setup are
 
 with the posterior update
 
+
 \begin{align*}
 	\Lambda_n & = (X^TX + \Lambda_0)                                         \\
 	\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ)                      \\
 	\alpha_n  & = \alpha_0 + \frac{n}{2}                                     \\
 	b_n       & = b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n) 
 \end{align*}
+\todo Add the development of these posterior updates to the appendix
 
-Once again $\mu$, the MAP estimate of $\beta$ is used to calculate the target Q-value.
+\subsection{Testing Variance Propagation}
 
-\todo: These results are outdated
+To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{results_no_prop.png}
-    \caption{WIP: \textbf{Performance on chain environment} Guassian Prior 2 includes the noise as a parameter}
-    \label{fig:results_no_propr}
-\end{figure}
+If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
 
-
-\subsection{Propagating Uncertainty}
-
-One possible issue with the two above methods is training using the MAP estimate of $\beta$. Using the MAP estimate means that the targets come from the following process:
-
-$$
-y = R + \max_a X_{t+1}\mu_a.
-$$
-
-Though this does incorporate the variance in the reward process through $R$ it does not convey the variance in the Q-value estimate of the next state. Even in a deterministic environment the policy shifts during training mean that there is an uncertainty in the Q-value of the next state. Quoting \cite{moerland_2017},  "\dots repeatedly visiting a state-action pair should not makes us certain about its value if we are still uncertain about what to do next."
-
-One possible method to include this uncertainty is to sample the $\beta$ posterior when calculating the target value.
-
-\todo Here is where I want stronger argumentation of why this should work (other than intuition).
-
-\todo These results are outdated
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{results_with_prop.png}
-    \caption{WIP: \textbf{Performance on chain environment} Guassian Prior 2 includes the noise as a parameter}
-    \label{fig:results_no_propr}
-\end{figure}
-
-\subsection{Investigating propagation}
-
-To ensure that these methods are propagating uncertainty we can consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution.
-
-If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. To test the following setup was usedThe priors for the known noise models were set to
+Both models were tested with both MAP and sample targets. The priors for the known noise models were set to
 
 \begin{align*}
     \beta &\sim N(0,10^3)\\
@@ -146,19 +157,23 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
 \begin{figure}[H]
     \centering
     \subfloat[$N(1,0.1^2)$]{
-        \includegraphics[width=0.8\textwidth]{1000iterationsSD01.png}
+        \includegraphics[width=0.6\textwidth, height=0.15\textheight]{1000iterationsSD01.png}
     }
     \\
     \subfloat[$N(1,1^2)$]{
-        \includegraphics[width=0.8\textwidth]{1000iterationsSD1.png}
+        \includegraphics[width=0.6\textwidth, height=0.15\textheight]{1000iterationsSD1.png}
     }
     \\
     \subfloat[$N(1,10^2)$]{
-        \includegraphics[width=0.8\textwidth]{1000iterationsSD10.png}
+        \includegraphics[width=0.6\textwidth, height=0.15\textheight]{1000iterationsSD10.png}
     }
-    \caption{\textbf{Variance Propagation On 2 State Toy Example}: It is clear that the known noise models result in a normal distribution around the correct mean but with the assumed noise level for variance. The unknown noise model using the mean target leads to a variance that heads towards 0. The only model that is able to correctly model the posterior is the unknown noise model with sampled targets.}
+    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The blue lines show the models Q-value posterior distribution while the orange lines show the target posterior distribution. Only the unkown noise model with sample targets is able to correctly estimate the target in all cases.}
     \label{fig:proptest}
 \end{figure}
+
+
+\section{Variance Propagation Over Multiple States}
+
 
 Based on these results focus is placed on the unknown noise model with sampled targets. Now consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics meaning it deterministic transitions to the terminal state with zero reward over the transition. This allows an investigation over how well variance is propagated through multiple states.
 
@@ -166,17 +181,17 @@ Based on these results focus is placed on the unknown noise model with sampled t
     \centering
 
     \subfloat[$N(1,1^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD1.png}
+        \includegraphics[width=0.45\textwidth]{3State10000iterationsSD1.png}
     }
     \subfloat[$N(1,10^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD10.png}
+        \includegraphics[width=0.45\textwidth]{3State10000iterationsSD10.png}
     }
     \\
     \subfloat[$N(1,0.1^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD01.png}
+        \includegraphics[width=0.45\textwidth]{3State10000iterationsSD01.png}
     }
     \subfloat[$N(1,0.01^2)$]{
-        \includegraphics[width=0.5\textwidth]{3State10000iterationsSD001.png}
+        \includegraphics[width=0.45\textwidth]{3State10000iterationsSD001.png}
     }
     \caption{\textbf{Variance Propagation On 3 State Toy Example}: For larger variance targets the propagation correctly updates the state 1 variance. However the low variance targets results in an overestimation over the variance which worsens further away from the known posterior.}
     \label{fig:3stateproptest}
@@ -188,39 +203,19 @@ One reason the 0.01 standard deviation posterior is harder to approximate than t
 \begin{figure}[H]
     \centering
     \subfloat[6 States with $N(0.01,1^2)$]{
-        \includegraphics[width=0.8\textwidth]{6State10000iterationsSD001.png}
+        \includegraphics[width=0.7\textwidth]{6State10000iterationsSD001.png}
     }
     \\
     \subfloat[11 States with $N(1,1^2)$ target]{
-        \includegraphics[width=0.8\textwidth]{11State10000iterationsSD1.png}
+        \includegraphics[width=0.7\textwidth]{11State10000iterationsSD1.png}
     }
 
     \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occurring closer to the initial state.}
     \label{fig:longproptest}
 \end{figure}
 
-\subsection{\textcolor{red}{Temporary} Why doesn't corridor work?}
 
-Consider the case where the current position in the corridor is the only input and the terminal state is position 5. If the agent is in position 4 it should learn that action right will give one return. In position 3 it should prefer action right, but it does not know if it will reach the end of the corridor in time. The total return will either be 0 or 1. This means the expected value of the action should be 0.5. 
-
-\begin{align}
-    \label{eq:reg1}
-    G &= X\beta_g + \sigma_g \\
-    \label{eq:reg2}
-    Q &= X\beta_q + \sigma_q \\
-    \label{eq:reg3}
-    E[Q] &= X\beta_q \\
-    \label{eq:reg4}
-    E[G] &= X\beta_q + \sigma_q = X\beta_g
-\end{align}
-
-A target consisting of the Monte Carlo total return will result in the regression in equation \ref{eq:reg1}. A target consisting only of Q-values will result in the regression in equation \ref{eq:reg2}. However the actual target $r + Q(s',a')$ is a mix between the two so given a stochastic reward equation \ref{eq:reg2} will over estimate the variance.
-
-However this cannot be the problem in the corridor example since the reward is deterministic so $E[r|x] = R$.
-
-\subsection{\textcolor{red}{Temporary} Stability is (maybe) not a problem, propagation is just slow}
-
-\subsubsection{Sensitivy of the Q-value}
+\subsubsection{Sensitivity for Low Variance}
 
 With better priors stability doesn't seem to be a problem. I was using a suggested weak prior from Gelman which was $\alpha=0.001$ and $\beta=0.001$ which leads to inf values in the Scipy library. Essentially But I'm leaving this here cause the reasoning behind this does cause issues. In addition I was using the wrong Invgamma parameterization. This probably caused some instability as well.
 
@@ -231,6 +226,12 @@ A problem is the "speed" of propagation. The issues shown in figure \ref{fig:lon
 Keep in mind that the next state which is used as the current states target. I think the slow propagation is due to the wrong target values used to train the bayesian regression before the next states posterior is correct. The further away from the actual environment return, the longer time it takes before the next states posterior is correct which means the model is trained on more bad data.
 
 I think retraining the model from scratch at certain intervals fixes the second part of the issue. To speed up the time it takes for the uncertainty to propagate we can also consider using n-step updates.
+
+
+
+\section{Performance on Linear RL Problem}
+
+
 
 \section{Bayesian Deep Q Network}
 

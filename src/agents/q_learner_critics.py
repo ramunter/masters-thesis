@@ -57,7 +57,7 @@ class CriticTemplate(ABC):
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, batch=False, final_eps=0.01, lr=0.01):
+    def __init__(self, state, batch=False, final_eps=1e-3, lr=0.01):
         """
         Initializes a linear model.
 
@@ -68,8 +68,8 @@ class EGreedyCritic(CriticTemplate):
             lr    : Learning rate used by the linear model.
         """
         self.final_eps = final_eps
-        self.eps = 1
-        self.eps_decay = (1-final_eps)/200
+        self.eps = 0.1
+        self.eps_decay = (1-final_eps)/2000
         self.batch = batch
         self.model = self.setup_model(state, lr)
 
@@ -83,7 +83,6 @@ class EGreedyCritic(CriticTemplate):
 
     def get_action(self, state):
         """ Gets an action using the E greedy approach."""
-
         if binomial(1, self.eps):
             return binomial(1, 0.5)
         else:

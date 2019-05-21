@@ -112,7 +112,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
         average_regret -= average_regret / 20
         average_regret += (1 - reward) / 20
 
-        if average_regret < 0.1*1:  # What should "learned" be?
+        if average_regret < 0.2*1:  # What should "learned" be?
             break  # Check that this does not remove episode
 
     if verbose:
