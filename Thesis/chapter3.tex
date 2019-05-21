@@ -40,6 +40,9 @@ $Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all para
 
 \section{Conjugate Bayesian Linear Q learning}
 
+
+\todo Emphasize the assumptions in this chapter
+
 The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to this thesis will consider conjugate priors which have an analytical solution.
 
 \subsection{Gaussian Prior with Known noise}
@@ -103,7 +106,7 @@ $$
 y = r_t + \max_a (X_{t+1}\beta + \varepsilon)
 $$
 
-where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian noise distribution. However the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to include $\sigma_{\varepsilon}$ as an unkown parameter.
+where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian noise distribution. However the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to include $\sigma_{\varepsilon}$ as an unknown parameter.
 
 \subsection{Normal Prior with Unknown noise}
 
@@ -125,6 +128,7 @@ with the posterior update
 
 
 \begin{align*}
+    \label{eq:unknown_noise_posterior_update}
 	\Lambda_n & = (X^TX + \Lambda_0)                                         \\
 	\mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ)                      \\
 	\alpha_n  & = \alpha_0 + \frac{n}{2}                                     \\
@@ -134,9 +138,7 @@ with the posterior update
 
 \subsection{Testing Variance Propagation}
 
-To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution.
-
-If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
+To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
 
 Both models were tested with both MAP and sample targets. The priors for the known noise models were set to
 
@@ -167,15 +169,23 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
     \subfloat[$N(1,10^2)$]{
         \includegraphics[width=0.6\textwidth, height=0.15\textheight]{1000iterationsSD10.png}
     }
-    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The blue lines show the models Q-value posterior distribution while the orange lines show the target posterior distribution. Only the unkown noise model with sample targets is able to correctly estimate the target in all cases.}
+    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The blue lines show the models Q-value posterior distribution while the orange lines show the target posterior distribution. Only the unknown noise model with sample targets is able to correctly estimate the target in all cases.}
     \label{fig:proptest}
 \end{figure}
 
+The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the unknown noise model with sample targets. The unknown noise model with the MAP target leads to the correct mean but dramatically understimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The known noise model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
 
-\section{Variance Propagation Over Multiple States}
+Based on these results further developments are focused on the unknown noise model with sampled targets.
 
+\section{Variance Propagation}
 
-Based on these results focus is placed on the unknown noise model with sampled targets. Now consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics meaning it deterministic transitions to the terminal state with zero reward over the transition. This allows an investigation over how well variance is propagated through multiple states.
+\subsection{Over Multiple States}
+
+The setting above is in essence a regular regression setting. In a RL setting this variance needs to be propagated to further states. To test that this is still the case with the unknown noise model consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
+
+The same priors as earlier are used on 4 different target posteriors. The results are summarised in figure \ref{fig:3stateproptest}.
+
+\todo Add details around these experiments in the appendix
 
 \begin{figure}[H]
     \centering
@@ -193,45 +203,48 @@ Based on these results focus is placed on the unknown noise model with sampled t
     \subfloat[$N(1,0.01^2)$]{
         \includegraphics[width=0.45\textwidth]{3State10000iterationsSD001.png}
     }
-    \caption{\textbf{Variance Propagation On 3 State Toy Example}: For larger variance targets the propagation correctly updates the state 1 variance. However the low variance targets results in an overestimation over the variance which worsens further away from the known posterior.}
+    \caption{\textbf{Variance Propagation On 3 State Toy Example}: The models posterior estimate for the two first states are shown. The third state is the terminal state that returns a sample from the target distribution.}
     \label{fig:3stateproptest}
 \end{figure}
 
-One reason the 0.01 standard deviation posterior is harder to approximate than the 1 sd is that the sensitivity of the posterior to the $\alpha$ and $\beta$ parameters. Small changes in these for a distribution with low variance leads to large changes (\todo: Confirm that this is actually the case)
+Figure \ref{fig:3stateproptest} shows that for larger variance targets the propagation correctly updates the state 1 variance. However the low variance targets results in an overestimation over the variance in state 1. Running this experiment for more iterations does lead to a better approximation implying that the problem lies in the the convergence rate for different posteriors. 
 
+One possible reason for this is that the posterior representing the 0.01 standard deviation posterior is more sensitive to small changes in in its parameters than the larger variance posteriors. In other words small changes in the parameters for a distribution with low variance leads to large changes in the variance of the posterior. Since the learning is happening in an online fashion the first estimates of the posterior will likely have large error. This effect is amplified for state 1 since it is training on the large error state 2 posterior. (\todo: Confirm/source that this is actually the case)
+
+By extending the toy example to even more states as in figure \ref{fig:longproptest} one can see that this problem increases the further the variance needs to be propagated. Even large variance targets will fail to correctly propagate given enough states.
 
 \begin{figure}[H]
     \centering
-    \subfloat[6 States with $N(0.01,1^2)$]{
-        \includegraphics[width=0.7\textwidth]{6State10000iterationsSD001.png}
+    \subfloat[6 States with $N(0.1,1^2)$]{
+        \includegraphics[width=0.7\textwidth]{6State1000iterationsSD01.png}
     }
     \\
-    \subfloat[11 States with $N(1,1^2)$ target]{
-        \includegraphics[width=0.7\textwidth]{11State10000iterationsSD1.png}
+    \subfloat[6 States with $N(1,1^2)$ target]{
+        \includegraphics[width=0.7\textwidth]{6State1000iterationsSD1.png}
     }
-
-    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent some errors from occurring closer to the initial state.}
+    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent errors Closer to the initial state.}
     \label{fig:longproptest}
 \end{figure}
 
+This issue will be refered to as the speed of propagation. It encompasses the problem of quickly propagating variance estimates from downstream states back to states which are far from the environments reward.
 
-\subsubsection{Sensitivity for Low Variance}
+\todo: Define speed of propagation. Maybe a seperate subsection that plots how the error changes with length of chain. How do we measure the error between two distributions? KL Divergence?
 
-With better priors stability doesn't seem to be a problem. I was using a suggested weak prior from Gelman which was $\alpha=0.001$ and $\beta=0.001$ which leads to inf values in the Scipy library. Essentially But I'm leaving this here cause the reasoning behind this does cause issues. In addition I was using the wrong Invgamma parameterization. This probably caused some instability as well.
-
-\subsubsection{Slow propagation}
-
-A problem is the "speed" of propagation. The issues shown in figure \ref{fig:longproptest} are dealt with by just training for a longer time. However, the amount of training required for good results seems to grow exponentially with the number of states to propagate over.
-
-Keep in mind that the next state which is used as the current states target. I think the slow propagation is due to the wrong target values used to train the bayesian regression before the next states posterior is correct. The further away from the actual environment return, the longer time it takes before the next states posterior is correct which means the model is trained on more bad data.
-
-I think retraining the model from scratch at certain intervals fixes the second part of the issue. To speed up the time it takes for the uncertainty to propagate we can also consider using n-step updates.
+\subsection{Speed of propagation}
 
 
+
+Inorder to improve the speed of propagation insight is required into what causes the issue. In this section two causes and methods for counteracting them are discussed. However these are not necessarily the only two causes of slow propagation.
+
+\todo These argumentations are weak and require sources or "proof". 
+
+The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update one will increase the speed of variance propagtation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
+
+The second cause is a result of no longer using a step size when updating the Q-values using bayesian updates. In regular Q-learning the step size can be viewed as the weighting of new data relative to the current model. This effect is also found in the bayesian setting in the posterior update that combines the prior and the new data. However, in regular Q-learning the step size also leads to the model forgetting old data(\cite{sutton_barto_2018}\todo find this page). This does not happen in the bayesian regression setting that has been used.
+
+In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger impact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
 
 \section{Performance on Linear RL Problem}
-
-
 
 \section{Bayesian Deep Q Network}
 
