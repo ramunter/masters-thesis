@@ -316,7 +316,7 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
             batch : Batch or single updates?
         """
         super().__init__(state, batch, lr)
-        self.coef = self.model.sample()
+        self.coef = [model.sample_params() for model in self.models]
 
     def get_target_action_and_q_value(self, state):
         """Samples an action by picking the largest Q-value."""
@@ -326,9 +326,15 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
             return 0, Q_left
         return 1, Q_right
 
+    def q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        features = self.featurizer(state)
+        prediction = self.models[action].sample_y(features, self.coef[action])
+        return np.asscalar(prediction)
+
     def reset(self):
         """Samples coefficients on episode reset."""
-        self.coef = self.model.sample()
+        self.coef = [model.sample_params() for model in self.models]
 
 
 class DeepGaussianBayesCritic2(CriticTemplate):

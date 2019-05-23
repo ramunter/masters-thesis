@@ -1,5 +1,5 @@
 %===================================== CHAP 5 =================================
-\chapter{Conjugate Bayesian Linear Q learning}{\label{ch:bdqn}}
+\chapter{Conjugate Bayesian Linear Q learning}{\label{ch:linear}}
 
 
 In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context to investigate what models to use and what factors are important in a reinforcement learning setting.
@@ -72,7 +72,9 @@ where $\Lambda$ is the precision matrix. This results in the following posterior
     \end{split}
 \end{equation}
 
-Actions are picked by Thompson sampling. To sample However when calculating the target $Q$-value \cite{azziz_2018} uses the MAP estimate of $\beta$ instead. In this case the MAP estimate is $\mu$. 
+Actions are picked by Thompson sampling. To sample However when calculating the target $Q$-value \cite{azziz_2018} uses the MAP estimate of $\beta$ instead. In this case the MAP estimate is $\mu$.
+
+This model will be refered to as a bayesian normal model(BN).
 
 \subsection{Propagating Variance}
 
@@ -126,7 +128,6 @@ The conjugate priors for this setup are
 
 with the posterior update
 
-
 \begin{align*}
     \label{eq:unknown_noise_posterior_update}
 	\Lambda_n & = (X^TX + \Lambda_0)                                         \\
@@ -136,18 +137,20 @@ with the posterior update
 \end{align*}
 \todo Add the development of these posterior updates to the appendix
 
+This model will be refered to as the Bayesian Normal Inverse Gamma model(BNIG).
+
 \subsection{Testing Variance Propagation}
 
 To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
 
-Both models were tested with both MAP and sample targets. The priors for the known noise models were set to
+Both models were tested with both MAP and sample targets. The priors for the BN models were set to
 
 \begin{align*}
     \beta &\sim N(0,10^3)\\
     \sigma^2 &= 1
 \end{align*}
 
-and the priors for the unknown noise models were set to
+and the priors for the BNIG models were set to
 
 \begin{align*}
     \beta &\sim N(0,10^3) \\
@@ -169,13 +172,13 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
     \subfloat[$N(1,10^2)$]{
         \includegraphics[width=0.6\textwidth, height=0.15\textheight]{1000iterationsSD10.png}
     }
-    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The blue lines show the models Q-value posterior distribution while the orange lines show the target posterior distribution. Only the unknown noise model with sample targets is able to correctly estimate the target in all cases.}
+    \caption{\textbf{Variance Propagation On 2 State Toy Example}: The blue lines show the models Q-value posterior distribution while the orange lines show the target posterior distribution. Only the BNIG model with sample targets is able to correctly estimate the target in all cases.}
     \label{fig:proptest}
 \end{figure}
 
-The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the unknown noise model with sample targets. The unknown noise model with the MAP target leads to the correct mean but dramatically understimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The known noise model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
+The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the BNIG model with sample targets. The BNIG model with the MAP target leads to the correct mean but dramatically understimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The BN model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
 
-Based on these results further developments are focused on the unknown noise model with sampled targets.
+Based on these results further developments are focused on the BNIG model with sampled targets.
 
 \section{Variance Propagation}
 
@@ -232,8 +235,6 @@ This issue will be refered to as the speed of propagation. It encompasses the pr
 
 \subsection{Speed of propagation}
 
-
-
 Inorder to improve the speed of propagation insight is required into what causes the issue. In this section two causes and methods for counteracting them are discussed. However these are not necessarily the only two causes of slow propagation.
 
 \todo These argumentations are weak and require sources or "proof". 
@@ -244,30 +245,21 @@ The second cause is a result of no longer using a step size when updating the Q-
 
 In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger impact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
 
+Counteracting this effect while retaining the bayesian regression model is not trivial. This thesis addresses the problem using the solution described in \cite{azziz_2018} with a slight modification. Define a hyperparameter $T_{bayes}$ and train a new bayesian regression model from scratch using targets from the old model every $T_{bayes}$ steps. This setup is for batch updates, so in this online linear case the priors for $\lambda$, $\alpha$ and $\beta$ are reset while the mean value $\mu_\beta$ is left unchanged. 
+
+\todo Deep exploration?
+
 \section{Performance on Linear RL Problem}
 
-\section{Bayesian Deep Q Network}
+Up to now the model has only been tested on simple problems with known posteriors. To test how well this generalizes to a more realistic RL environment consider a variant on the corridor environment introduced in the theory section in figure \ref{fig:chain}.
 
-\todo this section assumes DQN has been explained
+Consider a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{100N}$ and otherwise the agent recieves no reward.
 
-The predominant issue with bayesian methods in deep reinforcement learning is using bayesian methods with neural networks. This thesis will address the linear layer method (\todo Actual name for method), a simple and computationally efficient method that comes at the cost of accuracy. 
+\todo add regret to theory section
 
-The final layer in a DQN is a linear layer. Since bayesian regression is also a linear combination one can replace the final layer with a bayesian regression model per action. This is equivalent to rewriting the regression task to 
+The BN, BNIG models was compared with the known noise bayesian model and a linear Q-learning method following an $\varepsilon$-greedy exploration scheme. As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the enivorment. In this case the enivorment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
 
-\begin{equation*}
-	Q = \phi(X)\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
-\end{equation*}
+\todo plots of results and discussion around these
 
-where $\phi(X)$ is the neural networks output given an input $X$. Note that this means the bayesian regression no longer incorporates all the uncertainty since the above assumes no uncertainty in the $\phi(X)$ encoding. 
-
-Training the model now needs to be split into two processes. Firstly the bayesian regression is trained using the posterior update shown above. The neural network is trained using a similar loss function as the DQN. However the networks Q-value estimate is replaced by the MAP estimate of $\beta$ resulting in
-
-\begin{equation*}
-	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
-\end{equation*}
-
-Note that these do not have to happen sequentially. In \cite{azziz_2018} and this implementation the bayesian regression is updated less often than the neural network.
-
-Finally to deal with the fact that reinforcement learning is a non-stationary problem the the bayesian regression is trained for scratch each time it is updated.
 
 \cleardoublepage

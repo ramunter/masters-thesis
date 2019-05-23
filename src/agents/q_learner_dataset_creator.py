@@ -122,10 +122,10 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
                 action = critic.get_action(state)
                 steps += 1
 
-        average_regret -= average_regret / 20
-        average_regret += (1 - reward) / 20
+        average_regret -= average_regret / 100
+        average_regret += (1 - reward) / 100
 
-        if average_regret < 0.01*1:  # What should "learned" be?
+        if average_regret < 0.1*1:  # What should "learned" be?
             break  # Check that this does not remove episode
 
     dataset = pd.DataFrame(dataset)

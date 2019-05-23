@@ -1,5 +1,37 @@
 %===================================== CHAP 4 =================================
 
-\chapter{Experiment}\label{ch:expe}
+\chapter{Neural Linear Bayesian Regression Model}\label{ch:bdqn}
+
+A major drawback of the methods discussed in chapter \ref{ch:linear} is that they are all linear models. These cannot perform well in environments with complex non-linear relationships between state-action pairs and Q-values without significant feature engineering. Recent developments in the RL field focus on deep RL\citep{mnih_2015, mnih_2016,silver_2017} where neural networks are used as encode these relationships allowing succesfull results on complex games. As such it it would be beneficial to be able to combine the methods from chapter \ref{ch:linear} with more complex models. This chapter attempts this and tests the new model on multiple complex environments with comparisons to other popular deep RL methods.
+
+\section{Combining Bayesian Q-learning with Neural Networks}
+
+\subsection{Neural Linear Model}
+
+Without significant feature engineering a linear model cannot generalize to more complex non-linear relationships between state-action pairs and their Q-values. However using bayesian methods with non-linear models can be difficult and computationally heavy. \cite{carlos_2018} compared a large array of bayesian models on a set of bandit environments. They found that accurate complex models often performed worse than simpler approximate methods. The suggested reason for this is that complex models require more data and training to acheive reasonable variance estimates. Since RL is an online task this can lead to miscalibrated variance early on in the training process that leads to worse results.
+
+Emperically \cite{carlos_2018} finds what they coin as a neural linear model to work best. The model consists of using a neural network as a basis function that is used as the covariates to a linear bayesian regression model. This is equivalent to rewriting the regression task to 
+
+\begin{equation*}
+	Q = \phi(X)\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
+\end{equation*}
+
+where $\phi(X)$ is the neural networks output given an input $X$. The error in the bayesian regressions point estimates is backpropagated through the neural network to learn a useful basis function. Note that this means the bayesian regression no longer incorporates all the uncertainty since the above assumes no uncertainty in the $\phi(X)$ encoding. \cite{carlos_2018} suggests that error that comes with this assumption is counteracted by the models stable uncerainty estimates.
+
+This setup allows the application of the methods discussed in chapter \ref{ch:linear} in more complex environments. It is also this method \cite{azziz_2018} follows in their application of the BN model to more complex models.
+
+\subsection{Bayesian DQN Model}
+
+Due to the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018} is provided. This is used as a base which is modified to fit with the BNIG model and allow for variance propagation.
+
+The BDQN architecture consists of a BN model combined with the classic DQN neural network architecture\citep{mnih_2015}. Since the final layer in a DQN is a linear layer one can replace it with the BN model. However training the model now needs to be split into two processes. 
+
+Firstly the BN is trained using posterior updates equivalent to equation \ref{eq:known_noise_posterior_update}. The neural network is trained using a loss function between the target Q-value and the MAP estimate from the BN layer. This results in a gradient update of the form
+
+\begin{equation*}
+	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
+\end{equation*}
+
+The only difference to a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. Note that these two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps.
 
 \cleardoublepage

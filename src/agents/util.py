@@ -85,33 +85,33 @@ class GaussianRegression2():
 
     def reset_var_params(self):
         self.counter += 1
-        if self.counter==100:
+        if self.counter==-10:
             self.invcov = np.eye(self.dim)
             self.cov = np.linalg.inv(self.invcov)
             self.a = np.ones((20,20))*1
-            self.b = np.ones((20,20))*1e-6
+            self.b = np.ones((20,20))*1e-3
             self.counter = 0
 
     def update_posterior(self, X, y, n):
         
         y = y.reshape((n, 1))
+        alpha = 0.01
         
         mean_0 = self.mean
         invcov_0 = self.invcov
-        
-        self.invcov = X.T@X + self.invcov
+        self.invcov = alpha*X.T@X + invcov_0
         self.cov = np.linalg.inv(self.invcov)
-        self.mean = self.cov@(X.T@y + invcov_0@mean_0)
+        self.mean = self.cov@(alpha*X.T@y + invcov_0@mean_0)
 
         # step = int(X[0,0]-1)
         # state = int(X[0,1]-1)
 
         step=0
         state=0
-        self.a[step,state] += n/2
-        
-        self.b[step,state] += max(0.5*np.asscalar(y.T@y -
-            self.mean.T@(X.T@X + invcov_0)@self.mean + mean_0.T@invcov_0@mean_0), 1e-12)
+
+        self.a[step,state] += alpha*n/2
+        self.b[step,state] += alpha**2*0.5*np.asscalar(y.T@y -
+            self.mean.T@self.invcov@self.mean + mean_0.T@invcov_0@mean_0)
 
     def sample(self, X, normal_vector):
         # step = int(X[0,0]-1)
