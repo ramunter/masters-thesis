@@ -78,47 +78,49 @@ class GaussianRegression2():
         self.mean = np.zeros((dim, 1))
         self.invcov = np.eye(dim)
         self.cov = np.linalg.inv(self.invcov)
-        self.a = np.ones((20,20))*1
-        self.b = np.ones((20,20))*1e-3
+
+        self.a = 1
+        self.b = 1e-6
         self.dim = dim
         self.counter = 0
 
-    def reset_var_params(self):
-        self.counter += 1
-        if self.counter==-10:
-            self.invcov = np.eye(self.dim)
-            self.cov = np.linalg.inv(self.invcov)
-            self.a = np.ones((20,20))*1
-            self.b = np.ones((20,20))*1e-3
-            self.counter = 0
+        self.XTX = np.zeros((dim,dim))
+        self.XTy = np.zeros((dim,1))
+        self.n = 0
+        self.yTy = 0
 
-    def update_posterior(self, X, y, n):
+    def update_posterior(self, X, y, n, d):
         
         y = y.reshape((n, 1))
-        alpha = 0.01
         
-        mean_0 = self.mean
-        invcov_0 = self.invcov
-        self.invcov = alpha*X.T@X + invcov_0
+        lr = 1-1e-2
+
+        mean_0 = np.zeros((self.dim, 1))
+        invcov_0 = np.eye(self.dim)*1e-3
+        a_0 = 1
+        b_0 = 1e-6
+
+
+        self.XTX = lr*self.XTX + X.T@X
+        self.XTy = lr*self.XTy + X.T@y
+        self.n   = lr*self.n + n
+
+        self.invcov = self.XTX + invcov_0
         self.cov = np.linalg.inv(self.invcov)
-        self.mean = self.cov@(alpha*X.T@y + invcov_0@mean_0)
+        self.mean = self.cov@(self.XTy + invcov_0@mean_0)
+        self.a = a_0 + self.n/2
+        if not d:
+            self.yTy = lr*self.yTy + y.T@y 
+        else:
+            self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean
 
-        # step = int(X[0,0]-1)
-        # state = int(X[0,1]-1)
+        self.b = max(b_0 + 0.5*np.asscalar(self.yTy -
+            self.mean.T@self.invcov@self.mean),1e-3)
 
-        step=0
-        state=0
-
-        self.a[step,state] += alpha*n/2
-        self.b[step,state] += alpha**2*0.5*np.asscalar(y.T@y -
-            self.mean.T@self.invcov@self.mean + mean_0.T@invcov_0@mean_0)
+        print(self.b)
 
     def sample(self, X, normal_vector):
-        # step = int(X[0,0]-1)
-        # state = int(X[0,1]-1)
-        step=0
-        state=0
-        sigma_2 = stats.invgamma.rvs(self.a[step, state], scale=self.b[step,state])
+        sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
         beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
 
         return self.sample_y(X, beta_sample, sigma_2)

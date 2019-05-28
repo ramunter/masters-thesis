@@ -22,9 +22,9 @@ This setup allows the application of the methods discussed in chapter \ref{ch:li
 
 \subsection{Bayesian DQN Model}
 
-Due to the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018} is provided. This is used as a base which is modified to fit with the BNIG model and allow for variance propagation.
+Due to the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018} is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
 
-The BDQN architecture consists of a BN model combined with the classic DQN neural network architecture\citep{mnih_2015}. Since the final layer in a DQN is a linear layer one can replace it with the BN model. However training the model now needs to be split into two processes. 
+The BDQN architecture consists of a BN model combined with the classic DQN neural network architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means to combine the models one can simply replace the final layer with a BN model. However training the model now needs to be split into two processes. 
 
 Firstly the BN is trained using posterior updates equivalent to equation \ref{eq:known_noise_posterior_update}. The neural network is trained using a loss function between the target Q-value and the MAP estimate from the BN layer. This results in a gradient update of the form
 

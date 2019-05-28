@@ -97,7 +97,7 @@ class EGreedyCritic(CriticTemplate):
             return 0, left_value
         return 1, right_value
 
-    def update(self, state, action, target):
+    def update(self, state, action, target, done):
         """Takes one optimization step for the linear model."""
 
         X = featurizer(state, action, self.batch)
@@ -185,7 +185,7 @@ class UBECritic(CriticTemplate):
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
         return np.asscalar(sample_q)
 
-    def update(self, state, action, target):
+    def update(self, state, action, target, done):
         """Train the model using Q-learning TD update."""
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
@@ -271,7 +271,7 @@ class GaussianBayesCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target):
+    def update(self, state, action, target, done):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
@@ -379,16 +379,16 @@ class DeepGaussianBayesCritic2(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.q_value(state,  0,  stats.norm.rvs(size=self.models[0].dim))
+        Q_left = self.q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
         Q_right = self.q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target):
+    def update(self, state, action, target, done):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        self.models[action].update_posterior(X, target, 1)
+        self.models[action].update_posterior(X, target, 1, done)
 
     def q_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
@@ -412,7 +412,7 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
     def reset(self):
         self.normal_samples = self.sample_standard_normal_vector()
-        [model.reset_var_params() for model in self.models]
+        # [model.reset_var_params() for model in self.models]
 
 
 
