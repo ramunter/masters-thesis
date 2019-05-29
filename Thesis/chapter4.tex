@@ -20,18 +20,27 @@ where $\phi(X)$ is the neural networks output given an input $X$. The error in t
 
 This setup allows the application of the methods discussed in chapter \ref{ch:linear} in more complex environments. It is also this method \cite{azziz_2018} follows in their application of the BN model to more complex models.
 
-\subsection{Bayesian DQN Model}
+\subsection{Bayesian DQN Models}
 
-Due to the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018} is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
+Based on the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018} is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
 
-The BDQN architecture consists of a BN model combined with the classic DQN neural network architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means to combine the models one can simply replace the final layer with a BN model. However training the model now needs to be split into two processes. 
+\subsubsection{BN DQN}
 
-Firstly the BN is trained using posterior updates equivalent to equation \ref{eq:known_noise_posterior_update}. The neural network is trained using a loss function between the target Q-value and the MAP estimate from the BN layer. This results in a gradient update of the form
+The BN DQN architecture starts with the same archicture as the standard DQN architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model. This model is trained using the posterior updates described in chapter \ref{ch:linear} in equation \ref{eq:known_noise_posterior_update}. The neural network is trained using the loss function
 
 \begin{equation*}
 	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
 \end{equation*}
 
-The only difference to a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. Note that these two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps.
+The only difference to a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. One could replace the MAP estimate by samples from the posterior $Q$. However as shown in the linear case this should have no effect on the final estimate but does have a higher computational cost than simply using that MAP estimate.
+
+These two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps. This is done to handle the non-stationarity of the task.
+
+\subsubsection{BNIG DQN model}
+
+In principle it should be possible to simply swap out the BN model on the final layer with a BNIG model. However using BNIG model requires the target to be sample from the posterior. Otherwise, as in the linear case, the expected value variance is estimated which quickly approaches 0.
+
+
+
 
 \cleardoublepage
