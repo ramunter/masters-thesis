@@ -79,59 +79,68 @@ class GaussianRegression2():
         self.invcov = np.eye(dim)
         self.cov = np.linalg.inv(self.invcov)
 
-        self.a = 1
-        self.b = 1e-6
+        self.a = 1 + 1e-3
+        self.b = 1e-2
         self.dim = dim
         self.counter = 0
 
         self.XTX = np.zeros((dim,dim))
         self.XTy = np.zeros((dim,1))
-        self.n = 0
         self.yTy = 0
+        self.n = 0
+        self.var = 0
 
-    def update_posterior(self, X, y, n, d):
+    @property
+    def expected_variance(self):
+        return self.b/(self.a-1)
+
+    def update_posterior(self, X, y, n,var):
         
         y = y.reshape((n, 1))
-        
-        lr = 1-1e-2
+    
+        lr = 1-1e-3
 
         mean_0 = np.zeros((self.dim, 1))
-        invcov_0 = np.eye(self.dim)*1e-3
-        a_0 = 1
-        b_0 = 1e-6
+        invcov_0 = np.eye(self.dim)
 
+        a_0 = 1 + 1e-3
+        b_0 = 1e-2
 
         self.XTX = lr*self.XTX + X.T@X
         self.XTy = lr*self.XTy + X.T@y
-        self.n   = lr*self.n + n
-
         self.invcov = self.XTX + invcov_0
         self.cov = np.linalg.inv(self.invcov)
         self.mean = self.cov@(self.XTy + invcov_0@mean_0)
+
+        self.n = lr*self.n + n
         self.a = a_0 + self.n/2
-        if not d:
-            self.yTy = lr*self.yTy + y.T@y 
-        else:
-            self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean
 
-        self.b = max(b_0 + 0.5*np.asscalar(self.yTy -
-            self.mean.T@self.invcov@self.mean),1e-3)
+        # self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean 
+        # self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
+        #     self.mean.T@self.invcov@self.mean))
 
-        print(self.b)
+        self.var = lr*self.var + var
+        self.b = b_0 + 0.5*(self.var)
 
     def sample(self, X, normal_vector):
         sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
         beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
-
         return self.sample_y(X, beta_sample, sigma_2)
 
+    def sample_e(self, X, normal_vector):
+        sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
+        beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
+        return self.sample_ey(X, beta_sample)
 
     def sample_y(self, X, beta_sample, sigma_2):
         return stats.norm.rvs(X@beta_sample.reshape(-1,1), np.sqrt(sigma_2))
 
+    def sample_ey(self, X, beta_sample):
+        return X@beta_sample.reshape(-1,1)
+
     def pdf(self, x, X):
         return multivariate_student_t(
-            x, X@self.mean, self.b[0,0]/self.a[0,0]*(np.eye(self.dim)+X@self.cov@X.T), 2*self.a[0,0])
+            x, X@self.mean, self.b/self.a*(np.eye(self.dim)+X@self.cov@X.T), 2*self.a)
 
 
     def print_parameters(self):

@@ -22,7 +22,7 @@ def n_state_prop(models, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
-    T=10000
+    T=1000
     n=1
     step = 1
     for i in range(int(T/n)):
@@ -30,12 +30,16 @@ def n_state_prop(models, target_scale):
         for m, model in enumerate(models):
             if m+step < len(models):
                 target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
-                model.update_posterior(np.array([1]*n), target, n=n) 
-
+                var = models[m+step].b/(models[m+step].a-1)
+                model.update_posterior(np.array([1]*n), target, var, n=n) 
             else:
-                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n=n)
+                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), target_scale**2, n=n)
 
 
+
+    for i, model in enumerate(models):
+        print("State", i+1)
+        model.print_parameters()
     ## Plotting code
 
     def plot_posterior(ax, model, index):
@@ -70,9 +74,6 @@ def n_state_prop(models, target_scale):
     plt.ylabel('Probability', labelpad=80)
     plt.show()
     
-    # for i, model in enumerate(models):
-    #     print("State", i+1)
-    #     model.print_parameters()
 
 def main(argv):
 

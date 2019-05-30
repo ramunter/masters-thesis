@@ -65,6 +65,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     n_step = 1
     steps = 0
     transitions = []
+    complete=0
 
     for episode in range(1, episodes+1):
 
@@ -83,7 +84,7 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
             transitions += [Transition(state, action, reward, done)]
 
             # Best next action
-            _, next_q_value = critic.get_target_action_and_q_value(
+            next_action, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
 
             # Update parameters
@@ -95,27 +96,30 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
                 for i, transition in enumerate(n_step_transitions):
                     state = transition.state
                     action = transition.action
-                    done = transition.done
-
-                    critic.update(state, action, target[i], done)
+                    critic.update(state, action, target[i], next_action)
 
             elif steps >= n_step:
                 target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
                 state = transitions[-n_step].state
                 action =  transitions[-n_step].action
-                done =  transitions[-n_step].done
-                critic.update(state, action, target, done)
+                critic.update(state, action, target, next_action)
 
             # Reset loop
             state = next_state
             action = critic.get_action(state)
             steps += 1
 
-        average_regret -= average_regret / 100
-        average_regret += (1 - reward) / 100
+        # average_regret -= average_regret / 100
+        # average_regret += (1 - reward) / 100
+        # if average_regret < 0.1*1:  # What should "learned" be?
+        #     break  # Check that this does not remove episode
 
-        if average_regret < 0.1*1:  # What should "learned" be?
-            break  # Check that this does not remove episode
+        regret = 1-reward
+        if regret == 0:
+            complete +=1#
+        if complete > 100:
+            break
+
 
     if verbose:
         print("Final Parameters")

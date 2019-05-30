@@ -28,7 +28,7 @@ class CriticTemplate(ABC):
         pass
 
     @abstractmethod
-    def update(self, state, action, target):
+    def update(self, state, action, target, next_action):
         pass
 
     def reset(self):
@@ -97,7 +97,7 @@ class EGreedyCritic(CriticTemplate):
             return 0, left_value
         return 1, right_value
 
-    def update(self, state, action, target, done):
+    def update(self, state, action, target, next_action):
         """Takes one optimization step for the linear model."""
 
         X = featurizer(state, action, self.batch)
@@ -185,7 +185,7 @@ class UBECritic(CriticTemplate):
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
         return np.asscalar(sample_q)
 
-    def update(self, state, action, target, done):
+    def update(self, state, action, target, next_action):
         """Train the model using Q-learning TD update."""
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
@@ -271,7 +271,7 @@ class GaussianBayesCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, done):
+    def update(self, state, action, target, next_action):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
@@ -368,8 +368,8 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
 
     def get_action(self, state):
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
+        Q_left = self.eq_value(state, 0)
+        Q_right = self.eq_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -385,10 +385,11 @@ class DeepGaussianBayesCritic2(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, done):
+    def update(self, state, action, target, next_action):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        self.models[action].update_posterior(X, target, 1, done)
+        var = self.models[action].expected_variance
+        self.models[action].update_posterior(X, target, 1, var)
 
     def q_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
@@ -397,6 +398,15 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
         X = self.featurizer(state)
         prediction = self.models[action].sample(X, normal_samples)
+        return np.asscalar(prediction)
+
+    def eq_value(self, state, action, normal_samples=None):
+        """Caclulate Q-value based on sampled coefficients."""
+        if normal_samples is None:
+            normal_samples = self.normal_samples[action]
+
+        X = self.featurizer(state)
+        prediction = self.models[action].sample_e(X, normal_samples)
         return np.asscalar(prediction)
 
     def featurizer(self, state):
@@ -473,7 +483,7 @@ class KalmanFilterCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target):
+    def update(self, state, action, target, next_action):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update(target, H=X)
