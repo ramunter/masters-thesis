@@ -96,30 +96,34 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
                 for i, transition in enumerate(n_step_transitions):
                     state = transition.state
                     action = transition.action
-                    critic.update(state, action, target[i], next_action)
+                    critic.update(state, action, target[i], next_action, done)
 
             elif steps >= n_step:
                 target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
                 state = transitions[-n_step].state
                 action =  transitions[-n_step].action
-                critic.update(state, action, target, next_action)
+                critic.update(state, action, target, next_action, done)
 
             # Reset loop
             state = next_state
             action = critic.get_action(state)
             steps += 1
 
-        # average_regret -= average_regret / 100
-        # average_regret += (1 - reward) / 100
-        # if average_regret < 0.1*1:  # What should "learned" be?
-        #     break  # Check that this does not remove episode
-
-        regret = 1-reward
-        if regret == 0:
-            complete +=1#
-        if complete > 100:
-            break
-
+        state = env.reset()
+        critic.reset()
+        action = critic.get_action(state)
+        done = False
+        while not done:
+            # Perform step
+            next_state, reward, done, _ = env.step(action)
+            # Reset loop
+            state = next_state
+            action = critic.get_eval_action(state)
+                  
+        average_regret -= average_regret / 100
+        average_regret += (1 - reward) / 100
+        if average_regret < 0.1*1:  # What should "learned" be?
+            break  # Check that this does not remove episode
 
     if verbose:
         print("Final Parameters")

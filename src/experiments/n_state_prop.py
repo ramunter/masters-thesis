@@ -22,18 +22,18 @@ def n_state_prop(models, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
-    T=1000
+    T=10000
     n=1
     step = 1
     for i in range(int(T/n)):
 
         for m, model in enumerate(models):
             if m+step < len(models):
-                target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
-                var = models[m+step].b/(models[m+step].a-1)
-                model.update_posterior(np.array([1]*n), target, var, n=n) 
+                #target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
+                var = models[m+step].expected_variance
+                model.update_posterior(np.array([1]*n), np.array([1])@models[m+step].mean, n, var) 
             else:
-                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), target_scale**2, n=n)
+                models[m].update_posterior(np.array([1]*n), np.array([1]), n, target_scale**2)
 
 
 

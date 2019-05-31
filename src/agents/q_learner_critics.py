@@ -21,6 +21,10 @@ class CriticTemplate(ABC):
 
     @abstractmethod
     def get_action(self, state):
+        pass    
+        
+    @abstractmethod
+    def get_eval_action(self, state):
         pass
 
     @abstractmethod
@@ -28,15 +32,11 @@ class CriticTemplate(ABC):
         pass
 
     @abstractmethod
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         pass
 
     def reset(self):
         pass
-
-    def best_action(self, state):
-        action, q_value = self.get_target_action_and_q_value(state)
-        return action
 
     # Debug functions
 
@@ -86,7 +86,11 @@ class EGreedyCritic(CriticTemplate):
         if binomial(1, self.eps):
             return binomial(1, 0.5)
         else:
-            return self.best_action(state)
+            return self.get_eval_action(state)
+
+    def get_eval_action(self, state):
+        action, q_value = self.get_target_action_and_q_value(state)
+        return action
 
     def get_target_action_and_q_value(self, state):
         """ Calculates the optimal action and Q-value."""
@@ -97,7 +101,7 @@ class EGreedyCritic(CriticTemplate):
             return 0, left_value
         return 1, right_value
 
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         """Takes one optimization step for the linear model."""
 
         X = featurizer(state, action, self.batch)
@@ -185,7 +189,7 @@ class UBECritic(CriticTemplate):
         sample_q = mean_q + self.beta*sample*(var_q**0.5)
         return np.asscalar(sample_q)
 
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         """Train the model using Q-learning TD update."""
         features = featurizer(state, action, self.batch)
         self.model.partial_fit(features, target)
@@ -252,10 +256,15 @@ class GaussianBayesCritic(CriticTemplate):
         self.eps_decay = (1-self.final_eps)/200
 
     def get_action(self, state):
-        # if binomial(1, self.eps):
-        #     return binomial(1, 0.5)
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
+
+    def get_eval_action(self, state):
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -271,7 +280,7 @@ class GaussianBayesCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         self.models[action].update_posterior(X, target, 1)
@@ -280,8 +289,15 @@ class GaussianBayesCritic(CriticTemplate):
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
-        features = self.featurizer(state)
-        prediction = self.models[action].sample(features)
+        X = self.featurizer(state)
+        prediction = self.models[action].sample(X)
+
+        return np.asscalar(prediction)
+
+    def mean_q_value(self, state, action):
+        """Caclulate Q-value based on sampled coefficients."""
+        X = self.featurizer(state)
+        prediction = X@self.models[action].mean
 
         return np.asscalar(prediction)
 
@@ -374,21 +390,29 @@ class DeepGaussianBayesCritic2(CriticTemplate):
             return 0
         return 1
 
+    def get_eval_action(self, state):
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
+
     def get_target_action_and_q_value(self, state):
         """
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
-        Q_right = self.q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
+        Q_left = self.mean_q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
+        Q_right = self.mean_q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        var = self.models[action].expected_variance
+        var = self.models[next_action].expected_variance*(1-done)
+        print(var)
         self.models[action].update_posterior(X, target, 1, var)
 
     def q_value(self, state, action, normal_samples=None):
@@ -407,6 +431,12 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
         X = self.featurizer(state)
         prediction = self.models[action].sample_e(X, normal_samples)
+        return np.asscalar(prediction)
+
+    def mean_q_value(self, state, action, normal_samples=None):
+        """Caclulate Q-value based on sampled coefficients."""
+        X = self.featurizer(state)
+        prediction = X@self.models[action].mean
         return np.asscalar(prediction)
 
     def featurizer(self, state):
@@ -483,7 +513,7 @@ class KalmanFilterCritic(CriticTemplate):
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, next_action):
+    def update(self, state, action, target, next_action, done):
         """Calculate posterior and update prior."""
         X = featurizer(state, action, self.batch)
         self.model.update(target, H=X)

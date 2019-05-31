@@ -69,7 +69,7 @@ def run_all_attempts(env, agent, N, attempts):
     for _ in range(0, attempts):
 
         steps_to_learn = agent.method(
-            env, agent.critic, episodes=10000, verbose=False)
+            env, agent.critic, episodes=4000, verbose=False)
         list_steps_to_learn += [steps_to_learn]
 
     average_steps_to_learn = mean(list_steps_to_learn)

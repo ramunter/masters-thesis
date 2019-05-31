@@ -94,7 +94,7 @@ class GaussianRegression2():
     def expected_variance(self):
         return self.b/(self.a-1)
 
-    def update_posterior(self, X, y, n,var):
+    def update_posterior(self, X, y, n, var):
         
         y = y.reshape((n, 1))
     
@@ -112,14 +112,14 @@ class GaussianRegression2():
         self.cov = np.linalg.inv(self.invcov)
         self.mean = self.cov@(self.XTy + invcov_0@mean_0)
 
-        self.n = lr*self.n + n
+        self.n = 0.9*self.n + n
         self.a = a_0 + self.n/2
 
         # self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean 
         # self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
         #     self.mean.T@self.invcov@self.mean))
 
-        self.var = lr*self.var + var
+        self.var = 0.9*self.var + var
         self.b = b_0 + 0.5*(self.var)
 
     def sample(self, X, normal_vector):
