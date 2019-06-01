@@ -87,22 +87,26 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
             next_action, next_q_value = critic.get_target_action_and_q_value(
                 next_state)
 
-            # Update parameters
-            if done:
-                num_updates = min(n_step, steps)
-                n_step_transitions = transitions[-num_updates:]
-                target = calculate_target(episode, n_step_transitions, gamma, next_q_value)
+            # # Update parameters
+            # if done:
+            #     num_updates = min(n_step, steps)
+            #     n_step_transitions = transitions[-num_updates:]
+            #     target = calculate_target(episode, n_step_transitions, gamma, next_q_value)
 
-                for i, transition in enumerate(n_step_transitions):
-                    state = transition.state
-                    action = transition.action
-                    critic.update(state, action, target[i], next_action, done)
+            #     for i, transition in enumerate(n_step_transitions):
+            #         state = transition.state
+            #         action = transition.action
+            #         critic.update(state, action, target[i], next_action, done)
 
-            elif steps >= n_step:
-                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
-                state = transitions[-n_step].state
-                action =  transitions[-n_step].action
-                critic.update(state, action, target, next_action, done)
+            # elif steps >= n_step:
+            #     target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
+            #     state = transitions[-n_step].state
+            #     action =  transitions[-n_step].action
+            #     critic.update(state, action, target, next_action, done)
+
+            target = array([reward + gamma*next_q_value*(1-done)])
+            mean_target = array([reward + gamma*critic.mean_q_value(next_state, next_action)*(1-done)])
+            critic.update(state, action, target, mean_target, next_state, next_action, done)
 
             # Reset loop
             state = next_state

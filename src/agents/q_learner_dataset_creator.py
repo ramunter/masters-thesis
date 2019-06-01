@@ -88,30 +88,38 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
                 next_state)
 
             # Update parameters
-            if done:
-                num_updates = min(n_step, steps)
-                n_step_transitions = transitions[-num_updates:]
-                target = calculate_target(episode, n_step_transitions, gamma, next_q_value)
+            # if done:
+            #     num_updates = min(n_step, steps)
+            #     n_step_transitions = transitions[-num_updates:]
+            #     target = calculate_target(episode, n_step_transitions, gamma, next_q_value)
 
-                for i, transition in enumerate(n_step_transitions):
-                    state = transition.state
-                    action = transition.action
+            #     for i, transition in enumerate(n_step_transitions):
+            #         state = transition.state
+            #         action = transition.action
 
-                    critic.update(state, action, target[i], next_action, done)
-                    X = np.array(np.append(state, [action, 1]))
+            #         critic.update(state, action, target[i], next_action, done)
+            #         X = np.array(np.append(state, [action, 1]))
 
-                    dataset.append(
-                        np.append(X, [target[i], critic.q_value(state, action)]))
+            #         dataset.append(
+            #             np.append(X, [target[i], critic.q_value(state, action)]))
             
-            elif steps >= n_step:
-                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
-                state = transitions[-n_step].state
-                action =  transitions[-n_step].action
-                critic.update(state, action, target, next_action, done)
-                X = np.array(np.append(state, [action, 1]))
-                dataset.append(
-                    np.append(X, [target, critic.q_value(state, action)]))
-        
+            # elif steps >= n_step:
+            #     target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
+            #     state = transitions[-n_step].state
+            #     action =  transitions[-n_step].action
+            #     critic.update(state, action, target, next_action, done)
+            #     X = np.array(np.append(state, [action, 1]))
+            #     dataset.append(
+            #         np.append(X, [target, critic.q_value(state, action)]))
+
+
+            target = np.array([reward + gamma*next_q_value*(1-done)])
+            mean_target = np.array([reward + gamma*critic.mean_q_value(next_state, next_action)*(1-done)])
+            critic.update(state, action, target, mean_target, next_state, next_action, done)
+            X = np.array(np.append(state, [action, 1]))
+            dataset.append(
+                np.append(X, [target[0], critic.q_value(state, action)]))
+
             # Reset loop
             if not done:
                 state = next_state

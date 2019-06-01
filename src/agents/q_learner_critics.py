@@ -384,8 +384,8 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
 
     def get_action(self, state):
-        Q_left = self.eq_value(state, 0)
-        Q_right = self.eq_value(state, 1)
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -402,18 +402,19 @@ class DeepGaussianBayesCritic2(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.mean_q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
-        Q_right = self.mean_q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
+        Q_left = self.q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
+        Q_right = self.q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, target, next_action, done):
+    def update(self, state, action, target, mean_target, next_state, next_action, done):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        var = self.models[next_action].expected_variance*(1-done)
-        print(var)
-        self.models[action].update_posterior(X, target, 1, var)
+        X2 = self.featurizer(next_state)
+        var = self.models[next_action].var_prediction(X2)*(1-done)
+        td = (mean_target - X@self.models[action].mean)*(1-done)
+        self.models[action].update_posterior(X, target, mean_target, td, var, 1)
 
     def q_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
