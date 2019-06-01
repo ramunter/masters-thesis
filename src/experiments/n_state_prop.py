@@ -18,50 +18,57 @@ FLAGS = flags.FLAGS
 
 plt.rcParams.update({'font.size': 32})
 
-def n_state_prop(models, target_scale):
+def n_state_prop(model, states, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
-    T=10000
-    n=1
+    T=5000
     step = 1
-    for i in range(int(T/n)):
+    for i in range(int(T)):
+        for state in range(states):
+            if state+step < states:
+                X = np.array([[state,1]])
+                X2 = np.array([[state+1,1]])
+                var = model.var_prediction(X2)
 
-        for m, model in enumerate(models):
-            if m+step < len(models):
-                #target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
-                var = models[m+step].expected_variance
-                model.update_posterior(np.array([1]*n), np.array([1])@models[m+step].mean, n, var) 
+                target = model.sample(X2, norm.rvs(size=2))
+                mean_target = X2@model.mean
+                td = X2@model.mean - X@model.mean
+                model.update_posterior(X, target, mean_target, td, var, 1)
+
             else:
-                models[m].update_posterior(np.array([1]*n), np.array([1]), n, target_scale**2)
+                target =  final_state_posterior.rvs(size=1)
+                mean_target = np.array([1])
+                td = 1 - X@model.mean
+
+                model.update_posterior(X, target, mean_target, td, target_scale, 1)
 
 
-
-    for i, model in enumerate(models):
-        print("State", i+1)
-        model.print_parameters()
+    print("State", i+1)
+    model.print_parameters()
     ## Plotting code
 
     def plot_posterior(ax, model, index):
 
         x = np.linspace(1-3*target_scale, 1+3*target_scale, 10000)
-
+        print("Gamma scale", model.beta(np.array([index,1])))
         ## Plot sampled posterior distribution
-        # samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
+        # samples = np.array([model.sample(np.array([index, 1]), norm.rvs(size=2)) for _ in range(len(x))])
         # sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
         ax.set_title("State" + str(index))
         ax.set_xticks(np.linspace(1-3*target_scale, 1+3*target_scale, 3)[1:-1])
         ax.set_xlim(1-3*target_scale, 1+3*target_scale)
 
-        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
+        # ax.plot(x, [model.pdf(i, np.array([index])) for i in x], linewidth=2, label="Posterior PDF")
+        ax.plot(x, norm(loc=1, scale=model.expected_variance(np.array([index,1]))).pdf(x), linewidth=2, label="Posterior PDF")
         ax.plot(x, final_state_posterior.pdf(x), linewidth=2, label="Target")
 
 
-    number_of_subplots=len(models)
+    number_of_subplots=states
     fig, axs = plt.subplots(1, number_of_subplots, sharex=True, sharey=True)
     plt.subplots_adjust(wspace=0.01)
 
-    for i, model in enumerate(models):
+    for i, state in enumerate(range(states)):
         plot_posterior(axs[i], model, i+1)
 
     plt.legend(loc='best', frameon=False)
@@ -79,9 +86,8 @@ def main(argv):
 
     target_scale = FLAGS.scale
     
-    models = []
-    [models.append(GaussianRegression2(dim=1)) for _ in range(FLAGS.states)]
-    n_state_prop(models, target_scale)
+    model = GaussianRegression2(dim=2)
+    n_state_prop(model, FLAGS.states, target_scale)
 
 if __name__ == '__main__':
 

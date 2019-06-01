@@ -382,7 +382,6 @@ class DeepGaussianBayesCritic2(CriticTemplate):
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
         self.normal_samples = self.sample_standard_normal_vector()
 
-
     def get_action(self, state):
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
@@ -413,7 +412,7 @@ class DeepGaussianBayesCritic2(CriticTemplate):
         X = self.featurizer(state)
         X2 = self.featurizer(next_state)
         var = self.models[next_action].var_prediction(X2)*(1-done)
-        td = (mean_target - X@self.models[action].mean)*(1-done)
+        td = (mean_target - X@self.models[action].mean)#*(1-done)
         self.models[action].update_posterior(X, target, mean_target, td, var, 1)
 
     def q_value(self, state, action, normal_samples=None):

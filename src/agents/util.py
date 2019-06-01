@@ -96,7 +96,6 @@ class GaussianRegression2():
         self.var.intercept_ = np.array([1.])
         self.var.t_ = 2
 
-
     def var_prediction(self, X):
         return self.var.predict(X.reshape(1,-1))
 
@@ -106,13 +105,13 @@ class GaussianRegression2():
     def beta(self, X):
         return abs(self.var.predict(X.reshape(1,-1))*self.a)
 
-    def update_posterior(self, X, y, ey, td, var, n, post_var=None):
+    def update_posterior(self, X, y, ey, td, var, n):
 
         y = y.reshape((n, 1))
         ey = ey.reshape((n, 1))
 
     
-        lr = 1-1e-3
+        lr = 1-1e-2
 
         mean_0 = np.zeros((self.dim, 1))
         invcov_0 = np.eye(self.dim)*1e-3
@@ -132,11 +131,6 @@ class GaussianRegression2():
         # self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
         #     self.mean.T@self.invcov@self.mean))
         tar_var = var + (2*ey-td)*td
-        # print("var", var)
-        # print("mean", X@self.mean)
-        # print("ey", ey)
-        # print("td", td)
-        # print("dif", (2*ey-td)*td)
         self.var.partial_fit(X.reshape(1,-1), np.array([tar_var]).reshape(1,))
         # self.b = b_0 + 0.5*(self.var)
 
