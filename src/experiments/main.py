@@ -26,9 +26,9 @@ def main(argv):
         "E Greedy": EGreedyCritic,
         # "UBE": UBECritic,
         # "Sample Target UBE": SampleTargetUBECritic,
-        "Gaussian Prior": GaussianBayesCritic,
+        # "Gaussian Prior": GaussianBayesCritic,
         "Deep Gaussian Prior": GaussianBayesCritic,
-        "Gaussian Prior 2": GaussianBayesCritic2,
+        # "Gaussian Prior 2": GaussianBayesCritic2,
         "Deep Gaussian Prior 2": DeepGaussianBayesCritic2
         # "Kalman Filter": KalmanFilterCritic,
     }

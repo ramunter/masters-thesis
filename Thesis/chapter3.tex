@@ -8,9 +8,10 @@ In an attempt to find a better balance between exploration and exploitation this
 
 In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model for a single action can then be defined as
 
-\begin{equation*}
+\begin{equation}
+    \label{eq:regression}
 	Q(X,a) = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
-\end{equation*}
+\end{equation}
 
 with the response value defined as 
 
@@ -40,41 +41,43 @@ $Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all para
 
 \section{Conjugate Bayesian Linear Q learning}
 
-
 \todo Emphasize the assumptions in this chapter
 
 The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to this thesis will consider conjugate priors which have an analytical solution.
 
 \subsection{Gaussian Prior with Known noise}
 
-There are multiple ways to setup a bayesian regression model using conjugate priors. First consider the case used in \cite{azziz_2018} which creates one model per action and assumes the noise variance is known. The known noise variance is then treated as a hyperparameter. In this case the posterior can be expressed as 
+To start consider the model used in \cite{azziz_2018}. As in frequintist regression the noise term $\varepsilon$ is a zero mean gaussian distribution with variance $\sigma_\varepsilon$. In \cite{azziz_2018} $\sigma_\varepsilon$ is assumed known. This is rarely the case, but even if it is unknown it can be treated as a hyperparameter that has to be tuned to the environment. 
+
+A regression model is created per action, each with the same noise variance $\sigma_\varepsilon$ and with a prior over every regression coefficient. The posterior $Q$-value for each action is expressed as 
 
 \begin{align*}
     p(\beta_a |Q_a, \sigma_{\varepsilon_a}, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\beta_a) \\
-    p(Q_a|\sigma_{\varepsilon_a}, \mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a)d\beta_a
+    p(Q_a|\sigma_{\varepsilon_a}, \mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a)d\beta_a.
 \end{align*}
 
-In literature it is common to use a gaussian prior for $\beta$
+A common conjugate prior for the coefficients is the gaussian distribution 
 
 $$
-p(\beta) = \text{N}(\mu, \sigma_\varepsilon\Lambda^{-1}) 
+p(\beta_a) = \text{N}(\mu_a, \sigma_\varepsilon\Lambda_a^{-1}) 
 $$
 
-where $\Lambda$ is the precision matrix. This results in the following posterior update
-
-\todo Add the development of these posterior updates to the appendix
+where $\Lambda_a$ is the precision matrix. With this choice of prior the posterior distribution of $\beta_a$ is still gaussian with a closed form update for the distribution parameters. Given new state-action combinations X and target action-values $Q^a$ the posterior can be updated using 
 
 \begin{equation}
     \begin{split}
         \label{eq:known_noise_posterior_update}
-        \Lambda_n & = X^TX + \Lambda_0 \\
-        \mu_n     & = \Lambda_n^{-1}(\Lambda_0\mu_0 + X^TQ_a)
+        \Lambda_{a_n} & = X^TX + \Lambda_{a_0} \\
+        \mu_{a_n}     & = \Lambda_{a_n}^{-1}(\Lambda_{a_0}\mu_{a_0} + X^TQ_a).
     \end{split}
 \end{equation}
 
-Actions are picked by Thompson sampling. To sample However when calculating the target $Q$-value \cite{azziz_2018} uses the MAP estimate of $\beta$ instead. In this case the MAP estimate is $\mu$.
+where the $_0$ denotes the prior and $_n$ denotes the posterior parameters. The development of these updates can be found in the appendix(\todo reference). This model will be refered to as a bayesian normal model(BN).
 
-This model will be refered to as a bayesian normal model(BN).
+With this setup actions can now be picked by Thompson sampling. For each action sample $\beta$ values from its posterior distribution and a noise term from $N(0, \sigma_\varepsilon)$. These sample values are then used in the regression equation \ref{eq:regression} to get a posterior sample from $Q_a$. Finally chose the action with the highest sampled $Q$-value. 
+
+When calculating the target $Q$-value \cite{azziz_2018} does not use $Q$-value samples. Instead the MAP estimate of $\beta$ is used which in this case is $\mu$.
+
 
 \subsection{Propagating Variance}
 
@@ -112,11 +115,11 @@ where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian 
 
 \subsection{Normal Prior with Unknown noise}
 
-Including $\sigma_{\varepsilon}$ as an unknown parameter resuts in the following:
+Including $\sigma_{\varepsilon}$ as an unknown parameter resuts in the new posterior 
 
 \begin{align*}
     p(\beta_a, \sigma_{\varepsilon_a}|Q_a, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
-    p(Q_a|\mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a, \sigma_{\varepsilon_a})d\beta_a d\sigma_{\varepsilon_a}
+    p(Q_a|\mathcal{F}) &= \int p(Q_a|\beta_a, \sigma_{\varepsilon_a}, \mathcal{F}) p(\beta_a, \sigma_{\varepsilon_a})d\beta_a d\sigma_{\varepsilon_a}.
 \end{align*}
 
 The conjugate priors for this setup are
@@ -135,9 +138,8 @@ with the posterior update
 	\alpha_n  & = \alpha_0 + \frac{n}{2}                                     \\
 	b_n       & = b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n) 
 \end{align*}
-\todo Add the development of these posterior updates to the appendix
 
-This model will be refered to as the Bayesian Normal Inverse Gamma model(BNIG).
+The development of these formulas can be found in the appendix (\todo reference). This model will be refered to as the Bayesian Normal Inverse Gamma model(BNIG).
 
 \subsection{Testing Variance Propagation}
 
@@ -184,7 +186,7 @@ Based on these results further developments are focused on the BNIG model with s
 
 \subsection{Over Multiple States}
 
-The setting above is in essence a regular regression setting. In a RL setting this variance needs to be propagated to further states. To test that this is still the case with the unknown noise model consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
+The setting above is a regular regression setting. In a RL setting the variance needs to be propagated to further states. To test that this is still the case with the BNIG model consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
 
 The same priors as earlier are used on 4 different target posteriors. The results are summarised in figure \ref{fig:3stateproptest}.
 
@@ -225,7 +227,7 @@ By extending the toy example to even more states as in figure \ref{fig:longpropt
     \subfloat[6 States with $N(1,1^2)$ target]{
         \includegraphics[width=0.7\textwidth]{6State1000iterationsSD1.png}
     }
-    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent errors Closer to the initial state.}
+    \caption{\textbf{Failure of variance propagation over many states}: (\textbf{a}) shows that the error in estimation close to the terminal state leads to failure in the estimation of the posterior of the initial states. In (\textbf{b}) the seemingly correct estimation close to the terminal state still does not prevent errors closer to the initial state.}
     \label{fig:longproptest}
 \end{figure}
 
@@ -243,15 +245,15 @@ The first cause is best explained using an example. Consider the 3 state toy exa
 
 The second cause is a result of no longer using a step size when updating the Q-values using bayesian updates. In regular Q-learning the step size can be viewed as the weighting of new data relative to the current model. This effect is also found in the bayesian setting in the posterior update that combines the prior and the new data. However, in regular Q-learning the step size also leads to the model forgetting old data(\cite{sutton_barto_2018}\todo find this page). This does not happen in the bayesian regression setting that has been used.
 
-In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger impact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
+In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger impact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary due to changes in policy. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
 
-Counteracting this effect while retaining the bayesian regression model is not trivial. This thesis addresses the problem using the solution described in \cite{azziz_2018} with a slight modification. Define a hyperparameter $T_{bayes}$ and train a new bayesian regression model from scratch using targets from the old model every $T_{bayes}$ steps. This setup is for batch updates, so in this online linear case the priors for $\lambda$, $\alpha$ and $\beta$ are reset while the mean value $\mu_\beta$ is left unchanged. 
+Counteracting this effect while retaining the bayesian regression model is not trivial. The solution used in \cite{azziz_2018} is to define a hyperparameter $T_{bayes}$ and train a new bayesian regression model from scratch using targets from the old model every $T_{bayes}$ steps. However this is a computationally heavy step and can greatly increase the run time of the algorithm for problems with many predictors. 
 
-\todo Deep exploration?
+To avoid this a concept called exponential forgetting is used. This is first mentioned in \cite{dearden_1998} but with no reference and no explanation to what it is. (\todo get sources and reword:)
 
 \section{Performance on Linear RL Problem}
 
-Up to now the model has only been tested on simple problems with known posteriors. To test how well this generalizes to a more realistic RL environment consider a variant on the corridor environment introduced in the theory section in figure \ref{fig:chain}.
+Up to now the model has only been tested on simple problems with known posteriors and no active decision making. To test how well this generalizes to a more realistic RL environment consider a variant on the corridor environment introduced in the theory section in figure \ref{fig:chain}.
 
 Consider a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{100N}$ and otherwise the agent recieves no reward.
 
@@ -261,5 +263,6 @@ The BN, BNIG models was compared with the known noise bayesian model and a linea
 
 \todo plots of results and discussion around these
 
+\section{Deep Exploration}
 
 \cleardoublepage

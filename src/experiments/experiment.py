@@ -129,6 +129,8 @@ def plot_results(results, filename):
     results_melted = pd.melt(
         results, id_vars=["N"], value_name="Episodes to Learn")
 
+    results_melted.to_csv("./experiment_results.csv")
+
     sns.relplot(x="N", y="Episodes to Learn", hue="variable",
                 kind="line", data=results_melted)
     plt.savefig(filename+".png")

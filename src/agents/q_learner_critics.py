@@ -384,8 +384,8 @@ class DeepGaussianBayesCritic2(CriticTemplate):
 
 
     def get_action(self, state):
-        Q_left = self.eq_value(state, 0)
-        Q_right = self.eq_value(state, 1)
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -412,7 +412,6 @@ class DeepGaussianBayesCritic2(CriticTemplate):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
         var = self.models[next_action].expected_variance*(1-done)
-        print(var)
         self.models[action].update_posterior(X, target, 1, var)
 
     def q_value(self, state, action, normal_samples=None):

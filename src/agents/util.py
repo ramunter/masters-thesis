@@ -112,15 +112,15 @@ class GaussianRegression2():
         self.cov = np.linalg.inv(self.invcov)
         self.mean = self.cov@(self.XTy + invcov_0@mean_0)
 
-        self.n = 0.9*self.n + n
+        self.n = lr*self.n + n
         self.a = a_0 + self.n/2
 
-        # self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean 
-        # self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
-        #     self.mean.T@self.invcov@self.mean))
+        self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean 
+        self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
+            self.mean.T@self.invcov@self.mean))
 
-        self.var = 0.9*self.var + var
-        self.b = b_0 + 0.5*(self.var)
+        # self.var = 0.9*self.var + var + (2*ey-td)*td
+        # self.b = b_0 + 0.5*(self.var)
 
     def sample(self, X, normal_vector):
         sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
@@ -133,7 +133,7 @@ class GaussianRegression2():
         return self.sample_ey(X, beta_sample)
 
     def sample_y(self, X, beta_sample, sigma_2):
-        return stats.norm.rvs(X@beta_sample.reshape(-1,1), np.sqrt(sigma_2))
+        return stats.norm.rvs(X@beta_sample.reshape(-1,1), sigma_2)
 
     def sample_ey(self, X, beta_sample):
         return X@beta_sample.reshape(-1,1)

@@ -47,7 +47,7 @@ class Corridor(gym.Env):
 
     @property
     def state_output(self):
-        return array([self.steps, self.state])
+        return array([self.steps==self.state, self.state])
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -96,7 +96,7 @@ class Corridor(gym.Env):
         if self.state == self.N:
             reward = 1
         elif action == 0:
-            reward = 1/(100*self.N)
+            reward = 1/(10*self.N)
         else:
             reward = 0
 
