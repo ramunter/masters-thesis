@@ -249,7 +249,18 @@ In the bayesian regression setting described the prior is always the previous po
 
 Counteracting this effect while retaining the bayesian regression model is not trivial. The solution used in \cite{azziz_2018} is to define a hyperparameter $T_{bayes}$ and train a new bayesian regression model from scratch using targets from the old model every $T_{bayes}$ steps. However this is a computationally heavy step and can greatly increase the run time of the algorithm for problems with many predictors. 
 
-To avoid this a concept called exponential forgetting is used. This is first mentioned in \cite{dearden_1998} but with no reference and no explanation to what it is. (\todo get sources and reword:)
+To avoid this a concept called exponential forgetting is used. This is first mentioned in \cite{dearden_1998} but with no reference and no explanation to what it is. (\todo write down best source). The method reduces the impact of previous data by exponentially decaying old data.
+
+Rather than keeping track of the entire dataset used one can consider the terms used to update the posterior seen in equation \ref{eq:unknown_noise_posterior_update}. The terms $X^TX$, $X^Ty$, $y^Ty$ and $n$ are all proportional to the number of predictors rather than the number of datapoints. The terms can then be exponentially decayed by using the updates 
+
+\begin{align}
+(X^TX)^{(k+1)} &= \alpha{X^TX}^{(k)} + x^Tx \\
+(X^Ty)^{(k+1)} &= \alpha{X^Ty}^{(k)} + x^Ty \\
+(y^Ty)^{(k+1)} &= \alpha{y^Ty}^{(k)} + y^Ty \\
+n^{(k+1)} &= \alpha n^{(k)} + b 
+\end{align}
+
+where $\alpha$ is the decay rate and the b is the batch size.
 
 \section{Performance on Linear RL Problem}
 
@@ -264,5 +275,11 @@ The BN, BNIG models was compared with the known noise bayesian model and a linea
 \todo plots of results and discussion around these
 
 \section{Deep Exploration}
+
+\cite{osband_2018} 
+
+\section{Stabalizing Inverse Gamme Distribution}
+
+
 
 \cleardoublepage
