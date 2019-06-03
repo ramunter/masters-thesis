@@ -262,24 +262,73 @@ n^{(k+1)} &= \alpha n^{(k)} + b
 
 where $\alpha$ is the decay rate and the b is the batch size.
 
+\section{Deep Exploration}
+
+\cite{osband_2018}
+
 \section{Performance on Linear RL Problem}
 
 Up to now the model has only been tested on simple problems with known posteriors and no active decision making. To test how well this generalizes to a more realistic RL environment consider a variant on the corridor environment introduced in the theory section in figure \ref{fig:chain}.
 
-Consider a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{100N}$ and otherwise the agent recieves no reward.
+Consider a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{10N}$ and otherwise the agent recieves no reward.
 
-\todo add regret to theory section
+\todo Add regret to theory section
 
-The BN, BNIG models was compared with the known noise bayesian model and a linear Q-learning method following an $\varepsilon$-greedy exploration scheme. As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the enivorment. In this case the enivorment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
+All the methods discussed so far were tested on this enviroment with different chain lengths. This includes the BN and BNIG model with both regular and deep exploration. In addition a linear Q-learning method following an $\varepsilon$-greedy exploration scheme was tested. The hyperparameters for each model were found by manually testning different combinations. The priors that gave good propagation for the toy examples were used as a starting point. A table of the hyperparameters can be found in the appendinx in table \todo.
 
-\todo plots of results and discussion around these
+As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the enivorment. In this case the enivorment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
 
-\section{Deep Exploration}
+\todo These results are based on 10 attempts per length, this should be run for 50-100 attempts for nicer plots.
 
-\cite{osband_2018} 
+\begin{figure}[H]
+    \centering
+    \subfloat[1 step update]{
+        \includegraphics[scale=0.5]{Corridor1StepMethods.png}
+    }
+    \subfloat[3 step update]{
+        \includegraphics[scale=0.5]{Corridor3StepMethods.png}
+    }
+    \caption{\textbf{Linear Model Performance on Corridor Environment}: (\textbf{a}) shows that the only method to out perform is the Deep BNIG model. Increasing to a 3-step update in (\textbf{b}) improves the performance of all models but the largest increase in performance seems to be Deep BNIG.}
+    \label{fig:linear_corridor}
+\end{figure}
 
-\section{Stabalizing Inverse Gamme Distribution}
+The key result from figure \ref{fig:linear_corridor} is that the $\varepsilon$-greedy method outperforms all methods apart from the BNIG model with deep exploration. However there are a few interesting differences in the results between the bayesian models and their exploration methods. 
+
+The regular BNIG model performs worse than the regular BN model. One reason for this could be the constant noise term allowing for exploration even when the model is certain about it's current estimate. If the BNIG model quickly learns that a left moving policy gives a reward, the variance for the left action might approach zero before it gets enough data showing that a right moving policy gives a higher reward. A BN model will result in the same issue, but the small additional variance might provide enough exploration to manage a slightly longer corridor. An improvement to this would be to have the variance term $\sigma_a^2$ be dependent on the state.
+
+Adding deep exploration has seemingly no effect on the BN model but leads to far better results on the BNIG model. This could be due to the BN model not propagating variance quickly leading to a low variance model. Once the variance is low the difference between sampled action-value functions is also small so sampling each step versus sampling each episode will lead to similar actions.
+
+Finally, increasing from a 1-step to a 3-step update leads to better performance across all models. However for all models apart from deep BNIG the improvement is increasing the longest learnable corridor by around 2-4 states. In deep BNIG's case the improvment is an increase of atleast 8 states and possibly more. Once again this is probably due to the BNIG model being the only one actually propagating uncertainty. By increasing the step update in the BNIG model one is not only decreasing the bias of the expected value but also decreasing the bias of the variance. In other words the n-state update not only improves the value estimation but also improves the exploration, resulting in a larger improvment than in other methods.
 
 
+
+\section{\color{red}{Temp?} \color{black} State Dependent Inverse Gamma Distribution}
+
+\todo This might not be worth including but I'm writing it down so we can discuss if it's worth working on.
+
+\todo I originally worked on this to stabalize beta (which no longer is a problem) but realized it could be used with a model. I've tested a bit on corridor with a linear model with OK results, but need to test more to actually conclude that this works. But I wont work more on this until we have discussed this and after I've come further on my thesis.
+
+The variance of a state should be dependent on the state, which is not the case with the BNIG model. To fix this the inverse gamma distribution parameters should be dependent on the state. With some linear algebra it is possible to rewrite the $b$ term in terms of the next state variance and temporal difference. First recall the parameter updates
+
+\begin{align}
+    a_n &= a_0 + \frac{n}{2} \\
+    b_n &= b_0 + \frac{1}{2}(Q^TQ - \mu_n^TX^TX\mu_n)
+\end{align}
+
+where some terms are removed as a prior mean of 0 is used.
+
+Denote $y$ as the target, $\hat{Q}$ as the action-value of the next state and $Q$ the action-value of the current state. The target is then distributed by $N(r + \hat{Q}, \sigma^2_{a'})$. Using the moments of a normal distribution one finds
+
+\begin{equation}
+    \begin{split}
+        \mathbb{E}[Q^TQ] &= n\sigma^2_{a'} + (r + \hat{Q})^T(r + \hat{Q})\\
+        \mathbb{E}[b_n] &= b_0 + \frac{1}{2}\bigg(n\sigma^2 + (r + \hat{Q})^T(r + \hat{Q}) - Q^TQ\bigg)\\
+        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + (r + \hat{Q} - Q)^T(r + \hat{Q} + Q)\bigg)\\
+        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + \delta^T(r + \hat{Q} + Q)\bigg)\\
+        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta\bigg)
+    \end{split}
+\end{equation}
+
+where $\delta$ is the temporal difference and the last line reduces the number arguments required for the calculation. This leaves an equation that is dependent on the variance of the next state and the temporal difference error. With this setup $\sigma^2_a$ can be replaced by a model $\sigma^2_{a} = X\beta_{\sigma_{a}}$ that trains on targets $\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta$.
 
 \cleardoublepage
