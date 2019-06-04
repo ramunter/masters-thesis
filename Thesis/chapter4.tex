@@ -71,10 +71,10 @@ In this evaluation phase the model and network are not trained. The DQN agent ac
 \subsection{Cartpole}
 
 The environment considered is a classic toy example called cartpole. The environment was first proposed in \cite{barto_sutton_1983} and is easily available through the Open AI gym environment \citep{brockman_2016}.
-
+\todo figure to illustrate 
 The task consists of balancing a pole on top of a cart. If the pole falls over 15 degrees from the upright position or if the cart goes too far (2.4 units from the center) to the left or right the game is terminated. The game is also terminated after 500 timesteps. Every timestep a reward of $+1$ is received. There are two actions, the cart can be pushed to the left or to the right at every timestep. There are 4 input variables that define the state: the pole angle from vertical, the position of the cart and the derivative of both variables. 
 
-Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_cartpole}
+The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_cartpole}
 
 \begin{figure}[H]
     \centering
@@ -90,6 +90,19 @@ Each method was run for 50,000 steps with 10 different seeds and every 1000 step
 
 \subsection{Acrobot}
 
+Another common toy example is called acrobot. The experiment is first described in \cite{hauser_1990} and put into an RL context in \cite{sutton_1996}. The environment consists of a robot arm with two joints, one fixed to the origin and one with an actuator. The arm starts hanging downwards under the origin. The goal is to get the end of the robot arm over a line above the origin which terminates the episode. A reward of $-1$ is given each timestep. There are three actions, apply 1 torque left, 1 torque right or no operation. The state input is
+
+$$
+[\cos(\theta_1), \sin(\theta_1), \cos(\theta_2), \sin(\theta_2), \dot{\theta}_1, \dot{\theta}_2]
+$$
+
+where $\theta_1$ is the angle of the first joint and $\theta_2$ is the angle of the second joint relative to the first.
+
+\todo figure to illustrate 
+
+The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_acrobot}
+
+
 \begin{figure}[H]
     \centering
     \subfloat[DQN]{
@@ -99,7 +112,11 @@ Each method was run for 50,000 steps with 10 different seeds and every 1000 step
         \includegraphics[scale=0.5]{BDQNAcrobot.png}
     }
     \caption{\textbf{DQN and BNIG DQN Performance on Acrobot}: Plots show the mean performance over 10 different attempts. The shaded area covers 80\% of the total reward over all attempts.}
-    \label{fig:nn_cartpole}
+    \label{fig:nn_acrobot}
 \end{figure}
+
+\subsection{Atari}
+
+In progress
 
 \cleardoublepage
