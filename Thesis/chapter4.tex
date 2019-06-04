@@ -2,7 +2,7 @@
 
 \chapter{Neural Linear Bayesian Regression Model}\label{ch:bdqn}
 
-A major drawback of the methods discussed in chapter \ref{ch:linear} is that they are all linear models. These cannot perform well in environments with complex non-linear relationships between state-action pairs and Q-values without significant feature engineering. Recent developments in the RL field focus on deep RL\citep{mnih_2015, mnih_2016,silver_2017} where neural networks are used as encode these relationships allowing succesfull results on complex games. As such it it would be beneficial to be able to combine the methods from chapter \ref{ch:linear} with more complex models. This chapter attempts this and tests the new model on multiple complex environments with comparisons to other popular deep RL methods.
+A major drawback of the methods discussed in chapter \ref{ch:linear} is that they are all linear models. These cannot perform well in environments with complex non-linear relationships between state-action pairs and Q-values without significant feature engineering. Recent developments in the RL field focus on deep RL\citep{mnih_2015, mnih_2016,silver_2017} where neural networks are used as encode these relationships have allowed successfull results on complex games. As such it it would be beneficial to be able to combine the methods from chapter \ref{ch:linear} with more complex models. This chapter attempts this and tests the new model on multiple complex environments with comparisons to other popular deep RL methods.
 
 \section{Combining Bayesian Q-learning with Neural Networks}
 
@@ -24,8 +24,6 @@ This setup allows the application of the methods discussed in chapter \ref{ch:li
 
 Based on the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018}, called the BDQN, is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
 
-\subsubsection{BDQN Model}
-
 The BDQN architecture starts with the same archicture as the standard DQN architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model. This model is trained using the posterior updates described in chapter \ref{ch:linear} in equation \ref{eq:known_noise_posterior_update}. The neural network is trained using the loss function
 
 \begin{equation*}
@@ -36,9 +34,9 @@ The only difference to a regular neural network is that the networks output esti
 
 These two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps on either 100,000 datapoints or the entire replay buffer if it contains less. This is done to handle the non-stationarity of the task. 
 
-\subsubsection{Modification to a BNIG DQN model}
+\subsection{From BDQN to BNIG DQN}
 
-The downside retraining the bayesian regression is that this is computational heavy, especially considering that the final layer in the neural network consists of 512 neurons, meaning the update requires matrix arithmetic with a 512 by 512 matrix. On top of this using a BNIG model requires the target Q-values to be sampled from the posterior. This means every 10,000 steps 100,000 samples must be calculated which requires matrix arithmetic of the same magnitude. Instead this thesis considers the exponential forgetting method. However implementing this requires some extra considerations to ensure that the model remains stable.
+The downside retraining the bayesian regression is that this is computational heavy, especially considering that the final layer in the neural network consists of 512 neurons, meaning the update requires matrix arithmetic with a 512 by 512 matrix. On top of this using a BNIG model requires the target Q-values to be sampled from the posterior. This means every 10,000 steps 100,000 new samples must be drawn which requires a new set of matrix arithmetic of the same magnitude. Instead this thesis considers the exponential forgetting method. However implementing this requires some extra considerations to ensure that the model remains stable.
 
 Recall that the classic DQN has one online network that is updated each training step and one target network that is updated occaisonally to match the online network. \cite{mnih_2013} found that using this target network to calculate the regression target helped stabalize the algorithm.
 
@@ -46,11 +44,54 @@ With exponential forgetting the bayesian regression is trained continuosly. Howe
 
 To deal with this issue the same setup that is used for the networks is used for the regression models. Two bayesian regression models are created, one online and one target. The target model is used to calculate the target action-values while the online model is used for decision making. The target model is then updated to the parameters of the online model when the target network is updated. This decreases the loss and resulted in a stable network.
 
-With this approach the only required change to transform this to a BNIG setup is to swap out the bayesian model used in the BDQN with the BNIG model and sample action-values from the posterior for both the online and target models.
+With this approach the only required change to transform this to a BNIG setup is to swap out the bayesian model used in the BDQN with the BNIG model and sample action-values from the posterior for both the online and target models. The resulting algorithm is summarized in the pseudocode below.
 
-\section{BNIG DQN Implementation}
+\begin{algorithm}[H]
+    \caption{BNIG DQN}
+    Initialize variables according to algorithm \ref{alg:bnig_init} \\
+    \For{episode = 1, M}{
+        Initialize environment\\
+        $s_1 = $ initial environment state\\
+        
+        Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$\\
+        \For{t=1, T}{
+            $a_t = \argmax_a \phi(s_t)\beta_a + \varepsilon_a$ \\
+            Execute action $a_t$ and observe reward $r_t$ and state $s_{t+1}$ \\
+            Store transition $(s_t, a_t, r_t, s_{t+1})$ in $\mathcal{D}$\\
+            Train online network and model using algorithm \ref{alg:bdqn_train}\\
+            \If{$t \; \textbf{mod} \; T_{sync}$ == $0$}{
+                Set target network weights to online network weights\\
+                Set target BNIG parameters to online BNIG parameters.
+            }
+        }
+    }
+\end{algorithm}
 
-\todo Pseudocode, Architecture
+\begin{algorithm}[H]
+    \caption{BNIG DQN Initialization}
+    \label{alg:bdqn_init}
+    Initialize experience buffer $\mathcal{D}$ with capacity $N$\\
+    Initialize neural network $\phi$ with random weights $\theta$\\
+    Initialize target neural network $\phi*$ with weights $\theta^*=\theta$\\
+    Initialize $|\mathcal{A}|$ BNIG models with priors $\mu = zeros(p,1), \Sigma = diag(p,p), \alpha = 1, \beta = 0.01$.
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{BNIG training}
+    \label{alg:bdqn_train}
+        \If{$t \; \textbf{mod} \; T_{train}$ == $0$}{
+            Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\
+            Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$ for each transition\\
+            $a' = \argmax_a \phi(s_t)\beta_a + \varepsilon_a$ for each transition \\
+            Sample $\beta^*_{a'}, \sigma^*_{a'}$ for $a'$ in each transition \\
+            Set $y_j = \begin{cases}
+                r_j \quad \text{for terminal} \quad s_{j+1}\\
+                r_j + \gamma\bigg( \phi(s_t, a')\beta_{a'} + \varepsilon_{a'}\bigg)\quad \text{else}
+            \end{cases}$ \\
+            One step using optimizer of choice on the Huber loss (equation \ref{eq:huber_loss}) on the network weights.\\
+            Update BNIG model parameters using posterior update equation \ref{eq:unknown_noise_posterior_update}
+        }
+\end{algorithm}
 
 \section{BNIG DQN Results}
 
@@ -74,7 +115,7 @@ The environment considered is a classic toy example called cartpole. The environ
 \todo figure to illustrate 
 The task consists of balancing a pole on top of a cart. If the pole falls over 15 degrees from the upright position or if the cart goes too far (2.4 units from the center) to the left or right the game is terminated. The game is also terminated after 500 timesteps. Every timestep a reward of $+1$ is received. There are two actions, the cart can be pushed to the left or to the right at every timestep. There are 4 input variables that define the state: the pole angle from vertical, the position of the cart and the derivative of both variables. 
 
-The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_cartpole}
+The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in figure \ref{fig:nn_cartpole}.
 
 \begin{figure}[H]
     \centering

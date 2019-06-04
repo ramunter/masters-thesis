@@ -186,7 +186,7 @@ Based on these results further developments are focused on the BNIG model with s
 
 \subsection{Over Multiple States}
 
-The setting above is a regular regression setting. In a RL setting the variance needs to be propagated to further states. To test that this is still the case with the BNIG model consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
+The setting above is equivalent to regular regression. In a RL setting the variance needs to be propagated to further states. To test that this is still the case with the BNIG model consider a modification to the environment where an extra state is placed between the initial and terminal state. This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
 
 The same priors as earlier are used on 4 different target posteriors. The results are summarised in figure \ref{fig:3stateproptest}.
 
@@ -241,11 +241,13 @@ Inorder to improve the speed of propagation insight is required into what causes
 
 \todo These argumentations are weak and require sources or "proof". 
 
-The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update one will increase the speed of variance propagtation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
+The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will only converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update one will increase the speed of variance propagtation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
 
-The second cause is a result of no longer using a step size when updating the Q-values using bayesian updates. In regular Q-learning the step size can be viewed as the weighting of new data relative to the current model. This effect is also found in the bayesian setting in the posterior update that combines the prior and the new data. However, in regular Q-learning the step size also leads to the model forgetting old data(\cite{sutton_barto_2018}\todo find this page). This does not happen in the bayesian regression setting that has been used.
+The second cause is a result of no longer using a step size when updating the Q-values using bayesian updates. In regular Q-learning the step size can be viewed as the weighting of new data relative to the current model. This effect is also found in the bayesian setting in the posterior update that combines the prior and the new data. However, in regular Q-learning the step size also leads to the model forgetting old data(\cite{sutton_barto_2018}\todo find this page). This is not the case for the bayesian models previously described.
 
-In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger impact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary due to changes in policy. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
+In the bayesian regression setting described the prior is always the previous posterior. In simple terms the model assumes all data to be equally important. Recalling that the prior used is the previous posterior, a prior based on many datapoints will have a bigger Mˆ
+L based upon the data it has gathered up
+until episode L. To offer a representative approaimpact on the posterior than a single new datapoint. This is a problem since a reinforcement learning problem is almost always non-stationary due to changes in policy. With this weighting scheme the new data points which are more relevant to the current target are weighted the same as a datapoint collected based on the initial priors.
 
 Counteracting this effect while retaining the bayesian regression model is not trivial. The solution used in \cite{azziz_2018} is to define a hyperparameter $T_{bayes}$ and train a new bayesian regression model from scratch using targets from the old model every $T_{bayes}$ steps. However this is a computationally heavy step and can greatly increase the run time of the algorithm for problems with many predictors. 
 
@@ -254,17 +256,19 @@ To avoid this a concept called exponential forgetting is used. This is first men
 Rather than keeping track of the entire dataset used one can consider the terms used to update the posterior seen in equation \ref{eq:unknown_noise_posterior_update}. The terms $X^TX$, $X^Ty$, $y^Ty$ and $n$ are all proportional to the number of predictors rather than the number of datapoints. The terms can then be exponentially decayed by using the updates 
 
 \begin{align}
-(X^TX)^{(k+1)} &= \alpha{X^TX}^{(k)} + x^Tx \\
-(X^Ty)^{(k+1)} &= \alpha{X^Ty}^{(k)} + x^Ty \\
-(y^Ty)^{(k+1)} &= \alpha{y^Ty}^{(k)} + y^Ty \\
-n^{(k+1)} &= \alpha n^{(k)} + b 
+    (X^TX)^{(k+1)} &= \alpha{X^TX}^{(k)} + x^Tx \\
+    (X^Ty)^{(k+1)} &= \alpha{X^Ty}^{(k)} + x^Ty \\
+    (y^Ty)^{(k+1)} &= \alpha{y^Ty}^{(k)} + y^Ty \\
+    n^{(k+1)} &= \alpha n^{(k)} + b 
 \end{align}
 
-where $\alpha$ is the decay rate and the b is the batch size.
+where $\alpha$ is the decay rate and the b is the batch size. The result of this will be a regression that is based on the $\frac{1}{1-\alpha}$ previous datapoints with more recent datapoints being weighted more than older ones.  $\alpha$ should be set close to 1 to avoid instantly forgetting previous observations.
 
 \section{Deep Exploration}
 
-\cite{osband_2018}
+\todo When I started reading and writing this I realized that propagating the variance is already performing deep exploration. Why does sampling new parameters every episode work? It could be related to this environment so I tested on acrobot and cartpole. Sampling per episode works better on acrobot. Sampling per episode leads to no difference in evaluation performance on cartpole, but reduces performance during training. I think this indicates it is not only related to the corridor environment. I think it might be better because it indirectly decreases our certainty about the policy. If the model is pretty sure moving left is best it is very unlikely that the model will move right multiple steps in a row. Sampling per episode increases this probability. We can discuss this next meeting.
+
+\cite{osband_2018} introduces a term called deep exploration, the idea that a good exploration strategy has to consider how an action effects the future information gain.
 
 \section{Performance on Linear RL Problem}
 
@@ -294,9 +298,9 @@ As in \cite{osband_2018} models were compared by the average number of episodes 
 
 The key result from figure \ref{fig:linear_corridor} is that the $\varepsilon$-greedy method outperforms all methods apart from the BNIG model with deep exploration. However there are a few interesting differences in the results between the bayesian models and their exploration methods. 
 
-The regular BNIG model performs worse than the regular BN model. One reason for this could be the constant noise term allowing for exploration even when the model is certain about it's current estimate. If the BNIG model quickly learns that a left moving policy gives a reward, the variance for the left action might approach zero before it gets enough data showing that a right moving policy gives a higher reward. A BN model will result in the same issue, but the small additional variance might provide enough exploration to manage a slightly longer corridor. An improvement to this would be to have the variance term $\sigma_a^2$ be dependent on the state.
+The regular BNIG model performs worse than the regular BN model. One reason for this could be the constant noise term allowing for exploration even when the model is certain about it's current estimate. If the BNIG model quickly learns that a left moving policy gives a reward, the variance for the left action might approach zero before it gets enough data showing that a right moving policy gives a higher reward. A BN model will result in the same issue, but the small additional variance might provide enough exploration to manage a slightly longer corridor. This effect could be counteracted in the BNIG model by making the variance term $\sigma_a^2$ dependent on the state.
 
-Adding deep exploration has seemingly no effect on the BN model but leads to far better results on the BNIG model. This could be due to the BN model not propagating variance quickly leading to a low variance model. Once the variance is low the difference between sampled action-value functions is also small so sampling each step versus sampling each episode will lead to similar actions.
+Adding deep exploration has seemingly no effect on the BN model but leads to far better results on the BNIG model. This could be due to the BN model not propagating variance which quickly leads to a low variance model. Once the variance is low the difference between sampled action-value functions is also small so sampling each step versus sampling each episode will lead to similar actions.
 
 Finally, increasing from a 1-step to a 3-step update leads to better performance across all models. However for all models apart from deep BNIG the improvement is increasing the longest learnable corridor by around 2-4 states. In deep BNIG's case the improvment is an increase of atleast 8 states and possibly more. Once again this is probably due to the BNIG model being the only one actually propagating uncertainty. By increasing the step update in the BNIG model one is not only decreasing the bias of the expected value but also decreasing the bias of the variance. In other words the n-state update not only improves the value estimation but also improves the exploration, resulting in a larger improvment than in other methods.
 
@@ -306,7 +310,7 @@ Finally, increasing from a 1-step to a 3-step update leads to better performance
 
 \todo I originally worked on this to stabalize beta (which no longer is a problem) but realized it could be used with a model. I've tested a bit on corridor with a linear model with OK results, but need to test more to actually conclude that this works. But I wont work more on this until we have discussed this and after I've come further on my thesis.
 
-The variance of a state should be dependent on the state, which is not the case with the BNIG model. To fix this the inverse gamma distribution parameters should be dependent on the state. With some linear algebra it is possible to rewrite the $b$ term in terms of the next state variance and temporal difference. First recall the parameter updates
+The variance of a state should be dependent on the state, which is not the case with in BNIG model. To fix this the inverse gamma distribution parameters should be dependent on the state. With some linear algebra it is possible to rewrite the $b$ term in terms of the next state variance and temporal difference. First recall the parameter updates
 
 \begin{align}
     a_n &= a_0 + \frac{n}{2} \\
