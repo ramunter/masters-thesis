@@ -2,6 +2,8 @@ from absl import flags, app
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
+
 import seaborn as sns
 
 from absl import flags, app
@@ -13,7 +15,7 @@ flags.DEFINE_float("scale", 1, "SD of target")
 
 FLAGS = flags.FLAGS
 
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 32})
 
 def n_state_prop(models, target_scale):
 
@@ -48,12 +50,13 @@ def n_state_prop(models, target_scale):
         ## Plot sampled posterior distribution
         # samples = np.array([model.sample(np.array([1])) for _ in range(len(x))])
         # sns.kdeplot(samples.reshape(-1), label="Posterior Samples", legend=False, ax=ax)
-
-        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], label="Posterior PDF")
-        ax.plot(x, final_state_posterior.pdf(x), label="Target")
-
         ax.set_title("State" + str(index))
+        ax.set_xticks(np.linspace(1-3*target_scale, 1+3*target_scale, 3)[1:-1])
         ax.set_xlim(1-3*target_scale, 1+3*target_scale)
+
+        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
+        ax.plot(x, final_state_posterior.pdf(x), linewidth=2, label="Target")
+
 
     number_of_subplots=len(models)
     fig, axs = plt.subplots(1, number_of_subplots, sharex=True, sharey=True)
@@ -69,7 +72,7 @@ def n_state_prop(models, target_scale):
     plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
     plt.grid(False)
     plt.xlabel('State Value')
-    plt.ylabel('Probability')
+    plt.ylabel('Probability', labelpad=80)
     plt.show()
 
     for i, model in enumerate(models):
