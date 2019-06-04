@@ -36,7 +36,7 @@ The only difference to a regular neural network is that the networks output esti
 
 These two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps on either 100,000 datapoints or the entire replay buffer if it contains less. This is done to handle the non-stationarity of the task. 
 
-\subsubsection{BNIG DQN model}
+\subsubsection{Modification to a BNIG DQN model}
 
 The downside retraining the bayesian regression is that this is computational heavy, especially considering that the final layer in the neural network consists of 512 neurons, meaning the update requires matrix arithmetic with a 512 by 512 matrix. On top of this using a BNIG model requires the target Q-values to be sampled from the posterior. This means every 10,000 steps 100,000 samples must be calculated which requires matrix arithmetic of the same magnitude. Instead this thesis considers the exponential forgetting method. However implementing this requires some extra considerations to ensure that the model remains stable.
 
@@ -48,6 +48,58 @@ To deal with this issue the same setup that is used for the networks is used for
 
 With this approach the only required change to transform this to a BNIG setup is to swap out the bayesian model used in the BDQN with the BNIG model and sample action-values from the posterior for both the online and target models.
 
+\section{BNIG DQN Implementation}
+
+\todo Pseudocode, Architecture
+
 \section{BNIG DQN Results}
+
+In this section the BNIG DQN is tested on a variety of environments and compared to a regular DQN. 
+
+To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented ontop of this DQN implementation.
+
+The Dopamine package has hyperparmeters for the DQN on many of the tested environments. These are used for both the DQN and BNIG DQN in the following tests. A table of the hyperparmeters per environment is provided in the appendix.
+
+The comparison of the two methods is based on their performance on the environment relative to the number of samples it has trained on. To fairly compare the methods during training the experiments the results are gathered from an evaluation stage. The evaluation stage is run every time one wants to measure the performance of the method and consists of calculating the average total reward over a few episodes.
+
+In this evaluation phase the model and network are not trained. The DQN agent acts greedily without any probability of doing an action. The BNIG DQN acts greedily with respect to it's MAP estimate. This means it acts based on the mean $\beta$ values and no noise.
+
+\subsection{Corridor}
+
+\todo
+
+\subsection{Cartpole}
+
+The environment considered is a classic toy example called cartpole. The environment was first proposed in \cite{barto_sutton_1983} and is easily available through the Open AI gym environment \citep{brockman_2016}.
+
+The task consists of balancing a pole on top of a cart. If the pole falls over 15 degrees from the upright position or if the cart goes too far (2.4 units from the center) to the left or right the game is terminated. The game is also terminated after 500 timesteps. Every timestep a reward of $+1$ is received. There are two actions, the cart can be pushed to the left or to the right at every timestep. There are 4 input variables that define the state: the pole angle from vertical, the position of the cart and the derivative of both variables. 
+
+Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_cartpole}
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[scale=0.5]{DQNCartpole.png}
+    }
+    \subfloat[BNIG DQN]{
+        \includegraphics[scale=0.5]{BDQNCartpole.png}
+    }
+    \caption{\textbf{DQN and BNIG DQN Performance on Cartpole}: Plots show the mean performance over 10 different attempts. The shaded area covers 80\% of the total reward over all attempts.}
+    \label{fig:nn_cartpole}
+\end{figure}
+
+\subsection{Acrobot}
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[scale=0.5]{DQNAcrobot.png}
+    }
+    \subfloat[BNIG DQN]{
+        \includegraphics[scale=0.5]{BDQNAcrobot.png}
+    }
+    \caption{\textbf{DQN and BNIG DQN Performance on Acrobot}: Plots show the mean performance over 10 different attempts. The shaded area covers 80\% of the total reward over all attempts.}
+    \label{fig:nn_cartpole}
+\end{figure}
 
 \cleardoublepage

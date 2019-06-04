@@ -300,8 +300,6 @@ Adding deep exploration has seemingly no effect on the BN model but leads to far
 
 Finally, increasing from a 1-step to a 3-step update leads to better performance across all models. However for all models apart from deep BNIG the improvement is increasing the longest learnable corridor by around 2-4 states. In deep BNIG's case the improvment is an increase of atleast 8 states and possibly more. Once again this is probably due to the BNIG model being the only one actually propagating uncertainty. By increasing the step update in the BNIG model one is not only decreasing the bias of the expected value but also decreasing the bias of the variance. In other words the n-state update not only improves the value estimation but also improves the exploration, resulting in a larger improvment than in other methods.
 
-
-
 \section{\color{red}{Temp?} \color{black} State Dependent Inverse Gamma Distribution}
 
 \todo This might not be worth including but I'm writing it down so we can discuss if it's worth working on.

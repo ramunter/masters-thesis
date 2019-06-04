@@ -1,12 +1,14 @@
 library(ggplot2)
-setwd("~/masters-thesis")
+setwd("~/masters-thesis/data/Corridor")
 theme_set(theme_minimal() + 
               theme(legend.position = c(0, 1), 
                     legend.justification = c(0, 1), 
                     legend.text = element_text(size=10),
                     axis.text.x = element_text(color='black'),
                     axis.text.y = element_text(color='black'),
-                    text = element_text(size=14)))
+                    text = element_text(size=14),
+                    panel.grid.major = element_line(colour = "#AAAAAA"),
+                    panel.grid.minor = element_line(colour = "#FFFFFF")))
 
 plot_data = function(df, title){
    ggplot(data=df, aes(x=N, y=Episodes.to.Learn)) + 
@@ -26,6 +28,6 @@ df2$variable = relevel(df2$variable, "BN")
 df2$variable = relevel(df2$variable, "E Greedy")
 
 plot_data(df1, "Corridor 1-Step Methods")
-ggsave("./Thesis/fig/Corridor1StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
+ggsave("../../Thesis/fig/Corridor1StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
 plot_data(df2, "Corridor 3-Step Methods")
-ggsave("./Thesis/fig/Corridor3StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
+ggsave("../../Thesis/fig/Corridor3StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
