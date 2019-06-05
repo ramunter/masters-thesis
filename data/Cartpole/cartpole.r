@@ -13,7 +13,7 @@ theme_set(theme_minimal() +
 
 plot_summary = function(df){
    df2 = df %>% group_by(Step) %>% 
-           summarize(mean=mean(value),
+           summarize(mean=median(value),
                      q1 = quantile(value, probs=0.1),
                      q9 = quantile(value, probs= 0.9))
    
@@ -28,19 +28,18 @@ plot_summary = function(df){
 
 plot_per_run = function(df){
     ggplot(data=df, aes(x=Step)) + 
-        geom_line(aes(y=value, color=it),  size=1, alpha=1) + 
-        geom_point(aes(y=value, color=it), size=2) + 
+        geom_line(aes(y=value, color=seed),  size=1, alpha=1) + 
+        geom_point(aes(y=value, color=seed), size=2) + 
         labs(x="Training Steps (Thosands)", y="Average Evaluation Reward") +
-        facet_wrap(~it, ncol=2)
+        facet_wrap(~seed, ncol=2)
 }
 
 load_data = function(method){
     df = data.frame()
     for(i in 1:10){
         filename = paste("run-", method,"_cartpole_", i-1, "-tag-Eval_AverageReturns.csv", sep='')
-        print(filename)
         temp = read.csv(filename)
-        temp$it = as.factor(i)
+        temp$seed = as.factor(i)
         df = rbind(df, temp)
     }
     df$Wall.time = NULL
