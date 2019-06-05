@@ -30,7 +30,7 @@ The BDQN architecture starts with the same archicture as the standard DQN archit
 	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
 \end{equation*}
 
-The only difference to a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. One could replace the MAP estimate by samples from the posterior $Q$. However as shown in the linear case this should have no effect on the final estimate but does have a higher computational cost than simply using that MAP estimate.
+The only difference tzo a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. One could replace the MAP estimate by samples from the posterior $Q$. However as shown in the linear case this should have no effect on the final estimate but does have a higher computational cost than simply using that MAP estimate.
 
 These two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps on either 100,000 datapoints or the entire replay buffer if it contains less. This is done to handle the non-stationarity of the task. 
 
@@ -40,7 +40,7 @@ The downside retraining the bayesian regression is that this is computational he
 
 Recall that the classic DQN has one online network that is updated each training step and one target network that is updated occaisonally to match the online network. \cite{mnih_2013} found that using this target network to calculate the regression target helped stabalize the algorithm.
 
-With exponential forgetting the bayesian regression is trained continuosly. However, using the online bayesian regression method to calculate targets based on the output from the target network will lead to instability. The regression model can train on thosands of datapoints from the online network between network syncs. Using different network encodings with the same bayesian regression will lead to different results which will increases the loss. An increased loss leads to larger network changes which amplifies the effect leading to instability.
+With exponential forgetting the bayesian regression is trained continuosly. However, using the online bayesian regression method to calculate targets based on the output from the target network will lead to instability. The regression model can train on thosands of datapoints from the online network between network syncs. Using different network encodings for the target and prediction with the same bayesian regression will lead to a different results which will artificially increase the loss. An increased loss leads to larger network changes which amplifies the effect leading to instability.
 
 To deal with this issue the same setup that is used for the networks is used for the regression models. Two bayesian regression models are created, one online and one target. The target model is used to calculate the target action-values while the online model is used for decision making. The target model is then updated to the parameters of the online model when the target network is updated. This decreases the loss and resulted in a stable network.
 
@@ -55,7 +55,7 @@ With this approach the only required change to transform this to a BNIG setup is
         
         Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$\\
         \For{t=1, T}{
-            $a_t = \argmax_a \phi(s_t)\beta_a + \varepsilon_a$ \\
+            $a_t = \argmax_a \bigg(\phi(s_t)\beta_a + \varepsilon_a$\bigg) \\
             Execute action $a_t$ and observe reward $r_t$ and state $s_{t+1}$ \\
             Store transition $(s_t, a_t, r_t, s_{t+1})$ in $\mathcal{D}$\\
             Train online network and model using algorithm \ref{alg:bdqn_train}\\
@@ -67,14 +67,18 @@ With this approach the only required change to transform this to a BNIG setup is
     }
 \end{algorithm}
 
+Here $\varepsilon_a$ represents a sample from $N(0,\sigma^2_a)$ and $T_{sync}$ is a hyperparameter that defines how often to sync the online and target network and model. The initialization process requires
+
 \begin{algorithm}[H]
     \caption{BNIG DQN Initialization}
     \label{alg:bdqn_init}
     Initialize experience buffer $\mathcal{D}$ with capacity $N$\\
     Initialize neural network $\phi$ with random weights $\theta$\\
     Initialize target neural network $\phi*$ with weights $\theta^*=\theta$\\
-    Initialize $|\mathcal{A}|$ BNIG models with priors $\mu = zeros(p,1), \Sigma = diag(p,p), \alpha = 1, \beta = 0.01$.
+    Initialize $|\mathcal{A}|$ BNIG models with priors $\mu = zeros(p,1)$, $\Sigma = diag(p,p)$, $\alpha = 1$, $\beta = 0.01$.
 \end{algorithm}
+
+and finally the training procedure is defined in algorithm \ref{alg:bdqn_train}.
 
 \begin{algorithm}[H]
     \caption{BNIG training}
@@ -82,13 +86,13 @@ With this approach the only required change to transform this to a BNIG setup is
         \If{$t \; \textbf{mod} \; T_{train}$ == $0$}{
             Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\
             Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$ for each transition\\
-            $a' = \argmax_a \phi(s_t)\beta_a + \varepsilon_a$ for each transition \\
+            $a' = \argmax_a \bigg(\phi(s_t)\beta_a + \varepsilon_a\bigg)$ for each transition \\
             Sample $\beta^*_{a'}, \sigma^*_{a'}$ for $a'$ in each transition \\
             Set $y_j = \begin{cases}
                 r_j \quad \text{for terminal} \quad s_{j+1}\\
                 r_j + \gamma\bigg( \phi(s_t, a')\beta_{a'} + \varepsilon_{a'}\bigg)\quad \text{else}
             \end{cases}$ \\
-            One step using optimizer of choice on the Huber loss (equation \ref{eq:huber_loss}) on the network weights.\\
+            Optimize the network weights over the Huber loss (equation \ref{eq:huber_loss})\\
             Update BNIG model parameters using posterior update equation \ref{eq:unknown_noise_posterior_update}
         }
 \end{algorithm}
@@ -99,7 +103,7 @@ In this section the BNIG DQN is tested on a variety of environments and compared
 
 To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented ontop of this DQN implementation.
 
-The Dopamine package has hyperparmeters for the DQN on many of the tested environments. These are used for both the DQN and BNIG DQN in the following tests. A table of the hyperparmeters per environment is provided in the appendix.
+The Dopamine package has hyperparmeters for the DQN on many of the tested environments. In some of the environments no hyperparemeters were provided or the ones given performed badly. In these cases, to avoid bias towards BNIG DQN, the hyperparemeters were found by testing different combinations with the DQN. Only after good results were acheived using the DQN the BNIG DQN was run with the same hyperparameters. This means no tuning was done on the hyperparameters based on the BNIG DQN results. An overview of the hyperparmeters per environment is provided in the appendix.
 
 The comparison of the two methods is based on their performance on the environment relative to the number of samples it has trained on. To fairly compare the methods during training the experiments the results are gathered from an evaluation stage. The evaluation stage is run every time one wants to measure the performance of the method and consists of calculating the average total reward over a few episodes.
 
@@ -129,6 +133,8 @@ The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each
     \label{fig:nn_cartpole}
 \end{figure}
 
+A policy that does not balance the pole lasts about 10 to 20 frames which is equivalent to a reward of 10 to 20. Figure \ref{fig:nn_cartpole} shows both methods are able to find successfull balancing policy. However, while the max performance of the DQN matches the BNIG DQN, the latter acheives much more stable results. Breaking down the results per seeds (figure \ref{fig:nn_per_cartpole}) one can see that the spread is caused by the instability of DQN after having found an optimal policy in some attempts and failing to find the optimal policy in others. The BNIG BDQN however always finds the optimal policy however can face some detoriation in performance towards the end of the experiment. 
+
 \subsection{Acrobot}
 
 Another common toy example is called acrobot. The experiment is first described in \cite{hauser_1990} and put into an RL context in \cite{sutton_1996}. The environment consists of a robot arm with two joints, one fixed to the origin and one with an actuator. The arm starts hanging downwards under the origin. The goal is to get the end of the robot arm over a line above the origin which terminates the episode. A reward of $-1$ is given each timestep. There are three actions, apply 1 torque left, 1 torque right or no operation. The state input is
@@ -141,7 +147,7 @@ where $\theta_1$ is the angle of the first joint and $\theta_2$ is the angle of 
 
 \todo figure to illustrate 
 
-The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in \ref{fig:nn_acrobot}
+The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 100,000 steps with 10 different seeds and every 2000 steps an evaluation phase is run over 2000 steps. The results are summarized in \ref{fig:nn_acrobot}
 
 
 \begin{figure}[H]
@@ -155,6 +161,8 @@ The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each
     \caption{\textbf{DQN and BNIG DQN Performance on Acrobot}: Plots show the mean performance over 10 different attempts. The shaded area covers 80\% of the total reward over all attempts.}
     \label{fig:nn_acrobot}
 \end{figure}
+
+\todo Currently running new run since DQN was wrong
 
 \subsection{Atari}
 

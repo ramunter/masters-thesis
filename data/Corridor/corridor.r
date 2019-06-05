@@ -18,11 +18,11 @@ plot_data = function(df, title){
         facet_wrap(~variable, nrow=5)
 }
 
-df1 = read.csv("all_short_1_step.csv")
+df1 = read.csv("all_long_1_step.csv")
 df1$variable = relevel(df1$variable, "Deep BN")
 df1$variable = relevel(df1$variable, "BN")
 df1$variable = relevel(df1$variable, "E Greedy")
-df2 = read.csv("all_short_3_step.csv")
+df2 = read.csv("all_long_3_step.csv")
 df2$variable = relevel(df2$variable, "Deep BN")
 df2$variable = relevel(df2$variable, "BN")
 df2$variable = relevel(df2$variable, "E Greedy")
