@@ -24,13 +24,29 @@ This setup allows the application of the methods discussed in chapter \ref{ch:li
 
 Based on the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the archicture used in \cite{azziz_2018}, called the BDQN, is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
 
-The BDQN architecture starts with the same archicture as the standard DQN architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model. This model is trained using the posterior updates described in chapter \ref{ch:linear} in equation \ref{eq:known_noise_posterior_update}. The neural network is trained using the loss function
+The BDQN architecture starts with the same archicture as the standard DQN architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model and uses the MAP target for both without considering the possibility of sampling the target. The neural network is trained using the loss function
 
 \begin{equation*}
 	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
 \end{equation*}
 
-The only difference tzo a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. One could replace the MAP estimate by samples from the posterior $Q$. However as shown in the linear case this should have no effect on the final estimate but does have a higher computational cost than simply using that MAP estimate.
+ The only difference to a regular neural network is that the networks output estimate is replaced by the MAP estimate of $\beta$. One could replace the MAP estimate by samples from the posterior $Q$. However as the network does not consider the variance of the target it is less computationally expensive and more stabalizing to use the MAP. The pseudocode for this update is
+
+\begin{algorithm}[H] 
+    \caption{BDQN Network Training} 
+    \label{alg:BDQN_train} 
+        \If{$t \; \textbf{mod} \; T_{train}$ == $0$}{ 
+            Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\ 
+            $a' = \argmax_a \big(\phi(s_t)\mu_a\big)$ for each transition \\ 
+            Set $y_j = \begin{cases} 
+                r_j \quad \text{for terminal} \quad s_{j+1}\\ 
+                r_j + \gamma\phi^*(s_t, a')\mu^*_{a'} \quad \text{else} 
+            \end{cases}$ \\ 
+            Optimize the network weights over the Huber loss (equation \ref{eq:huber_loss}) 
+        } 
+\end{algorithm}
+
+The BN model is trained using the posterior updates described in chapter \ref{ch:linear} in equation \ref{eq:known_noise_posterior_update}. Since the BN model does keep track of variance one could consider using a sample targert rather than the MAP target in this case. However it has already been shown that in the linear case using a sampled target over a MAP target has no effect on the final estimate as it does not propagate uncerainty.
 
 These two training processes do not have to happen sequentially. In \cite{azziz_2018} the neural network is updated as frequently as in the original DQN implementation, while the bayesian regression trained from scratch every 10,000 steps on either 100,000 datapoints or the entire replay buffer if it contains less. This is done to handle the non-stationarity of the task. 
 
@@ -42,9 +58,25 @@ Recall that the classic DQN has one online network that is updated each training
 
 With exponential forgetting the bayesian regression is trained continuosly. However, using the online bayesian regression method to calculate targets based on the output from the target network will lead to instability. The regression model can train on thosands of datapoints from the online network between network syncs. Using different network encodings for the target and prediction with the same bayesian regression will lead to a different results which will artificially increase the loss. An increased loss leads to larger network changes which amplifies the effect leading to instability.
 
-To deal with this issue the same setup that is used for the networks is used for the regression models. Two bayesian regression models are created, one online and one target. The target model is used to calculate the target action-values while the online model is used for decision making. The target model is then updated to the parameters of the online model when the target network is updated. This decreases the loss and resulted in a stable network.
+To deal with this issue the same setup that is used for the networks is used for the regression models. Two bayesian regression models are created, one online and one target. The target model is used to calculate the target action-values while the online model is used for decision making. The target model is then updated to the parameters of the online model when the target network is updated. This decreases the loss and resulted in a stable network. The pseudocode for this update is seen in algorithm \ref{alg:bnig_train}. Note that the $^*$ notation denotes values from the target parameters and $\varepsilon_a$ is a sample from $N(0,\sigma^2_a)$.
 
-With this approach the only required change to transform this to a BNIG setup is to swap out the bayesian model used in the BDQN with the BNIG model and sample action-values from the posterior for both the online and target models. The resulting algorithm is summarized in the pseudocode below.
+\begin{algorithm}[H]
+    \caption{BNIG training}
+    \label{alg:bnig_train}
+        \If{$t \; \textbf{mod} \; \textit{batch size} == 0$}{
+            Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\
+            Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$ for each transition\\
+            $a' = \argmax_a \bigg(\phi(s_t)\beta_a + \varepsilon_a\bigg)$ for each transition \\
+            Sample $\beta^*_{a'}, \sigma^*_{a'}$ for $a'$ in each transition \\
+            Set $y_j = \begin{cases}
+                r_j \quad \text{for terminal} \quad s_{j+1}\\
+                r_j + \gamma\bigg(\phi^*(s_t, a')\beta^*_{a'} + \varepsilon^*_{a'}\bigg)\quad \text{else}
+            \end{cases}$ \\
+            Update BNIG model parameters using posterior update equation \ref{eq:unknown_noise_posterior_update}
+        }
+\end{algorithm}
+
+With this approach the only required change to transform the BDQN setup to a BNIG method is to swap out the BN model used in the BDQN with the BNIG model and sample action-values from the posterior for both the online and target models. The resulting algorithm is summarized in the pseudocode below.
 
 \begin{algorithm}[H]
     \caption{BNIG DQN}
@@ -58,7 +90,7 @@ With this approach the only required change to transform this to a BNIG setup is
             $a_t = \argmax_a \bigg(\phi(s_t)\beta_a + \varepsilon_a$\bigg) \\
             Execute action $a_t$ and observe reward $r_t$ and state $s_{t+1}$ \\
             Store transition $(s_t, a_t, r_t, s_{t+1})$ in $\mathcal{D}$\\
-            Train online network using algorithm \ref{alg:dqn_train}\\
+            Train online network using algorithm \ref{alg:bdqn_train}\\
             Train online model using algorithm \ref{alg:bnig_train} \\
             \If{$t \; \textbf{mod} \; T_{sync}$ == $0$}{
                 Set target network weights to online network weights\\
@@ -68,7 +100,7 @@ With this approach the only required change to transform this to a BNIG setup is
     }
 \end{algorithm}
 
-Here $\varepsilon_a$ represents a sample from $N(0,\sigma^2_a)$ and $T_{sync}$ is a hyperparameter that defines how often to sync the online and target network and model. The initialization process in algorithm \ref{alg:bnig_init} sets up the models, networks and experience buffer required.
+Here $T_{sync}$ is a hyperparameter that defines how often to sync the online and target network and model. Once again $\varepsilon_a$ represents a sample from $N(0,\sigma^2_a)$. The initialization process in algorithm \ref{alg:bnig_init} sets up the models, networks and experience buffer required.
 
 \begin{algorithm}[H]
     \caption{BNIG DQN Initialization}
@@ -80,42 +112,9 @@ Here $\varepsilon_a$ represents a sample from $N(0,\sigma^2_a)$ and $T_{sync}$ i
     Initialize target BNIG models with priors $\mu^*_a = \mu^*_a$, $\Sigma^*_a = \Sigma^*_a$, $\alpha^*_a = \alpha^*_a$, $\beta^*_a = \beta^*_a$.
 \end{algorithm}
 
-Finally the training procedure for the network is defined in algorithm \ref{alg:dqn_train} and algorithm \ref{alg:bnig_train}. Note that the $^*$ notation denotes values from the target model and network.
-
-\begin{algorithm}[H]
-    \caption{BNIG training}
-    \label{alg:dqn_train}
-        \If{$t \; \textbf{mod} \; T_{train}$ == $0$}{
-            Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\
-            Sample $\beta_a, \sigma_a$ for $a\in \mathcal{A}$ for each transition\\
-            $a' = \argmax_a \bigg(\phi(s_t)\beta_a + \varepsilon_a\bigg)$ for each transition \\
-            Sample $\beta^*_{a'}, \sigma^*_{a'}$ for $a'$ in each transition \\
-            Set $y_j = \begin{cases}
-                r_j \quad \text{for terminal} \quad s_{j+1}\\
-                r_j + \gamma\bigg(\phi^*(s_t, a')\beta^*_{a'} + \varepsilon^*_{a'}\bigg)\quad \text{else}
-            \end{cases}$ \\
-            Update BNIG model parameters using posterior update equation \ref{eq:unknown_noise_posterior_update}
-        }
-\end{algorithm}
-
-\begin{algorithm}[H]
-    \caption{BNIG training}
-    \label{alg:bnig_train}
-        \If{$t \; \textbf{mod} \; T_{train}$ == $0$}{
-            Sample random minibatch of transitions $(s_j, a_j, r_j, s_{j+1})$ from $\mathcal{D}$ \\
-            $a' = \argmax_a \big(\phi(s_t)\mu_a\big)$ for each transition \\
-            Set $y_j = \begin{cases}
-                r_j \quad \text{for terminal} \quad s_{j+1}\\
-                r_j + \gamma\phi^*(s_t, a')\mu^*_{a'} \quad \text{else}
-            \end{cases}$ \\
-            Optimize the network weights over the Huber loss (equation \ref{eq:huber_loss})
-            
-        }
-\end{algorithm}
-
 \section{BNIG DQN Results}
 
-In this section the BNIG DQN is tested on a variety of environments and compared to a regular DQN. 
+In this section the BNIG DQN is tested on a variety of environments and compared to a regular DQN.
 
 To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented ontop of this DQN implementation.
 
@@ -188,10 +187,20 @@ The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each
 
 A score above -500 indicates the agent was able to lift the robot arm over the required threshold. As seen in figure \ref{fig:nn_acrobot} both agents manage to do this. However, while the DQN model find a stable policy leading to an average reward of -100, the BDQN struggles to stay above -500. A deeper look into the per seed results (figure \ref{fig:nn_acrobot}) shows that the BDQN acheives an average reward of around -100 every seed. However, it is unable to keep this policy over more than two iterations before falling to a -500 reward again. There are many possible reasons. I can be caused by a too high learning rate, a miscalibrated exponential memory or a miscalibrated target update time period to a name a few.
 
-\todo Try some hyperparameter tuning to get BNIG to work on acrobot. I have not been successfull with this yet. Maybe there is another reason this is failing? Note that this worked well when the bayesian regression was trained from scratch.
+\todo Try some hyperparameter tuning to get BNIG to work on acrobot. I have not been successfull with this yet. Maybe there is another reason this is failing? Note that this worked well when the bayesian regression was trained from scratch. UPDATE: Works with a higher alpha but this feels like just pushing the method towards a DQN. With a large alpha relative beta the noise term "disappears".
 
 \subsection{Atari}
 
-\todo In progress, looks promising
+A standard benchmark in the deep RL field is a large set of atari 2600 games introduced in \cite{bellemare_13}. Papers presenting new methods in this field generally test on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. However these algorithms are heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once a subset of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN, so the results are not a completely fair comparison.
 
+\subsubsection{Pong}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{BDQNPong.png}
+    \caption{\textbf{BNIG DQN Performance on Pong}: Single seed BNIG DQN compared to 5 DQN seeds provided in the Dopamine package.}
+    \label{fig:nn_pong}
+\end{figure}
+
+\todo Still running. Note I've used 50k steps for evaluation instead of 125K as in dopamine. So the results are a bit noisy due to this, but I don't think they are noisy enough to explain the observered behaviour.
 \cleardoublepage

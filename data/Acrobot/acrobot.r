@@ -36,8 +36,8 @@ plot_per_run = function(df){
 
 load_data = function(method){
     df = data.frame()
-    for(i in 1:10){
-        filename = paste("run-", method,"_acrobot_", i-1, "-tag-Eval_AverageReturns.csv", sep='')
+    for(i in 1:7){
+        filename = paste("run-", method,"_acrobot_", i-1, "-tag-Eval_AverageReturns (1).csv", sep='')
         temp = read.csv(filename)
         temp$seed = as.factor(i)
         df = rbind(df, temp)
@@ -51,11 +51,11 @@ bdqn = load_data("bdqn")
 dqn = load_data("dqn")
 
 plot_summary(bdqn)
-ggsave("../../Thesis/fig/BDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
+# ggsave("../../Thesis/fig/BDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
 plot_summary(dqn)
-ggsave("../../Thesis/fig/DQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
+# ggsave("../../Thesis/fig/DQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
 
 plot_per_run(dqn)
-ggsave("../../Thesis/fig/PerDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+# ggsave("../../Thesis/fig/PerDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
 plot_per_run(bdqn)
-ggsave("../../Thesis/fig/PerBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+# ggsave("../../Thesis/fig/PerBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
