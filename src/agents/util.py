@@ -115,7 +115,7 @@ class GaussianRegression2():
         self.n = lr*self.n + n
         self.a = a_0 + self.n/2
 
-        self.yTy = lr*self.yTy + self.mean.T@X.T@X@self.mean 
+        self.yTy = lr*self.yTy + y.T@y#self.mean.T@X.T@X@self.mean 
         self.b = abs(b_0 + 0.5*np.asscalar(self.yTy - 
             self.mean.T@self.invcov@self.mean))
 
