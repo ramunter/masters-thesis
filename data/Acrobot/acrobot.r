@@ -1,7 +1,7 @@
 library(ggplot2)
 library(dplyr)
 library(reshape2)
-setwd("~/masters-thesis/data/Acrobot")
+
 theme_set(theme_minimal() + 
               theme(legend.position = 'bottom', 
                     legend.text = element_text(size=10),
@@ -36,8 +36,8 @@ plot_per_run = function(df){
 
 load_data = function(method){
     df = data.frame()
-    for(i in 1:7){
-        filename = paste("run-", method,"_acrobot_", i-1, "-tag-Eval_AverageReturns (1).csv", sep='')
+    for(i in 1:8){
+        filename = paste("run-", method,"_acrobot_", i-1, "-tag-Eval_AverageReturns.csv", sep='')
         temp = read.csv(filename)
         temp$seed = as.factor(i)
         df = rbind(df, temp)
@@ -47,15 +47,27 @@ load_data = function(method){
     return(df)
 }
 
+# Original
+
+setwd("~/masters-thesis/data/Acrobot/og")
+
 bdqn = load_data("bdqn")
 dqn = load_data("dqn")
 
 plot_summary(bdqn)
-# ggsave("../../Thesis/fig/BDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/BDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
 plot_summary(dqn)
-# ggsave("../../Thesis/fig/DQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/DQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
 
 plot_per_run(dqn)
-# ggsave("../../Thesis/fig/PerDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
 plot_per_run(bdqn)
-# ggsave("../../Thesis/fig/PerBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+
+# Tuned
+setwd("~/masters-thesis/data/Acrobot/alpha")
+bdqn = load_data("bdqn")
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/AlphaBDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/PerAlphaBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)

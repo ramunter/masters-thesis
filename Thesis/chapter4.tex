@@ -140,10 +140,17 @@ In this evaluation phase the model and network are not trained. The DQN agent ac
 \subsection{Cartpole}
 
 The environment considered is a classic toy example called cartpole. The environment was first proposed in \cite{barto_sutton_1983} and is easily available through the Open AI gym environment \citep{brockman_2016}.
-\todo figure to illustrate 
-The task consists of balancing a pole on top of a cart. If the pole falls over 15 degrees from the upright position or if the cart goes too far (2.4 units from the center) to the left or right the game is terminated. The game is also terminated after 500 timesteps. Every timestep a reward of $+1$ is received. There are two actions, the cart can be pushed to the left or to the right at every timestep. There are 4 input variables that define the state: the pole angle from vertical, the position of the cart and the derivative of both variables. 
 
-The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in figure \ref{fig:nn_cartpole}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5, trim={10px, 10px, 10px, 10px},clip]{cartpole.png}
+    \caption{\textbf{Cartpole Environment} The pole is in brown and the cart in black. \citep{gym_docs}}
+    \label{fig:cartpole}
+\end{figure}
+
+The task, seen in figure \ref{fig:cartpole}, consists of balancing a pole on top of a cart. If the pole falls over 15 degrees from the upright position or if the cart goes too far (2.4 units from the center) to the left or right the game is terminated. The game is also terminated after 500 timesteps. Every timestep a reward of $+1$ is received. There are two actions, the cart can be pushed to the left or to the right at every timestep. There are 4 input variables that define the state: the pole angle from vertical, the position of the cart and the derivative of both variables. 
+
+The environment implementation from OpenAI Gym was used \citep{brockman_2016}. Each method was run for 50,000 steps with 10 different seeds and every 1000 steps an evaluation phase is run over 1000 steps. The results are summarized in figure \ref{fig:nn_cartpole}.
 
 \begin{figure}[H]
     \centering
@@ -161,17 +168,22 @@ A policy that does not balance the pole lasts about 10 to 20 frames which is equ
 
 \subsection{Acrobot}
 
-Another common toy example is called acrobot. The experiment is first described in \cite{hauser_1990} and put into an RL context in \cite{sutton_1996}. The environment consists of a robot arm with two joints, one fixed to the origin and one with an actuator. The arm starts hanging downwards under the origin. The goal is to get the end of the robot arm over a line above the origin which terminates the episode. A reward of $-1$ is given each timestep. There are three actions, apply 1 torque left, 1 torque right or no operation. The state input is
+Another common toy example is called acrobot. The experiment is first described in \cite{hauser_1990} and put into an RL context in \cite{sutton_1996}. The environment, seen in figure \ref{fig:acrobot}, represents a vertically hanging 2D, 2 joint robot arm. The first joint's position is fixed to the origin while the second join has an actuator. This actuator can apply torque to the second joint. The arm starts hanging downwards under the origin. The goal is to balance the force of gravity, the actuators output and the momentum of the arm to swing the end of the arm over a line above the origin. Acheiving this terminates the episode. A reward of $-1$ is given each timestep. The state input is
 
 $$
 [\cos(\theta_1), \sin(\theta_1), \cos(\theta_2), \sin(\theta_2), \dot{\theta}_1, \dot{\theta}_2]
 $$
 
-where $\theta_1$ is the angle of the first joint and $\theta_2$ is the angle of the second joint relative to the first.
+where $\theta_1$ is the angle of the first joint and $\theta_2$ is the angle of the second joint relative to the first. The agent can apply -1, 0 and +1 torque to the second joint.
 
-\todo figure to illustrate 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4, trim={10px, 10px, 10px, 10px},clip]{acrobot.png}
+    \caption{\textbf{Acrobot Environment}: A still frame from the OpenAI acrobot implementation. The joints are marked in green, the arms in blue and the line represents the threshold. \citep{gym_docs}}
+    \label{fig:acrobot}
+\end{figure}
 
-The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each method was run for 100,000 steps with 10 different seeds and every 2000 steps an evaluation phase is run over 2000 steps. 
+The environment implementation from OpenAI Gym was used \citep{brockman_2016}. Each method was run for 100,000 steps with 10 different seeds and every 2000 steps an evaluation phase is run over 2000 steps. The environment and performance is seen in figure \ref{fig:nn_pong} 
 
 \begin{figure}[H]
     \centering
@@ -185,22 +197,46 @@ The environment implementation from OpenAI Gym was used \citep{OpenAI_gym}. Each
     \label{fig:nn_acrobot}
 \end{figure}
 
-A score above -500 indicates the agent was able to lift the robot arm over the required threshold. As seen in figure \ref{fig:nn_acrobot} both agents manage to do this. However, while the DQN model find a stable policy leading to an average reward of -100, the BDQN struggles to stay above -500. A deeper look into the per seed results (figure \ref{fig:nn_acrobot}) shows that the BDQN acheives an average reward of around -100 every seed. However, it is unable to keep this policy over more than two iterations before falling to a -500 reward again. There are many possible reasons. I can be caused by a too high learning rate, a miscalibrated exponential memory or a miscalibrated target update time period to a name a few.
+A score above -500 indicates the agent was able to lift the robot arm over the required threshold. As seen in figure \ref{fig:nn_acrobot} both agents manage to do this. However, while the DQN model find a stable policy leading to an average reward of -100, the BDQN struggles to stay above -500. A deeper look into the per seed results (figure \ref{fig:nn_per_acrobot}) shows that the BDQN acheives an average reward of around -100 every seed. However, it is unable to keep this policy over more than two iterations before falling to a -500 reward again. There are many possible reasons. It can be caused by a too high learning rate, a miscalibrated exponential memory or a miscalibrated target update time period to a name a few.
 
 \todo Try some hyperparameter tuning to get BNIG to work on acrobot. I have not been successfull with this yet. Maybe there is another reason this is failing? Note that this worked well when the bayesian regression was trained from scratch. UPDATE: Works with a higher alpha but this feels like just pushing the method towards a DQN. With a large alpha relative beta the noise term "disappears".
 
 \subsection{Atari}
 
-A standard benchmark in the deep RL field is a large set of atari 2600 games introduced in \cite{bellemare_13}. Papers presenting new methods in this field generally test on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. However these algorithms are heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once a subset of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN, so the results are not a completely fair comparison.
+A standard benchmark in the deep RL field is a large set of atari 2600 games called the Arcade Learning Environment(ALE) introduced in \cite{bellemare_13}. Papers presenting new methods in this field generally tested for 200 million frames on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. All environments must be learned based purely on the image input from the game. Due to the difficulty of the games and the large networks required the learning process is heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once a subset of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN, so the results are not a completely fair comparison.
 
 \subsubsection{Pong}
 
+Pong is one of the simpler environment in the ALE with superhuman performance acheived already in 2013\citep{mnih_2013}. The game consits of two paddles and a ball. The aim of the game its to hit the ball past the other players paddle which results in a +1 reward. If the other player hits the ball past the agents paddle it receives a -1 reward. 
+
 \begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.5]{BDQNPong.png}
-    \caption{\textbf{BNIG DQN Performance on Pong}: Single seed BNIG DQN compared to 5 DQN seeds provided in the Dopamine package.}
+    \subfloat[Environment]{
+        \includegraphics[scale=0.4, trim={10px, 50px, 10px, 20px},clip]{pong.png}
+    }
+    \subfloat[Performance]{
+        \includegraphics[scale=0.5]{BDQNPong.png}
+    }
+    \caption{\textbf{Pong environment results}: \textbf{(a)} shows an input state of the pong environment\citep{gym_docs}. The green panel is the agent and the ball is in white. \textbf{(b)} compares the BDQN performance in orange to the 5 DQN runs provided in Dopamine.}
     \label{fig:nn_pong}
 \end{figure}
 
-\todo Still running. Note I've used 50k steps for evaluation instead of 125K as in dopamine. So the results are a bit noisy due to this, but I don't think they are noisy enough to explain the observered behaviour.
+BNIG started off well, with better evaluation performance than all DQN seeds for the first 5 iterations. From there on out the improvements decrease and the evaluation becomes more unstable. After 35 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evalute the performance but the results indicate the performance is similar to the DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update, which should improve performance, the underlying BNIG method seems to actually worse than DQN on this game.
+
+\subsection{Tuning BNIG}
+
+Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results.
+
+\todo I think I've solved the issue by scaling alpha by the n-step update. I'll update why tomorrow
+\begin{figure}[H]
+    \centering
+    \subfloat[Acrobot BNIG]{
+        \includegraphics[scale=0.5]{AlphaBDQNAcrobot.png}
+    }
+    \subfloat[Pong BNIG]{
+        \includegraphics[scale=0.5]{BDQNPongHighAlpha.png}
+    }
+    \caption{\textbf{High alpha prior results on acrobot and pong}}
+    \label{fig:nn_acrobot}
+\end{figure}
+
 \cleardoublepage
