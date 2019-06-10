@@ -224,9 +224,22 @@ BNIG started off well, with better evaluation performance than all DQN seeds for
 
 \subsection{Tuning BNIG}
 
-Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results.
+Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the rate parameters $b_a$ dramatically increase leading to a too large variance. Multiple attempts were made at controlling this increase but the only successfull result was increasing the scale parameter $a_a$.
 
-\todo I think I've solved the issue by scaling alpha by the n-step update. I'll update why tomorrow
+
+\todo replace scale plot, based on wrong hyperparameters
+\begin{figure}[H]
+    \centering
+    \subfloat[Prior Scale of 1]{
+        \includegraphics[scale=0.5]{BUnstable.png}
+    }
+    \subfloat[Prior Scale of 10,000]{
+        \includegraphics[scale=0.5]{BStable.png}
+    }
+    \caption{\textbf{Development of rate parameter given different scale priors.}}
+    \label{fig:scale_stability}
+\end{figure}
+
 \begin{figure}[H]
     \centering
     \subfloat[Acrobot BNIG]{
@@ -235,7 +248,7 @@ Due to the poor performance on acrobot and pong an attempt was made at tuning th
     \subfloat[Pong BNIG]{
         \includegraphics[scale=0.5]{BDQNPongHighAlpha.png}
     }
-    \caption{\textbf{High alpha prior results on acrobot and pong}}
+    \caption{\textbf{High scale prior results on acrobot and pong}}
     \label{fig:nn_acrobot}
 \end{figure}
 

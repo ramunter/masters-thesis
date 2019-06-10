@@ -1,11 +1,30 @@
 \chapter{Discussion}\label{ch:disc}
 
-\section{Method Shortcomings}
+
+\section{Variance Stability}
+
+One of the major shortcomings of the BNIG DQN method developed in this thesis is the instability of the variance estimate. Though an increase in the prior scale parameter improves performance this lowers variance based on a hyperparameter rather than the data. It greatly constricts the exploration and must be tuned on an enviornment to enviornment basis. Further developments should focus on how to stabalize this variance to allow for weaker priors. There are multiple issues that could decrease the stability of the varaince.
+
+\subsection{Maximization Bias}
+
+One source of instability could be maximization bias\citep[p.~134]{sutton_barto_2018} occuring on the variance estimate. Early in the learning process the maximum operator on the target leads to picking actions that lead to high variance states as these provide the highest values. This leads to higher variance targets which starts a feedback loop that can lead to the large jumps in the rate parameter of the inverse gamma distribution as seen in figure \ref{fig:b_unstab}.
+
+A solution to the maximization bias in regular Q-learning is double Q-learning\citep[p.~134]{sutton_barto_2018}. This consists of creating two completely decoupled models and for each update use one for target action selection and one for action-value calculation. Which is used for what is randomly chosen each update. This doubles the memory complexity of the model but keeps the same computational complexity. The double DQN uses an approximation to this by using the target network for target action selection and the online network for action-value calculation. This is also what is done with the BNIG target model in this thesis. However a complete decoupling by creating two BNIG models per action might help reduce the variance instability.
+
+\subsection{Multimodal Targets}
+
+Another possible source is caused by the terminal state variance estimate. This is an issue when the model believes an episode will keep going but instead something unforseen happens resulting in the episode terminating. In games such as catpole or acrobot the prediction will be of magnitude $10^2$ while the target will be of magnitude $10^0$. A direct effect of this is large drops in the scale parameter. However this also effects the mean estimate, pushing it to be lower to accomidate for the model taking wrong. This results in a higher target than prediction in all other states which pushes the variance up.
+
+The underlying issue here is that the BNIG model assumes a gaussian distribuition over the prediction. The expected value should be multimodal with probabilities placed over the terminal reward and the action-state value.
 
 \subsection{State Dependent Variance}
 
-\subsection{Variance Feedback Loop}
 
-\section{Further Developments}
+
+\section{Method Improvements}
+
+\subsection{Allowing for State Dependent Variance}
+
+\subsection{Run Time}
 
 \cleardoublepage

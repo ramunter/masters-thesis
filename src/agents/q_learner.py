@@ -93,13 +93,13 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
                 for i, transition in enumerate(n_step_transitions):
                     state = transition.state
                     action = transition.action
-                    critic.update(state, action, target[i], next_action, done)
+                    critic.update(state, action, target[i])
 
             elif steps >= n_step:
                 target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
                 state = transitions[-n_step].state
                 action =  transitions[-n_step].action
-                critic.update(state, action, target, next_action, done)
+                critic.update(state, action, target)
 
             # Reset loop
             state = next_state

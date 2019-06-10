@@ -8,6 +8,6 @@ from src.agents.q_learner_critics import *
 
 env = Corridor(N=10)
 steps_to_learn = q_learner(
-    env, DeepGaussianBayesCritic2, episodes=2000, verbose=True)
+    env, DeepGaussianBayesCritic2, episodes=1000, verbose=True)
 
 print(steps_to_learn)
