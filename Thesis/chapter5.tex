@@ -15,7 +15,6 @@ A solution to the maximization bias in regular Q-learning is double Q-learning\c
 
 Another possible source is caused by the terminal state variance estimate. This is an issue when the model believes an episode will keep going but instead something unforseen happens resulting in the episode terminating. In games such as catpole or acrobot the prediction will be of magnitude $10^2$ while the target will be of magnitude $10^0$. A direct effect of this is large drops in the scale parameter. However this also effects the mean estimate, pushing it to be lower to accomidate for the model taking wrong. This results in a higher target than prediction in all other states which pushes the variance up.
 
-The underlying issue here is that the BNIG model assumes a gaussian distribuition over the prediction. The expected value should be multimodal with probabilities placed over the terminal reward and the action-state value.
 
 \subsection{State Dependent Variance}
 
