@@ -39,6 +39,20 @@ Another possible source is caused by the terminal state variance estimate. This 
 
 \subsection{Allowing for State Dependent Variance}
 
-\subsection{Run Time}
+A few attempts were made to make the variance state dependent. Due to computational and time constraints these are not included in this thesis. However this subsection highlight some of the possible methods for doing this and which are most promising.
+
+One approach would be to use a random effects model\citep[p.~382-383]{gelman_2013} which allows different variance levels in different groups. The main challenge would then be how to group different state. This could either be done through manual feature engineer or some unsupervised learning method. The first in undesireable in the general case as it requires manual work and subjective modeling of the environment, reducing the geralizability of the model. The latter would require further research.
+
+To avoid this one could instead set up a new model that encorporates the unequal variances and correlated errors by considering $y \sim N(X\beta, \Sigma_y)$ instead of $y \sim N(X\beta, \sigma_a)$.  However these models are more complicated to setup and usually some prior knowledge about the structure of the covariance matrix. It could be possible to somehow encorporate the RL structure to define a weighting for bayesian weighted regression\citep[p.~370-373]{gelman_2013}. 
+
+One way to define this weighting structure would be to use a model that assumes a known noise variance per datapoint. This is equivalent to a diagonal $\Sigma_y$. Then one could try to directly model the variance parameters by considering the strucuture of the RL problem. This approach is similar to the one introduced in \cite{donoghue_2017}. However note that the resulting model would be substantially different as istead of propagating explicity through the uncertainty bellman equation the propagation would occur through sampling the target values.
+
+\subsection{Runtime}
+
+The runtime of the BNIG DQN model is worse than the DQN model. On acrobot the DQN model averaged 220 frames per second during training while the BNIG DQN model averaged 145. However the BNIG implementation has not been optimized. Notably the covariance posterior update can be reduced from $O(p^3)$ to $O(p^2)$ where $p$ is the size of the final layer by using the Sherman-Morrison-Woodbury formula as in \cite{donoghue_2017}.
+
+\subsection{Seperate N-Step}
+
+A minor improvement would be to allow seperate $n$-step updates for the neural network and the BNIG model. As seen in chapter \ref{ch:linear} increasing the $n$ can lead to much better variance propagation and better results in the RL setting. However a high $n$-step reduces performance and earlier papers have found $n=3$ performs best on ALE\citep{hessel_2017}. However since the training procedures for the BNIG model and network are seperate one can use seperate $n$ values for each model. This is used in \cite{donoghue_2017} where n is set to 150 for only the variance model.
 
 \cleardoublepage
