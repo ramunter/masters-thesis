@@ -47,7 +47,7 @@ The calculation of an arbitrary posterior can be computationally heavy which is 
 
 \subsection{Gaussian Prior with Known noise}
 
-To start consider the model used in \cite{azziz_2018}. As in frequintist regression the noise term $\varepsilon$ is a zero mean gaussian distribution with variance $\sigma_\varepsilon$. In \cite{azziz_2018} $\sigma_\varepsilon$ is assumed known. This is rarely the case, but even if it is unknown it can be treated as a hyperparameter that has to be tuned to the environment. 
+To start consider the model used in \cite{azziz_2018}. As in frequentist regression the noise term $\varepsilon$ is a zero mean gaussian distribution with variance $\sigma_\varepsilon$. In \cite{azziz_2018} $\sigma_\varepsilon$ is assumed known. This is rarely the case, but even if it is unknown it can be treated as a hyperparameter that has to be tuned to the environment. 
 
 A regression model is created per action, each with the same noise variance $\sigma_\varepsilon$ and with a prior over every regression coefficient. The posterior $Q$-value for each action is expressed as 
 
@@ -72,7 +72,7 @@ where $\Lambda_a$ is the precision matrix. With this choice of prior the posteri
     \end{split}
 \end{equation}
 
-where the $_0$ denotes the prior and $_n$ denotes the posterior parameters. The development of these updates can be found in the appendix(\todo reference). This model will be refered to as a bayesian normal model(BN).
+where the $_0$ denotes the prior and $_n$ denotes the posterior parameters. The development of these updates can be found in the appendix(\todo reference). This model will be referred to as a bayesian normal model(BN).
 
 With this setup actions can now be picked by Thompson sampling. For each action sample $\beta$ values from its posterior distribution and a noise term from $N(0, \sigma_\varepsilon)$. These sample values are then used in the regression equation \ref{eq:regression} to get a posterior sample from $Q_a$. Finally chose the action with the highest sampled $Q$-value. 
 
@@ -115,7 +115,7 @@ where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian 
 
 \subsection{Normal Prior with Unknown noise}
 
-Including $\sigma_{\varepsilon}$ as an unknown parameter resuts in the new posterior 
+Including $\sigma_{\varepsilon}$ as an unknown parameter results in the new posterior 
 
 \begin{align*}
     p(\beta_a, \sigma_{\varepsilon_a}|Q_a, \mathcal{F}) &\propto p(Q_a| \beta_a, \sigma_{\varepsilon_a}, \mathcal{F})p(\theta) \\
@@ -139,11 +139,11 @@ with the posterior update
 	b_n       & = b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n) 
 \end{align*}
 
-The development of these formulas can be found in the appendix (\todo reference). This model will be refered to as the Bayesian Normal Inverse Gamma model(BNIG).
+The development of these formulas can be found in the appendix (\todo reference). This model will be referred to as the Bayesian Normal Inverse Gamma model(BNIG).
 
 \subsection{Testing Variance Propagation}
 
-To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministicly leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
+To ensure that this method is propagating uncertainty consider a simple example from \cite{osband_2018}. Consider a MPD with two states. The initial state allows only one action that deterministically leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
 
 Both models were tested with both MAP and sample targets. The priors for the BN models were set to
 
@@ -159,7 +159,7 @@ and the priors for the BNIG models were set to
     \sigma^2 &\sim InvGamma(1,1).
 \end{align*}
 
-Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1, 10)$ respectively. The results are seen in figure \ref{fig:proptest}.
+Three MDPs were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1, 10)$ respectively. The results are seen in figure \ref{fig:proptest}.
 
 \begin{figure}[H]
     \centering
@@ -178,7 +178,7 @@ Three MDP's were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1,
     \label{fig:proptest}
 \end{figure}
 
-The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the BNIG model with sample targets. The BNIG model with the MAP target leads to the correct mean but dramatically understimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The BN model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
+The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the BNIG model with sample targets. The BNIG model with the MAP target leads to the correct mean but dramatically underestimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The BN model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
 
 Based on these results further developments are focused on the BNIG model with sampled targets.
 
@@ -231,15 +231,15 @@ By extending the toy example to even more states as in figure \ref{fig:longpropt
     \label{fig:longproptest}
 \end{figure}
 
-This issue will be refered to as the speed of propagation. It encompasses the problem of quickly propagating variance estimates from downstream states back to states which are far from the environments reward.
+This issue will be referred to as the speed of propagation. It encompasses the problem of quickly propagating variance estimates from downstream states back to states which are far from the environments reward.
 
-\todo: Define speed of propagation. Maybe a seperate subsection that plots how the error changes with length of chain. How do we measure the error between two distributions? KL Divergence?
+\todo: Define speed of propagation. Maybe a separate subsection that plots how the error changes with length of chain. How do we measure the error between two distributions? KL Divergence?
 
 \subsection{Speed of propagation}
 
-Inorder to improve the speed of propagation insight is required into what causes the issue. In this section two causes and methods for counteracting them are discussed. However these are not necessarily the only two causes of slow propagation.
+In order to improve the speed of propagation insight is required into what causes the issue. In this section two causes and methods for counteracting them are discussed. However these are not necessarily the only two causes of slow propagation.
 
-\todo These argumentations are weak and require sources or "proof". 
+\todo These argumentation are weak and require sources or "proof". 
 
 The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will only converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update one will increase the speed of variance propagtation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
 
