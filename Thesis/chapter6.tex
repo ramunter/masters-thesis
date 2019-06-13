@@ -2,7 +2,7 @@
 
 \chapter{Conclusion}\label{ch:conc}
 
-Motivated by the results from the UBE method\citep{donoghue_2017} this thesis has tried to use bayesian linear regression to drive efficient exploration using thompson sampling. Through a linear toy example it was shown that previous bayesian linear regression RL methods do not properly propagate variance between states leading to an underestimation of variance. Furthermore  it was shown that y sampling targets from the posterior and including the regression noise variance as a bayesian parameter proper variance propagation was acheived.
+Motivated by the results from the UBE method\citep{donoghue_2017} this thesis has tried to use bayesian linear regression to drive efficient exploration using thompson sampling. Through a linear toy example it was shown that previous bayesian linear regression RL methods do not properly propagate variance between states leading to an underestimation of variance. Furthermore  it was shown that y sampling targets from the posterior and including the regression noise variance as a bayesian parameter proper variance propagation was acheived. 
 
 To generalize this method to more complex enviroments a generalization to neural networks was created based on the similar \cite{azziz_2018} BDQN. The method showed promising results on some enviroments but had unstable noise variance estimates resulting is bad results on other environments.
 
