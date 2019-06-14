@@ -262,7 +262,7 @@ One issue that remains with the aforementioned methods is that they are \textit{
     Q(S_t, A_t) = Q(S_t, A_t) + \alpha\big[R_{t+1} + \gamma \max_a Q(S_{t+1}, a) - Q(S_t, A_t)]
 \end{equation}
 
-Note that this equation is completely independent of the policy followed when generating the sample. This means in contrast to an on-policy method, Q-learning can be trained on transition samples from any policy regardless of what the Q-learning policy is.
+Note that this equation is completely independent of the policy followed when generating the experience. This means in contrast to an on-policy method, Q-learning can be trained on transition experiences from any policy regardless of what the Q-learning policy is.
 
 \subsection{Exploration vs Exploitation}
 
@@ -289,8 +289,6 @@ A balance is needed between exploiting the policy to maximize reward and explori
 where $0 < \varepsilon < 1$ and $\mathbb{A}$ is the set of all legal actions.
 Asymptotically this policy is guaranteed to visit every state an infinite amount of times. This generally works quite well in practice but can be inefficient for complex environments. \citep[p.~27-28]{sutton_barto_2018}
 
-\todo Can maybe discuss E greedy a bit more here
-
 \section{Deep Q-Learning}
 
 \subsection{Function Approximation}
@@ -307,24 +305,57 @@ To illustrate this consider the environment of buying and selling stock while ma
     \label{fig:stock_diff}
 \end{figure}
 
-Ideally the value estimate the method should be able to generalize to limited samples or completely unseen states. In the stock price example the value and policy at similar prices should give information about how the agent should act given an unseen price. 
+Ideally the value estimate the method should be able to generalize to states with limited experiences or completely unseen states. In the stock price example the value and policy at similar prices should give information about how the agent should act given an unseen price. 
 
 The approach to solving this is using function approximation. When estimating the value or action-value function one is trying to estimate a continuous value given a set of input values. This is a regression problem. So instead of using a table to map states to values one can use regression methods to do the same. 
 
 Since the value function is dependent on the policy and the policy is changing during training, the target is non-stationary. It is therefore important that the regression method chosen must be able to deal with non-stationary targets.\cite[p.~198-199]{sutton_barto_2018}
 
-It is important to note that using function approximation means that the convergence guarantees discussed earlier no longer hold. Some function approximation methods are still guaranteed to converge to a policy, albeit not necessarily the optimal policy while others are unstable and require special tweaks to reliably converge to a policy.
+It is important to note that using function approximation means that the convergence guarantees discussed earlier no longer hold. Some function approximation methods are still guaranteed to converge to a policy, albeit not necessarily the optimal policy while others are unstable and require special tweaks to reliably converge to a policy. Specifically off-policy methods with function approximation will sometimes diverge but in practice they tend to converge\citep[p~.258]{sutton_barto_2018}.
 
-\todo Check Sutton for linear methods convergence
+\subsection{Linear function approximation with Q-learning}
 
-\subsection{Linear function appproximation}
+In linear Q-learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model for a single action can then be defined as
 
-\todo
+\begin{equation}
+    \label{eq:regression}
+	Q(X) = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
+\end{equation}
+
+with the response value defined as 
+
+\begin{equation}
+    \label{eq:q_target}
+	Q(s,a) = r_t + \gamma\argmax_{a'}Q(s',a').
+\end{equation}
+
+The ordinary least squares solution to the $\beta$ coefficients can then be found using the normal equation \citep[p~.105-107]{fahrmeir_2013} which in matrix form is
+
+\begin{equation*}
+	\beta = [X^TX]^{-1}X^TQ.
+\end{equation*}
+
+However this method is under the assumption that the target distribution is stationary and has to be trained on the entire dataset when given new data. This makes it ill-suited for reinforcement learning where one is constantly receiving new data from a non-stationary distribution. 
+
+Instead the common approach is to apply stochastic gradient descent over the parameters \citep[p~.201-203]. With a monte carlo target this gives the equation 
+
+\begin{equation*}
+    \beta = \beta + \alpha \big[G_t - Q(s,a|\beta)]\nabla_\beta Q(s,a|\beta).
+\end{equation*}
+
+The same equation for the temporal difference target gives 
+
+\begin{equation*}
+    \beta = \beta + \alpha \big[ r_t + \gamma\argmax_{a'}Q(s',a'|\beta) - Q(s,a|\beta)]\nabla_\beta Q(s,a|\beta)
+\end{equation*}
+
+Note that in the temporal difference case the target is dependent on the coefficients and therefore does not fulfill all the criteria for stochastic gradient descent. This results in losing the guarantee that the method converges to a local optimum. However empirically in the case of linear models it tends to reliably converge.
+
+Given this model the agent can take an action by acting greedily over the models $Q(s,a)$ values in a given state. Since this is purely an exploitation strategy, it is often coupled with the $\varepsilon$-greedy policy.
 
 \subsection{Nonlinear function approximation}
 
 Action-value functions can be complicated functions so it can be desirable to have a nonlinear function approximator.
-
 
 \subsubsection{Fully Connected Neural Networks}
 
@@ -398,15 +429,23 @@ The loss function can then be differentiated with respect to the model parameter
 
 which can then replace $\nabla L(w_K)$ in equation \ref{eq:backprop}.
 
+\subsubsection{Convolutional Neural Networks}
+
+Certain methods in this thesis will also use convolutional neural networks(CNN) in combination with fully connected NNs. This is not vital to the understanding of the work done in this thesis so only a brief intuition of CNNs will be provided. The following is summarized from chapter 9 in \cite{goodfellow_2013}.
+
+Images are high dimensional so running fully connected NN that maps from every input to some final output requires a lot of parameters and is computationally heavy. In addition many of these parameters are wasted the same feature in different parts of the image should lead to similar results. In a fully connected NN this feature would have to be relearned  for each location it can appear in an image. In addition if a feature ends up in a new position that the NN has not be trained on the method will fail.
+
+CNNs are a different NN structure designed towards use cases such as images.  A convolution operator is essentially a weighted sum of some input. In an image the weighted sum is over a local neighborhood based on the inputs position. CNNs learn a small set of weights and repeatedly takes the convolution between these a subset of the input across the entire input. Usually a CNN consists of many sets of these weights which learn different features. The result of this is that a CNN can recognize features regardless of their placement, known as translation invariant, and so does not need to relearn the same encodings. This means a CNN can recognize features with far less features and better generalizability than a regular NN.
+
 \subsubsection{The Deadly Triad}
 
 There is an issue that arises with function approximation, which is known as the deadly triad. When combining function approximation, bootstrapping and off-policy training one often finds that the estimate becomes unstable and can diverge. This is especially a problem with nonlinear function approximators like neural networks \citep{mnih_2013}. Dropping one of these factors essentially negates this problem, however using all of these is desirable due to their contribution to an increase in performance. \cite[p.~264-265]{sutton_barto_2018}.
 
 \subsection{Deep Q Networks}
 
-The recent rise in interest in NN led to interest in using these as a nonlinear approximator for Q-learning. In \cite{mnih_2013} a method called the Deep Q Network (DQN) was introduced achieving state of the art results on a select few Atari games. They used a multilayer NN Q-value function approximator that takes in a state $S$ as input and outputs a Q-value per action. For exploration they follow a $\varepsilon$-greedy policy starting with $\varepsilon=1$ that decreases towards to $\varepsilon=0$ as training progresses.
+The recent rise in interest in NN led to research in using these as a nonlinear approximator for Q-learning. In \cite{mnih_2013} a method called the Deep Q Network (DQN) was introduced achieving state of the art results on a select few Atari games. They used a multilayer NN Q-value function approximator that takes in a state $S$ as input and outputs a Q-value per action. For exploration they follow a $\varepsilon$-greedy policy starting with $\varepsilon=1$ that decreases towards to $\varepsilon=0$ as training progresses.
 
-Due to the deadly triad issues, some modifications had to be made to Q-learning to handle the divergence issues. To deal with this \cite{mnih_2013} reintroduced a concept called \textit{experience replay}, originally introduced in \cite{lin_1993}. Instead of training the network after every step taken, samples are saved as the tuple $e_t=(s_t, a_t,r_t, s_{t+1})$ creating a data set of samples $\mathcal{D} = e_1,...,e_n$. The neural network can then be trained using samples drawn randomly from $\mathcal{D}$. In practice this is done every few steps taken by the agent.
+Due to the deadly triad issues, some modifications had to be made to Q-learning to handle the divergence issues. To deal with this \cite{mnih_2013} reintroduced a concept called \textit{experience replay}, originally introduced in \cite{lin_1993}. Instead of training the network after every step taken, experiences are saved as the tuple $e_t=(s_t, a_t,r_t, s_{t+1})$ creating a data set of experiences $\mathcal{D} = e_1,...,e_n$. The neural network can then be trained using samples drawn randomly from $\mathcal{D}$. In practice this is done every few steps taken by the agent.
 
 \cite{mnih_2015} further increased stability by using two neural networks instead of one. The second neural network, called the target network, is used to calculate the target $Q$ value, the $Q(S_{t+1}, a)$ term in equation \ref{eq:td_q_learning}. The weights of the target network are copied from the original network, called the online network, after a large number of steps. This creates a more stable optimization target. 
 
@@ -426,26 +465,24 @@ The DQN version from \cite{mnih_2015} achieved new state of the art results on a
 
 \subsection{Further developments on DQN}
 
-Many additional tweaks to DQN have been introduced since \cite{mnih_2015}. Some of the more promising changes were combined and tested in \cite{hessel_2017}. To decrease the experiment run-time this project implements two of changes mentioned in \cite{hessel_2017}, namely dueling DQN and double DQN, which gives a method named Dueling Double DQN (Dueling DDQN). However, to keep notation short, the abbreviation DQN will refer to the Deuling DDQN for the rest of this project. These changes are not fundamental to this project so they will only be briefly discussed below.
+Many additional tweaks to DQN have been introduced since \cite{mnih_2015}. Some of the more promising changes were combined and tested in \cite{hessel_2017}. To decrease the experiment run-time this project implements one of the changes mentioned in \cite{hessel_2017}, namely the double DQN.  This change is not fundamental to this project so it will only be briefly discussed.
 
-\subsubsection{Double DQN}
-
-In \cite{hasselt_2010} and \cite{hasselt_2015} it was shown that Q-learning overestimated Q-values. The following change in the Q-learning target reduced this bias
+\cite{hasselt_2010} showed that tabular Q-learning can have large positive bias in certain environments. This was due to an overestimation as a result of the max operator. To fix this they suggested creating two separate action-value functions and replacing the Q-learning update with 
 
 \begin{equation}
-    R_t + \gamma Q'(S_{t+1}, \argmax_{a'}Q(S_{t+1}, a'))
+    \begin{split}
+    Q_2(s,a) &= Q_2(s,a) + \alpha\bigg(r + \gamma Q_1\big(s', \argmax_{a'}[Q_2(s',a')]\big) - Q_2(s,a)\bigg) \\
+    Q_1(s,a) &= Q_1(s,a) + \alpha\bigg(r + \gamma Q_2\big(s', \argmax_{a'}[Q_1(s',a')]\big) - Q_1(s,a)\bigg).
+    \end{split}
 \end{equation}
 
-where $Q$ is estimated by the online network and $Q'$ is estimated by the target network.
-
-\subsubsection{Dueling DQN}
-
-The Dueling DQN builds upon the idea that a Q-value $Q_\pi(s,a)$ can be viewed as a combination of state value $v_\pi(s)$ and the improvement by taking an action called the advantage function $A_\pi(s,a)$. \cite{wang_2015} suggested that representing this in the network architecture could simplify learning. Dueling DQN consists of splitting the final layer into two streams. One stream is used to estimate the state value. The other stream creates an advantage value for each action. These are finally added together as in equation \ref{eq:duel_combine} to produce a Q-value per action that can be trained using the same method as a regular DQN.
+During training one randomly picks one update to run every step. The underlying idea is that one decouples the targets action selection from its value estimation which results in a less biased estimator. In \cite{hasselt_2015} this is extended to the DQN by simply using the target Q-network $Q'$ as the second action-value function. The target Q-value was then calculated by
 
 \begin{equation}
-    \label{eq:duel_combine}
-    Q(s, a) = v(s) + \bigg(A(s,a)-\frac{1}{|\mathbb{A}|}\sum_{a'} A(s,a')\bigg)
+    R_t + \gamma Q'(S_{t+1}, \argmax_{a'}Q(S_{t+1}, a')).
 \end{equation}
+
+This is not equivalent to a complete decoupling of two action-value functions but empirically this reduced the bias and thus improved performance. 
 
 \subsection{Limits of DQN}
 
@@ -453,7 +490,7 @@ Despite the human-level performance of DQN methods in many Atari games \citep{mn
 
 \section{Exploration through uncertainty}
 
-Despite the guarantee that $\varepsilon$-greedy will asymptotically explore all states this might not always be computationally feasible. Even if it is computationally feasible, the sample efficiency of RL is known to be quite bad. One of the most sample efficient methods within Atari games is \cite{hessel_2017} but this still requires 20 million frames per game. Since $\varepsilon$-greedy uses no information about the environment or agent a focus of research has been to perform more informed exploration. 
+Despite the guarantee that $\varepsilon$-greedy will asymptotically explore all states this might not always be computationally feasible. Even if it is computationally feasible, the sample efficiency of RL is known to be quite bad. One of the most sample efficient methods within Atari games is \cite{hessel_2017} but this still required 20 million frames per game to achieve its results. Since $\varepsilon$-greedy uses no information about the environment or agent a focus of research has been to perform more informed exploration. 
 
 \subsection{Uncertainty in Reinforcement Learning}
 
@@ -494,11 +531,11 @@ One method to propagate the uncertainty from future value estimates is to includ
 
 If one considers the uncertainty around the value to be an interval of statistically plausible values, this method optimizes the Bellman equation over the highest statistically plausible value. This has given the method the name optimism in the face of uncertainty(OFU). This method is only applicable to tabular environments and fails for large state spaces where visit counts tend to be low.
 
-\cite{bellemare_2016} generalized this equation away from relying directly on visit counts by estimating a visit count from a linear approximation model. This achieved state of the art results in multiple environments when published. However, an issue with this method is that it changes the loss function which no longer directly optimizes the Bellman equation. This can lead to inefficient exploration at times or sub-optimal behavior. \citep{moerland_2017} 
+\cite{bellemare_2016} generalized this equation away from relying directly on visit counts by estimating a visit count from a linear approximation model. This achieved state of the art results in multiple environments when published. However, an issue with this method is that it changes the loss function which no longer directly optimizes the Bellman equation. This can lead to inefficient exploration at times or sub-optimal behavior \citep{moerland_2017}. In addition the method used both temporal difference and monte carlo updates, which the paper itself states lead to major improvements.
 
 \subsection{Posterior sampling for reinforcement learning}
 
-A second paradigm in uncertainty based exploration is posterior sampling for reinforcement learning (PSRL). This method builds on a bayesian view of reinforcement learning. Considering the task of maximizing reward from an MDP. Bayesian reinforcement learning treats the unknown MDP as a random variable. To do this one considers the expected one-step reward $\hat{R}^*(s,a)$ and transition probabilities $P^*(s,a)$ to be random variables. Denoting a sample from these distributions as $r*$ and $p*$ one can create a posterior sample of the action-value $Q*$ conditioned on the history of transitions by using the following equation. 
+A second paradigm in uncertainty based exploration is posterior sampling for reinforcement learning (PSRL). This method builds on a bayesian view of reinforcement learning. Considering the task of maximizing reward from an MDP. Bayesian reinforcement learning treats the unknown MDP as a random variable. To do this one considers the expected one-step reward $\hat{R}^*(s,a)$ and transition probabilities $P^*(s,a)$ to be random variables. Denoting a sample from these distributions as $r^*$ and $p^*$ one can create a posterior sample of the action-value $Q^*$ conditioned on the history of transitions by using the following equation. 
 
 \begin{equation}
  \label{eq:bayesian_bellman}
@@ -525,5 +562,44 @@ To grasp the intuition to why the above leads to exploration consider an environ
 Figure \ref{fig:posterior-qvalues} shows that the expected Q-value of action A is higher than B. However, the posterior distribution of Q-values can be viewed as the distribution of plausible values for Q \citep{osband_2016}. The overlap between the two distributions indicates that there is a certain probability that action B is actually better than action A. By sampling these posteriors when chosing action one gives a probability of choosing action B over action A that is related to the amount of overlap between these distributions.
 
 \cite{osband_2016} shows that the sample-efficiency scales better with respect to the number of states and actions for posterior sampling than optimism in the face of uncertainty. However, the challenge remains in finding a good posterior that is not so computationally heavy that it cancels out the sample-efficiency.
+
+\section{Recent Research within Deep PSRL}
+
+Computationally tractable methods for bayesian inference in neural networks is especially challenging. However there are multiple recent papers within that have been released the past year that are able to generalize PSRL to deep RL. Most of these use some form of approximation to simplify sampling from the posterior Q-value. A summary of three recent deep PSRL papers that are well cited and have helped form this thesis are provided.
+
+\subsection{Randomized Prior Functions for Deep Reinforcement Learning}
+
+\cite{osband_2018} finds an approximation to the posterior Q-value distribution through a mixture of statistical bootstrapping and ensemble methods. First the method assumes the posterior to be a gaussian distribution. It then presents the following, slightly summarized, lemma:
+
+
+\textit{Let $f_\theta (x) = x^T\theta$, $\tilde{y}_i\sim N(y_i,\sigma^2)$ and $\tilde{\theta} \sim N(\bar{\theta}, \lambda I)$. Then the following optimization problem generates a sample $\theta | \mathcal{D}$}
+
+\begin{equation}
+    \tilde{\theta} + \argmin_\theta \sum_{i=1}^n\|\tilde{y}_i-(f_{\tilde{\theta}} + f_\theta)(x_i)\|_2^2 + \frac{\sigma^2}{\lambda}\|\theta\|_2^2.
+\end{equation}
+
+Breaking down this statement the method starts by sampling coefficients $\tilde{\theta}$ from the prior to create a prior function $f_{\tilde{\theta}}$. Then fit an additive model $f_\theta(x)$ with a regularization term $\frac{\sigma^2}{\lambda}\|\theta\|_2^2$ to a noisy version of the dataset $\tilde{y} \sim N(y, \sigma^2)$. The resulting outputs from $(f_{\tilde{\theta}}-f_{\theta})(x_i)$ will be a single sample from the posterior. 
+
+This means that in order to model the posterior based on $n$ samples one needs $n$ models. Though it can be computationally heavy to create many models it is also noted that these models can be trained in parallel, meaning this method is scalable given the right computaional reasources.
+
+To generalize to neural networks the method approximates further by replacing the prior model with a fixed randomly initialized neural network $p$ multiplied by a hyperparameter $\beta$ that regulates the magnitude of the prior. Instead of applying noise to the data a new dataset is created by statistically bootstraping the original dataset. A seperate DQN is then trained on the bootstraped data and the addition of the fixed prior network. The resulting Q-value is then 
+
+\begin{equation}
+    Q(s,a) = f_\theta(s,a) + \beta p(s,a)
+\end{equation}
+
+The paper then shows that on hard exploration toy examples such as a variant on the chain environment(figure \ref{fig:chain}) the method far outperforms an $\varepsilon$-greedy exploration policy. In addition the method manages to escape the first room in Montezuma's Revenge, receiving a an average score of approximately 2500. However the paper also notes that this performance is sensitive to adjustments to the prior scale $\beta$.
+
+\subsection{Uncertainty Bellman Equation}
+
+\cite{donoghue_2017}
+
+\subsection{BDQN}
+
+\cite{azziz_2018}
+
+\subsection{Drop Out}
+
+On a short note, if the reader is well-versed in neural networks one might wonder why none of these paper use dropout to estimate the posterior. In this case it is recommended to view the discussion in \cite{osband_2018} about the shortcomings of dropout in RL. In addition \cite{azziz_2018} empirically shows that dropout does not perform well in the RL setting.
 
 \cleardoublepage

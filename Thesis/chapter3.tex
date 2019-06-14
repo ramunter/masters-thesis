@@ -2,31 +2,7 @@
 \chapter{Conjugate Bayesian Linear Q learning}{\label{ch:linear}}
 
 
-In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context to investigate what models to use and what factors are important in a reinforcement learning setting.
-
-\section{Linear Q learning}
-
-In linear Q learning the goal is to create a regression model that maps the state and action to a Q-value, $Q(s,a)$. Let $x_t$ denote the state and action at timestep $t$. $X$ then denotes the design matrix containing these features and $Q$ the vector of corresponding Q-values. The regression model for a single action can then be defined as
-
-\begin{equation}
-    \label{eq:regression}
-	Q(X,a) = X\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
-\end{equation}
-
-with the response value defined as 
-
-\begin{equation}
-    \label{eq:q_target}
-	Q(s,a) = r_t + \argmax_{a'}Q(s',a').
-\end{equation}
-
-The ordinary least squares solution to the $\beta$ coefficients can then be found using the normal equation which in matrix form is
-
-\begin{equation*}
-	\beta = [X^TX]^{-1}X^TQ
-\end{equation*}
-
-Given this model the agent can take an action by acting greedily over the models $Q(s,a)$ values in a given state. Since this is purely an exploitation strategy, it is often coupled with the $\varepsilon$-greedy policy.
+In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context to investigate what models to use and what aspects are important to consider in a reinforcement learning setting.
 
 \section{Bayesian Linear Q learning}
 
