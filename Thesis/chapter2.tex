@@ -580,9 +580,9 @@ Computationally tractable methods for bayesian inference in neural networks is e
 
 Breaking down this statement the method starts by sampling coefficients $\tilde{\theta}$ from the prior to create a prior function $f_{\tilde{\theta}}$. Then fit an additive model $f_\theta(x)$ with a regularization term $\frac{\sigma^2}{\lambda}\|\theta\|_2^2$ to a noisy version of the dataset $\tilde{y} \sim N(y, \sigma^2)$. The resulting outputs from $(f_{\tilde{\theta}}-f_{\theta})(x_i)$ will be a single sample from the posterior. 
 
-This means that in order to model the posterior based on $n$ samples one needs $n$ models. Though it can be computationally heavy to create many models it is also noted that these models can be trained in parallel, meaning this method is scalable given the right computaional reasources.
+This means that in order to model the posterior based on $n$ samples one needs $n$ models. Though it can be computationally heavy to create many models it is also noted that these models can be trained in parallel, meaning this method is scalable given the right computational resources.
 
-To generalize to neural networks the method approximates further by replacing the prior model with a fixed randomly initialized neural network $p$ multiplied by a hyperparameter $\beta$ that regulates the magnitude of the prior. Instead of applying noise to the data a new dataset is created by statistically bootstraping the original dataset. A seperate DQN is then trained on the bootstraped data and the addition of the fixed prior network. The resulting Q-value is then 
+To generalize to neural networks the method approximates further by replacing the prior model with a fixed randomly initialized neural network $p$ multiplied by a hyperparameter $\beta$ that regulates the magnitude of the prior. Instead of applying noise to the data a new dataset is created by statistically bootstraping the original dataset. A separate DQN is then trained on the bootstraped data and the addition of the fixed prior network. The resulting Q-value is then 
 
 \begin{equation}
     Q(s,a) = f_\theta(s,a) + \beta p(s,a)
