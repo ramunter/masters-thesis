@@ -1,23 +1,20 @@
 %===================================== CHAP 5 =================================
 \chapter{Conjugate Bayesian Linear Q learning}{\label{ch:linear}}
 
-
-In an attempt to find a better balance between exploration and exploitation this thesis investigates the use of bayesian methods to allow for Thompson sampling. This chapter builds and compares bayesian methods in a linear model context to investigate what models to use and what aspects are important to consider in a reinforcement learning setting.
+The goal of this thesis is to try to develop a method that implicitly propagates uncertainty without the need of as many assumptions and extra components as the UBE. First this chapter will show that the bayesian model in \cite{azziz_2018} does not propagate variance. It will then go on to suggest a new model that does propagate variance, discuss the properties of this propagation and test the models performance in a linear setting. 
 
 \section{Bayesian Linear Q learning}
 
 To extend linear Q learning methods to Thompson sampling a bayesian perspective is required. To do this a prior distribution is placed over the regression parameters. Using bayes rule the posterior distribution of the parameters can be calculated and used to calculate the marginal distribution over Q.
 
 \begin{align*}
-p(\theta |Q, \mathcal{F}) &\propto p(Q| \theta, \mathcal{F})p(\theta) \\
-p(Q) &= \int p(Q|\theta, \mathcal{F}) p(\theta) d\theta
+    p(\theta |Q, \mathcal{F}) &\propto p(Q| \theta, \mathcal{F})p(\theta) \\
+    p(Q) &= \int p(Q|\theta, \mathcal{F}) p(\theta) d\theta
 \end{align*}
 
 $Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. Since this is only used for Thompson sampling the value of the integral is not of interest. Instead it is the samples from $p(Q|\theta, \mathcal{F})$ that will be used to drive exploration.
 
 \section{Conjugate Bayesian Linear Q learning}
-
-\todo Emphasize the assumptions in this chapter
 
 The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to this thesis will consider conjugate priors which have an analytical solution.
 
@@ -43,12 +40,12 @@ where $\Lambda_a$ is the precision matrix. With this choice of prior the posteri
 \begin{equation}
     \begin{split}
         \label{eq:known_noise_posterior_update}
-        \Lambda_{a_n} & = X^TX + \Lambda_{a_0} \\
-        \mu_{a_n}     & = \Lambda_{a_n}^{-1}(\Lambda_{a_0}\mu_{a_0} + X^TQ_a).
+        \Lambda_{a_n} & = \sigma^{-2}X^TX + \Lambda_{a_0} \\
+        \mu_{a_n}     & = \sigma^{-2}\Lambda_{a_n}^{-1}(\Lambda_{a_0}\mu_{a_0} + X^TQ_a).
     \end{split}
 \end{equation}
 
-where the $_0$ denotes the prior and $_n$ denotes the posterior parameters. The development of these updates can be found in the appendix(\todo reference). This model will be referred to as a bayesian normal model(BN).
+where $_0$ denotes the prior and $_n$ denotes the posterior parameters \citep[p.~233]{fahrmeir_2013}. The development of these updates can be found in \ref{a:bn}. This model will be referred to as a bayesian normal model(BN).
 
 With this setup actions can now be picked by Thompson sampling. For each action sample $\beta$ values from its posterior distribution and a noise term from $N(0, \sigma_\varepsilon)$. These sample values are then used in the regression equation \ref{eq:regression} to get a posterior sample from $Q_a$. Finally chose the action with the highest sampled $Q$-value. 
 
@@ -63,7 +60,7 @@ $$
 y = r_t + \max_a X_{t+1}\mu_a.
 $$
 
-This does not correctly encorporate the target variance. To see why recall the definition of the Q-value
+This does not correctly incorporate the target variance. To see why recall the definition of the Q-value
 
 \begin{align*}
     Q_t &= \mathbb{E}[G_t] = \mathbb{E}[r_t + r_{t+1} + \dots] \\
@@ -84,7 +81,7 @@ The result of this is that the known noise model only includes the variance in t
 Based on the above a better choice of target is
 
 $$
-y = r_t + \max_a (X_{t+1}\beta + \varepsilon)
+y = r_t + \max_aQ(X_{t+1}\beta + \varepsilon)
 $$
 
 where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian noise distribution. However the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to include $\sigma_{\varepsilon}$ as an unknown parameter.
@@ -115,7 +112,7 @@ with the posterior update
 	b_n       & = b_0 + (Q^TQ + \mu^T\Lambda_0\mu_0 - \mu_n^T\Lambda_n\mu_n) 
 \end{align*}
 
-The development of these formulas can be found in the appendix (\todo reference). This model will be referred to as the Bayesian Normal Inverse Gamma model(BNIG).
+The development of these formulas can be found in \ref{a:bnig}. This model will be referred to as the Bayesian Normal Inverse Gamma model(BNIG).
 
 \subsection{Testing Variance Propagation}
 
@@ -132,7 +129,7 @@ and the priors for the BNIG models were set to
 
 \begin{align*}
     \beta &\sim N(0,10^3) \\
-    \sigma^2 &\sim InvGamma(1,1).
+    \sigma^2 &\sim InvGamma(1, 0.01).
 \end{align*}
 
 Three MDPs were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1, 10)$ respectively. The results are seen in figure \ref{fig:proptest}.
@@ -154,7 +151,7 @@ Three MDPs were set up with a known posterior of $N(1, 0.1), N(1, 1)$ and $N(1, 
     \label{fig:proptest}
 \end{figure}
 
-The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the BNIG model with sample targets. The BNIG model with the MAP target leads to the correct mean but dramatically underestimates the variance. This would be an expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The BN model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
+The results summarized in figure \ref{fig:proptest} showed that all models were able to correctly estimate the mean. However the target variance was only correctly estimated by the the BNIG model with sample targets. The BNIG model with the MAP target leads to the correct mean but dramatically underestimates the variance. This would be the expected result if the model is approximating $\mathbb{E}[Q]$ instead of $Q$. The BN model is only correct for both the mean and sample target if the hyperparameter $\varepsilon$ is set to the correct variance. In an unknown and more complex environment this is unlikely to be possible. However with enough hyperparameter tuning one could argue that this can lead to good results which might explain the results achieved in \cite{azziz_2018}.
 
 Based on these results further developments are focused on the BNIG model with sampled targets.
 
@@ -217,7 +214,7 @@ In order to improve the speed of propagation insight is required into what cause
 
 \todo These argumentation are weak and require sources or "proof". 
 
-The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will only converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update one will increase the speed of variance propagtation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
+The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will only converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off (\todo Include n-step in theory). Similarly extending the 1-step update to an n-step update will increase the speed of variance propagation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
 
 The second cause is a result of no longer using a step size when updating the Q-values using bayesian updates. In regular Q-learning the step size can be viewed as the weighting of new data relative to the current model. This effect is also found in the bayesian setting in the posterior update that combines the prior and the new data. However, in regular Q-learning the step size also leads to the model forgetting old data(\cite{sutton_barto_2018}\todo find this page). This is not the case for the bayesian models previously described.
 
@@ -248,13 +245,13 @@ where $\alpha$ is the decay rate and the b is the batch size. The result of this
 
 Up to now the model has only been tested on simple problems with known posteriors and no active decision making. To test how well this generalizes to a more realistic RL environment consider a variant on the corridor environment introduced in the theory section in figure \ref{fig:chain}.
 
-Consider a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{10N}$ and otherwise the agent recieves no reward.
+The environment is a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{10N}$ and otherwise the agent receives no reward.
 
 \todo Add regret to theory section
 
-All the methods discussed so far were tested on this enviroment with different chain lengths. This includes the BN and BNIG model with both regular and deep exploration. In addition a linear Q-learning method following an $\varepsilon$-greedy exploration scheme was tested. The hyperparameters for each model were found by manually testning different combinations. The priors that gave good propagation for the toy examples were used as a starting point. A table of the hyperparameters can be found in the appendinx in table \todo.
+All the methods discussed so far were tested on this environment with different chain lengths. This includes the BN and BNIG model with both regular and deep exploration. In addition a linear Q-learning method following an $\varepsilon$-greedy exploration scheme was tested. The hyperparameters for each model were found by manually testing different combinations. The priors that gave good propagation for the toy examples were used as a starting point. A table of the hyperparameters can be found in the appendix in table \todo.
 
-As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the enivorment. In this case the enivorment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
+As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the environment. In this case the environment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
 
 \todo These results are based on 10 attempts per length, this should be run for 50-100 attempts for nicer plots.
 
@@ -266,7 +263,7 @@ As in \cite{osband_2018} models were compared by the average number of episodes 
     \subfloat[3 step update]{
         \includegraphics[scale=0.5]{Corridor3StepMethods.png}
     }
-    \caption{\textbf{Linear Model Performance on Corridor Environment}: (\textbf{a}) shows that the only method to out perform is the Deep BNIG model. Increasing to a 3-step update in (\textbf{b}) improves the performance of all models but the largest increase in performance seems to be Deep BNIG.}
+    \caption{\textbf{Linear Model Performance on Corridor Environment}: (\textbf{a}) shows that the only method that outperforms the $\varepsilon$-greedy policy is the Deep BNIG model. Increasing to a 3-step update in (\textbf{b}) improves the performance of all models but the largest increase in performance seems to be Deep BNIG.}
     \label{fig:linear_corridor}
 \end{figure}
 
@@ -276,35 +273,35 @@ The regular BNIG model performs worse than the regular BN model. One reason for 
 
 Adding deep exploration has seemingly no effect on the BN model but leads to far better results on the BNIG model. This could be due to the BN model not propagating variance which quickly leads to a low variance model. Once the variance is low the difference between sampled action-value functions is also small so sampling each step versus sampling each episode will lead to similar actions.
 
-Finally, increasing from a 1-step to a 3-step update leads to better performance across all models. However for all models apart from deep BNIG the improvement is increasing the longest learnable corridor by around 2-4 states. In deep BNIG's case the improvment is an increase of atleast 8 states and possibly more. Once again this is probably due to the BNIG model being the only one actually propagating uncertainty. By increasing the step update in the BNIG model one is not only decreasing the bias of the expected value but also decreasing the bias of the variance. In other words the n-state update not only improves the value estimation but also improves the exploration, resulting in a larger improvment than in other methods.
+Finally, increasing from a 1-step to a 3-step update leads to better performance across all models. However for all models apart from deep BNIG the improvement is increasing the longest learnable corridor by around 2-4 states. In deep BNIG's case the improvement is an increase of at least 8 states and possibly more. Once again this is probably due to the BNIG model being the only one actually propagating uncertainty. By increasing the step update in the BNIG model one is not only decreasing the bias of the expected value but also decreasing the bias of the variance. In other words the n-state update not only improves the value estimation but also improves the exploration, resulting in a larger improvement than in other methods.
 
-\section{\color{red}{Temp?} \color{black} State Dependent Inverse Gamma Distribution}
+% \section{\color{red}{Temp?} \color{black} State Dependent Inverse Gamma Distribution}
 
-\todo This might not be worth including but I'm writing it down so we can discuss if it's worth working on.
+% \todo This might not be worth including but I'm writing it down so we can discuss if it's worth working on.
 
-\todo I originally worked on this to stabalize beta (which no longer is a problem) but realized it could be used with a model. I've tested a bit on corridor with a linear model with OK results, but need to test more to actually conclude that this works. But I wont work more on this until we have discussed this and after I've come further on my thesis.
+% \todo I originally worked on this to stabilize beta (which no longer is a problem) but realized it could be used with a model. I've tested a bit on corridor with a linear model with OK results, but need to test more to actually conclude that this works. But I wont work more on this until we have discussed this and after I've come further on my thesis.
 
-The variance of a state should be dependent on the state, which is not the case with in BNIG model. To fix this the inverse gamma distribution parameters should be dependent on the state. With some linear algebra it is possible to rewrite the $b$ term in terms of the next state variance and temporal difference. First recall the parameter updates
+% The variance of a state should be dependent on the state, which is not the case with in BNIG model. To fix this the inverse gamma distribution parameters should be dependent on the state. With some linear algebra it is possible to rewrite the $b$ term in terms of the next state variance and temporal difference. First recall the parameter updates
 
-\begin{align}
-    a_n &= a_0 + \frac{n}{2} \\
-    b_n &= b_0 + \frac{1}{2}(Q^TQ - \mu_n^TX^TX\mu_n)
-\end{align}
+% \begin{align}
+%     a_n &= a_0 + \frac{n}{2} \\
+%     b_n &= b_0 + \frac{1}{2}(Q^TQ - \mu_n^TX^TX\mu_n)
+% \end{align}
 
-where some terms are removed as a prior mean of 0 is used.
+% where some terms are removed as a prior mean of 0 is used.
 
-Denote $y$ as the target, $\hat{Q}$ as the action-value of the next state and $Q$ the action-value of the current state. The target is then distributed by $N(r + \hat{Q}, \sigma^2_{a'})$. Using the moments of a normal distribution one finds
+% Denote $y$ as the target, $\hat{Q}$ as the action-value of the next state and $Q$ the action-value of the current state. The target is then distributed by $N(r + \hat{Q}, \sigma^2_{a'})$. Using the moments of a normal distribution one finds
 
-\begin{equation}
-    \begin{split}
-        \mathbb{E}[Q^TQ] &= n\sigma^2_{a'} + (r + \hat{Q})^T(r + \hat{Q})\\
-        \mathbb{E}[b_n] &= b_0 + \frac{1}{2}\bigg(n\sigma^2 + (r + \hat{Q})^T(r + \hat{Q}) - Q^TQ\bigg)\\
-        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + (r + \hat{Q} - Q)^T(r + \hat{Q} + Q)\bigg)\\
-        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + \delta^T(r + \hat{Q} + Q)\bigg)\\
-        &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta\bigg)
-    \end{split}
-\end{equation}
+% \begin{equation}
+%     \begin{split}
+%         \mathbb{E}[Q^TQ] &= n\sigma^2_{a'} + (r + \hat{Q})^T(r + \hat{Q})\\
+%         \mathbb{E}[b_n] &= b_0 + \frac{1}{2}\bigg(n\sigma^2 + (r + \hat{Q})^T(r + \hat{Q}) - Q^TQ\bigg)\\
+%         &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + (r + \hat{Q} - Q)^T(r + \hat{Q} + Q)\bigg)\\
+%         &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + \delta^T(r + \hat{Q} + Q)\bigg)\\
+%         &= b_0 + \frac{1}{2}\bigg(n\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta\bigg)
+%     \end{split}
+% \end{equation}
 
-where $\delta$ is the temporal difference and the last line reduces the number arguments required for the calculation. This leaves an equation that is dependent on the variance of the next state and the temporal difference error. With this setup $\sigma^2_a$ can be replaced by a model $\sigma^2_{a} = X\beta_{\sigma_{a}}$ that trains on targets $\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta$.
+% where $\delta$ is the temporal difference and the last line reduces the number arguments required for the calculation. This leaves an equation that is dependent on the variance of the next state and the temporal difference error. With this setup $\sigma^2_a$ can be replaced by a model $\sigma^2_{a} = X\beta_{\sigma_{a}}$ that trains on targets $\sigma^2_{a'} + 2\delta^Ty-\delta^T\delta$.
 
 \cleardoublepage

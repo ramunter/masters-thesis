@@ -30,7 +30,7 @@ In general the environment consists of two things. First is the state, which def
 \end{figure}
 
 
-Upon reaching the goal the game is over, making the goal state a \textit{temrinal state}. Environments with terminal states are called \textit{episodic} as during training the game must be reset to keep playing. If instead the player is teleported back to the start and can keep playing it is a \textit{continuous} environment.
+Upon reaching the goal the game is over, making the goal state a \textit{terminal state}. Environments with terminal states are called \textit{episodic} as during training the game must be reset to keep playing. If instead the player is teleported back to the start and can keep playing it is a \textit{continuous} environment.
 
 \subsection{Tabular Markov Decision Process}
 
@@ -56,7 +56,7 @@ Essentially a MDP allows for an action to be taken at each state which in turn e
 
 From this definition one can model the gridworld example as a MDP. Given a player state, an action can be chosen to move to North, East, West or South. As long as the action leads to a state that is on the grid, the transition probability is one to the desired square and zero for all other squares. If the action leads off-grid the transition probability is one to stay in the same square. This follows the Markov property as the transition probability is only dependent on the current state and action. Finally, performing an action the agent receives a reward of +10 if it reaches the goal and -1 otherwise.  
 
-\section{Dynamic Programming solutions to Tabular MDP's}
+\section{Dynamic Programming solutions to Tabular MDPs}
 
 \subsection{Bellman Equation}
 
@@ -641,7 +641,7 @@ The BDQN assumes a gaussian prior and posterior distribution. It then replaces t
 
 Since this thesis will be heavily discussing the BDQN it is also worth noting that \cite{azziz_2018} has not been accepted to any conference at the time of writing. Despite this the paper is well known in the RL field with over 30 citations and is often brought up in new PSRL papers. An open review for ICLR 2019 shows that the concerns about this paper revolve mainly around the second part of the paper, a theoretical proof of performance, not the BDQN\citep{openreview_bdqn}.
 
-\subsection{Drop Out}
+\subsection{Dropout}
 
 On a short note, if the reader is well-versed in neural networks one might wonder why none of these paper use dropout to estimate the posterior. In this case it is recommended to view the discussion in \cite{osband_2018} about the shortcomings of dropout in RL. In addition \cite{azziz_2018} empirically shows that dropout does not perform well in the RL setting.
 
