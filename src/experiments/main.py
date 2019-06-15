@@ -24,13 +24,10 @@ def main(argv):
 
     critics = {
         "E Greedy": EGreedyCritic,
-        # "UBE": UBECritic,
-        # "Sample Target UBE": SampleTargetUBECritic,
-        "Gaussian Prior": GaussianBayesCritic,
-        # "Deep Exploration Gaussian Prior": DeepGaussianBayesCritic,
-        "Gaussian Prior 2": GaussianBayesCritic2,
-        # "Test Critic": TestCritic,
-        # "Kalman Filter": KalmanFilterCritic,
+        "BN": GaussianBayesCritic,
+        "Deep BN": GaussianBayesCritic,
+        "BNIG": GaussianBayesCritic2,
+        "Deep BNIG": DeepGaussianBayesCritic2
     }
 
     experiment(

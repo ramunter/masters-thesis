@@ -13,6 +13,7 @@ from src.agents.util import GaussianRegression2
 flags.DEFINE_integer("states", 5, "Number of states")
 flags.DEFINE_float("scale", 1, "SD of target")
 
+
 FLAGS = flags.FLAGS
 
 plt.rcParams.update({'font.size': 32})
@@ -23,24 +24,22 @@ def n_state_prop(models, target_scale):
 
     T=10000
     n=1
+    step = 1
     for i in range(int(T/n)):
 
-        for m, model in enumerate(models[0:-1]):
-            # var = np.array([1]*n)@model.cov@np.array([1]*n).T +\
-            #     model.b/(model.a - 1) 
-            # vartar = np.array([1]*n)@models[m+1].cov@np.array([1]*n).T +\
-            #         models[m+1].b/(models[m+1].a - 1) 
-
-            # if var < vartar:
-            target = np.array([models[m+1].sample(np.array([1])) for _ in range(n)])
-            # else:
-            #     target = np.array([models[m+1].mean]*n)
-
-            model.update_posterior(np.array([1]*n), target, n=n) 
-
-        models[-1].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n=n)
+        for m, model in enumerate(models):
+            if m+step < len(models):
+                target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
+                var = models[m+step].expected_variance
+                model.update_posterior(np.array([1]*n), target, n) 
+            else:
+                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), 1)
 
 
+
+    for i, model in enumerate(models):
+        print("State", i+1)
+        model.print_parameters()
     ## Plotting code
 
     def plot_posterior(ax, model, index):
@@ -74,10 +73,7 @@ def n_state_prop(models, target_scale):
     plt.xlabel('State Value')
     plt.ylabel('Probability', labelpad=80)
     plt.show()
-
-    for i, model in enumerate(models):
-        print("State", i+1)
-        model.print_parameters()
+    
 
 def main(argv):
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 from numpy.random import choice, binomial
-from numpy import arange
+from numpy import arange, zeros, array
 
 import gym
 from gym import spaces
@@ -38,12 +38,16 @@ class Corridor(gym.Env):
         self.reverse_states = choice(arange(N), size=K, replace=False)
         self.p = p
 
-        self.state = 0  # Start at beginning of the chain
+        self.state = 1  # Start at beginning of the chain
         self.steps = 1
         self.max_steps = N
 
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Discrete(self.N)
+
+    @property
+    def state_output(self):
+        return array([self.steps, self.state])
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -56,13 +60,15 @@ class Corridor(gym.Env):
 
         action = self.env_changes_to_actions(action)
         self.transition(action)
-        reward = self.reward_calculator()
+        reward = self.reward_calculator(action)
 
         if self.steps >= self.max_steps:
             done = True
         else:
             done = False
-        return self.state, reward, done, {}
+
+
+        return self.state_output, reward, done, {}
 
     def env_changes_to_actions(self, action):
 
@@ -79,23 +85,27 @@ class Corridor(gym.Env):
     def transition(self, action):
 
         if action == LEFT:
-            if self.state != 0:
+            if self.state != 1:
                 self.state -= 1
 
-        elif action == RIGHT and self.state < self.N - 1:  # 'forwards action'
+        elif action == RIGHT and self.state < self.N:  # 'forwards action'
             self.state += 1
 
-    def reward_calculator(self):
+    def reward_calculator(self, action):
 
-        if self.state == self.N - 1:
+        if self.state == self.N:
             reward = 1
+        elif action == 0:
+            reward = 1/(10*self.N)
         else:
             reward = 0
 
         return reward
 
     def reset(self):
-        self.state = 0
-        self.steps = 0
+        self.state = 1
+        self.steps = 1
 
-        return self.state
+        return self.state_output
+
+    

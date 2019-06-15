@@ -40,8 +40,8 @@ def featurizer(state, action, batch=False):
 class GaussianRegression():
     def __init__(self, noise=1, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.cov = np.eye(dim)*1e3
-        self.noise = noise
+        self.cov = np.eye(dim)*1e-3
+        self.noise = 1e-12
         self.dim = dim
 
 
@@ -50,18 +50,24 @@ class GaussianRegression():
 
         inv_cov = np.linalg.inv(self.cov)
 
-        self.mean = np.linalg.inv(X.T@X + self.noise * inv_cov) @ \
+        self.mean = np.linalg.inv(X.T@X + inv_cov) @ \
             (X.T@y + inv_cov@self.mean)
-        self.cov = np.linalg.inv(
-            self.noise**(-2) * X.T @ X + inv_cov)
+        self.cov = np.linalg.inv(X.T @ X + inv_cov)
 
-    def sample(self):
+    def sample(self, X):
+        beta_sample = self.sample_params()
+        return self.sample_y(X, beta_sample)
+
+    def sample_params(self):
         coef = np.random.multivariate_normal(
             self.mean[:, 0], self.cov)
         return coef
 
+    def sample_y(self, X, beta_sample):
+        return stats.norm.rvs(X@beta_sample.reshape(-1,1), np.sqrt(self.noise))
+
     def pdf(self, x, X):
-        return np.squeeze(stats.norm.pdf(x, X@self.mean, (np.eye(self.dim)+X@self.cov@X.T)*self.noise))
+        return np.squeeze(stats.norm.pdf(x, X@self.mean, (np.eye(self.dim)*self.noise)))
 
     def print_parameters(self):
         print("Mean\n", self.mean)
@@ -71,54 +77,74 @@ class GaussianRegression():
 class GaussianRegression2():
     def __init__(self, dim=3):
         self.mean = np.zeros((dim, 1))
-        self.invcov = np.eye(dim)*1e-3
+        self.invcov = np.eye(dim)
         self.cov = np.linalg.inv(self.invcov)
-        self.a = 1 + 1e-6
-        self.b = 1e-6
+
+        self.a = 1 + 1e-3
+        self.b = 1e-2
         self.dim = dim
+        self.counter = 0
+
+        self.XTX = np.zeros((dim,dim))
+        self.XTy = np.zeros((dim,1))
+        self.yTy = 0
+        self.n = 0
+        self.var = 0
+
+    @property
+    def expected_variance(self):
+        return self.b/(self.a-1)
 
     def update_posterior(self, X, y, n):
-
+        
         y = y.reshape((n, 1))
-        mean_0 = self.mean
-        invcov_0 = self.invcov
-        
-        self.invcov = X.T@X + self.invcov
+    
+        lr = 1-1e-3
+
+        mean_0 = np.zeros((self.dim, 1))
+        invcov_0 = np.eye(self.dim)
+
+        a_0 = 1e3 + 1e-3
+        b_0 = 1e-2
+
+        self.XTX = lr*self.XTX + X.T@X
+        self.XTy = lr*self.XTy + X.T@y
+        self.invcov = self.XTX + invcov_0
         self.cov = np.linalg.inv(self.invcov)
+        self.mean = self.cov@(self.XTy + invcov_0@mean_0)
 
-        self.mean = np.linalg.inv(
-            X.T@X + invcov_0)@(X.T@y + invcov_0@mean_0)
+        self.n = lr*self.n + n
+        self.a = a_0 + self.n/2
 
-        self.a = self.a + n/2
-        
-        self.b = self.b + 0.5*np.asscalar(y.T@y + mean_0.T@invcov_0@mean_0 -
-            self.mean.T@self.invcov@self.mean)
-        
+        self.yTy = lr*self.yTy + y.T@y#self.mean.T@X.T@X@self.mean 
+        self.b = max(b_0 + 0.5*np.asscalar(self.yTy - 
+            self.mean.T@self.invcov@self.mean), 1e-6)
+        print(self.b)
 
-    def sample(self, X):
-        beta_sample, sigma_2 = self.sample_params()
-        beta_sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], np.linalg.inv(self.invcov)*sigma_2)
-
+    def sample(self, X, normal_vector):
+        sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
+        beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
         return self.sample_y(X, beta_sample, sigma_2)
 
-    def sample_params(self):
+    def sample_e(self, X, normal_vector):
         sigma_2 = stats.invgamma.rvs(self.a, scale=self.b)
-        beta_sample = stats.multivariate_normal.rvs(
-            self.mean[:,0], np.linalg.inv(self.invcov)*sigma_2)
-        return beta_sample, sigma_2
+        beta_sample = self.mean[:,0] + np.linalg.cholesky(self.cov)@normal_vector*np.sqrt(sigma_2)
+        return self.sample_ey(X, beta_sample)
 
     def sample_y(self, X, beta_sample, sigma_2):
-        return stats.norm.rvs(X@beta_sample.reshape(-1,1), np.sqrt(sigma_2))
+        return stats.norm.rvs(X@beta_sample.reshape(-1,1), sigma_2)
+
+    def sample_ey(self, X, beta_sample):
+        return X@beta_sample.reshape(-1,1)
 
     def pdf(self, x, X):
         return multivariate_student_t(
             x, X@self.mean, self.b/self.a*(np.eye(self.dim)+X@self.cov@X.T), 2*self.a)
 
-        # return stats.t.pdf(x, 2*self.a, X@self.mean, self.b/self.a*(np.eye(self.dim)+X@self.cov@X.T)).reshape(-1)
 
     def print_parameters(self):
         print("Mean\n", self.mean)
-        print("Inv Cov\n", self.invcov)
+        print("Cov\n", self.cov)
         print("Gamma shape", self.a)
         print("Gamma scale", self.b)
+

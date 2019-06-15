@@ -3,6 +3,7 @@ from collections import namedtuple, deque
 
 import numpy as np
 from numpy.random import binomial
+import scipy.stats as stats
 
 from sklearn.linear_model import SGDRegressor, SGDClassifier
 from filterpy.kalman import KalmanFilter
@@ -20,6 +21,10 @@ class CriticTemplate(ABC):
 
     @abstractmethod
     def get_action(self, state):
+        pass    
+        
+    @abstractmethod
+    def get_eval_action(self, state):
         pass
 
     @abstractmethod
@@ -32,10 +37,6 @@ class CriticTemplate(ABC):
 
     def reset(self):
         pass
-
-    def best_action(self, state):
-        action, q_value = self.get_target_action_and_q_value(state)
-        return action
 
     # Debug functions
 
@@ -56,7 +57,7 @@ class CriticTemplate(ABC):
 class EGreedyCritic(CriticTemplate):
     """ A regular E greedy agent with a constant E."""
 
-    def __init__(self, state, batch=False, final_eps=0.01, lr=0.01):
+    def __init__(self, state, batch=False, final_eps=1e-3, lr=0.01):
         """
         Initializes a linear model.
 
@@ -67,8 +68,8 @@ class EGreedyCritic(CriticTemplate):
             lr    : Learning rate used by the linear model.
         """
         self.final_eps = final_eps
-        self.eps = 1
-        self.eps_decay = (1-final_eps)/200
+        self.eps = 0.1
+        self.eps_decay = (1-final_eps)/2000
         self.batch = batch
         self.model = self.setup_model(state, lr)
 
@@ -82,11 +83,14 @@ class EGreedyCritic(CriticTemplate):
 
     def get_action(self, state):
         """ Gets an action using the E greedy approach."""
-
         if binomial(1, self.eps):
             return binomial(1, 0.5)
         else:
-            return self.best_action(state)
+            return self.get_eval_action(state)
+
+    def get_eval_action(self, state):
+        action, q_value = self.get_target_action_and_q_value(state)
+        return action
 
     def get_target_action_and_q_value(self, state):
         """ Calculates the optimal action and Q-value."""
@@ -100,9 +104,9 @@ class EGreedyCritic(CriticTemplate):
     def update(self, state, action, target):
         """Takes one optimization step for the linear model."""
 
-        features = featurizer(state, action, self.batch)
-        self.model.partial_fit(features, target)
-        return features
+        X = featurizer(state, action, self.batch)
+        self.model.partial_fit(X, np.array([target]).reshape(1,))
+        return X
 
     def q_value(self, state, action):
         """Caclulates Q-value given state and action."""
@@ -238,19 +242,29 @@ class GaussianBayesCritic(CriticTemplate):
             lr    : Learning rate used by the linear model. 
             batch : Batch or single updates?
         """
+        self.count = 0
 
         self.batch = batch
         if type(state) is int:
-            feature_size = 3
+            feature_size = 2
         else:
-            feature_size = len(state) + 2  # Add bias term and action term.
+            feature_size = len(state) + 1  # Add bias term.
 
-        self.model = GaussianRegression(dim=feature_size)
+        self.models = [GaussianRegression(dim=feature_size), GaussianRegression(dim=feature_size)] # Model per action
+        self.final_eps = 0.01
+        self.eps = 1
+        self.eps_decay = (1-self.final_eps)/200
 
     def get_action(self, state):
-        self.coef = self.model.sample()
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
+
+    def get_eval_action(self, state):
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -268,27 +282,37 @@ class GaussianBayesCritic(CriticTemplate):
 
     def update(self, state, action, target):
         """Calculate posterior and update prior."""
-                
-        X = featurizer(state, action, self.batch)
-        self.model.update_posterior(X, target, 1)
+        X = self.featurizer(state)
+        self.models[action].update_posterior(X, target, 1)
+        X = np.array(np.append(state, [action, 1]))
         return X
 
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
-        features = featurizer(state, action)
-        prediction = features@self.coef
+        X = self.featurizer(state)
+        prediction = self.models[action].sample(X)
+
         return np.asscalar(prediction)
 
     def mean_q_value(self, state, action):
-        """Caclulate Q-value based on mean coefficients."""
-        features = featurizer(state, action)
-        prediction = features@self.model.mean[:,0]
+        """Caclulate Q-value based on sampled coefficients."""
+        X = self.featurizer(state)
+        prediction = X@self.models[action].mean
+
         return np.asscalar(prediction)
 
+    def featurizer(self, state):
+        #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
+        return np.append(state, [1]).reshape(1,-1)
+
     def print_parameters(self):
-        print("Coefficients")
-        print("Mean:\n", self.model.mean)
-        print("Cov:\n", self.model.cov)
+        for action in range(2):
+            print("Action ", action)
+            self.models[action].print_parameters()
+
+    def reset(self):
+        if self.eps > self.final_eps:
+            self.eps -= self.eps_decay
 
 
 class DeepGaussianBayesCritic(GaussianBayesCritic):
@@ -308,7 +332,7 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
             batch : Batch or single updates?
         """
         super().__init__(state, batch, lr)
-        self.coef = self.model.sample()
+        self.coef = [model.sample_params() for model in self.models]
 
     def get_target_action_and_q_value(self, state):
         """Samples an action by picking the largest Q-value."""
@@ -318,79 +342,18 @@ class DeepGaussianBayesCritic(GaussianBayesCritic):
             return 0, Q_left
         return 1, Q_right
 
-    def reset(self):
-        """Samples coefficients on episode reset."""
-        self.coef = self.model.sample()
-
-
-class GaussianBayesCritic2(CriticTemplate):
-    """
-    Bayesian linear model using a gaussian prior with unknown variance.
-
-    Samples both the Q- and target Q-value by sampling the parameters per step.
-    """
-
-    def __init__(self, state, batch=False, lr=0.01):
-        """
-        Initializes a bayesian linear model.
-
-        args:
-            state : State from the environment of interest.
-            lr    : Learning rate used by the linear model. 
-            batch : Batch or single updates?
-        """
-
-        self.batch = batch
-        if type(state) is int:
-            feature_size = 3
-        else:
-            feature_size = len(state) + 2  # Add bias term and action term.
-
-        self.model = GaussianRegression2(dim=feature_size)
-
-    def get_action(self, state):
-        self.coef, self.noise = self.model.sample_params()
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
-        if Q_left > Q_right:
-            return 0
-        return 1
-
-    def get_target_action_and_q_value(self, state):
-        """
-        Samples an action by sampling coefficients and choosing the highest
-        resulting Q-value.
-        """
-        self.coef, self.noise = self.model.sample_params()
-
-        Q_left = self.q_value(state, 0)
-        Q_right = self.q_value(state, 1)
- 
-        if Q_left > Q_right:
-            return 0, Q_left
-        return 1, Q_right
-
-    def update(self, state, action, target):
-        """Calculate posterior and update prior."""
-        X = featurizer(state, action, self.batch)
-        self.model.update_posterior(X, target, 1)
-        return X
-
     def q_value(self, state, action):
         """Caclulate Q-value based on sampled coefficients."""
-        features = featurizer(state, action)
-        prediction = self.model.sample_y(features, self.coef, self.noise)
-
+        features = self.featurizer(state)
+        prediction = self.models[action].sample_y(features, self.coef[action])
         return np.asscalar(prediction)
 
-    def print_parameters(self):
-        self.model.print_parameters()
-
     def reset(self):
-        # self.coef, self.noise = self.model.sample_params()
-        pass
+        """Samples coefficients on episode reset."""
+        self.coef = [model.sample_params() for model in self.models]
 
-class TestCritic(CriticTemplate):
+
+class DeepGaussianBayesCritic2(CriticTemplate):
     """
     Bayesian linear model using a gaussian prior with unknown variance.
 
@@ -414,21 +377,22 @@ class TestCritic(CriticTemplate):
         else:
             feature_size = len(state) + 1  # Add bias term.
 
-        self.policy = self.setup_model(state, lr)
-        self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
-        
-    def setup_model(self, state, lr):
-        policy = SGDClassifier(loss='log', learning_rate="constant",
-                             eta0=lr)
-        # SKlearn needs partial fit to be run once before use
-        policy.partial_fit(np.array(state).reshape(1, -1),
-                          np.array([0]), classes=np.array([0,1]))
+        self.feature_size = feature_size
 
-        return policy
+        self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
+        self.normal_samples = self.sample_standard_normal_vector()
+
 
     def get_action(self, state):
         Q_left = self.q_value(state, 0)
         Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
+
+    def get_eval_action(self, state):
+        Q_left = self.mean_q_value(state, 0)
+        Q_right = self.mean_q_value(state, 1)
         if Q_left > Q_right:
             return 0
         return 1
@@ -438,62 +402,66 @@ class TestCritic(CriticTemplate):
         Samples an action by sampling coefficients and choosing the highest
         resulting Q-value.
         """
-        Q_left = self.target_q_value(state, 0)
-        Q_right = self.target_q_value(state, 1)
+        Q_left = self.q_value(state,  0, stats.norm.rvs(size=self.models[0].dim))
+        Q_right = self.q_value(state, 1, stats.norm.rvs(size=self.models[1].dim))
         if Q_left > Q_right:
             return 0, Q_left
         return 1, Q_right
 
-    def update(self, state, action, next_state, next_action, done, target):
+    def update(self, state, action, target):
         """Calculate posterior and update prior."""
         X = self.featurizer(state)
-        X_2 = self.featurizer(next_state)
+        self.models[action].update_posterior(X, target, 1)
 
-        var1 = X@self.models[action].cov@X.T +\
-             self.models[action].b/(self.models[action].a - 1)
-
-        var2 = X_2@self.models[next_action].cov@X_2.T +\
-             self.models[next_action].b/(self.models[next_action].a - 1)
-        # print(var2)
-        if var2 < var1 or done:
-            self.models[action].update_posterior(X, target, 1)
-            # self.policy.partial_fit(np.array(state).reshape(1,-1), np.array([action]))
-        else:
-            self.count += 1
-            print(self.count)
-
-        return X
-
-    def q_value(self, state, action):
+    def q_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
-        self.coef, self.noise = self.models[action].sample()
-        features = self.featurizer(state)
-        prediction = features@self.coef + \
-            np.random.normal(0, np.sqrt(self.noise))
+        if normal_samples is None:
+            normal_samples = self.normal_samples[action]
+
+        X = self.featurizer(state)
+        prediction = self.models[action].sample(X, normal_samples)
         return np.asscalar(prediction)
 
-    def target_q_value(self, state, action):
+    def eq_value(self, state, action, normal_samples=None):
         """Caclulate Q-value based on sampled coefficients."""
-        features = self.featurizer(state)
+        if normal_samples is None:
+            normal_samples = self.normal_samples[action]
 
-        prediction = features@self.coef + \
-            np.random.normal(0, np.sqrt(self.noise))
+        X = self.featurizer(state)
+        prediction = self.models[action].sample_e(X, normal_samples)
+        return np.asscalar(prediction)
 
+    def mean_q_value(self, state, action, normal_samples=None):
+        """Caclulate Q-value based on sampled coefficients."""
+        X = self.featurizer(state)
+        prediction = X@self.models[action].mean
         return np.asscalar(prediction)
 
     def featurizer(self, state):
-        #return np.append([state, 1], self.policy.coef_).reshape(1,-1)
-        return np.array([state, 1]).reshape(1,-1)
+        return np.append(state, [1]).reshape(1,-1)
 
     def print_parameters(self):
         for action in range(2):
             print("Action ", action)
             self.models[action].print_parameters()
 
-    def reset(self):
-        # self.print_parameters()
-        pass
+    def sample_standard_normal_vector(self):
+        return [stats.norm.rvs(size=model.dim) for model in self.models]
 
+    def reset(self):
+        self.normal_samples = self.sample_standard_normal_vector()
+        # [model.reset_var_params() for model in self.models]
+
+
+
+class GaussianBayesCritic2(DeepGaussianBayesCritic2):
+    def get_action(self, state):
+        self.normal_samples = self.sample_standard_normal_vector()
+        Q_left = self.q_value(state, 0)
+        Q_right = self.q_value(state, 1)
+        if Q_left > Q_right:
+            return 0
+        return 1
 
 class KalmanFilterCritic(CriticTemplate):
     """

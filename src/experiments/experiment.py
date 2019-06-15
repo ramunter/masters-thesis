@@ -2,7 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
-from statistics import median
+from statistics import median, mean
 from collections import namedtuple
 
 plt.style.use('ggplot')
@@ -72,7 +72,7 @@ def run_all_attempts(env, agent, N, attempts):
             env, agent.critic, episodes=1000, verbose=False)
         list_steps_to_learn += [steps_to_learn]
 
-    average_steps_to_learn = median(list_steps_to_learn)
+    average_steps_to_learn = mean(list_steps_to_learn)
     return average_steps_to_learn
 
 
@@ -112,7 +112,7 @@ def create_critics(methods, critics):
 
     for critic_name, critic in critics.items():
         for method_name, method in methods.items():
-            names.append(method_name + " " + critic_name)
+            names.append(critic_name)
             agents.append(Agent(method, critic))
 
     return names, agents
@@ -128,6 +128,8 @@ def plot_results(results, filename):
 
     results_melted = pd.melt(
         results, id_vars=["N"], value_name="Episodes to Learn")
+
+    results_melted.to_csv(filename+".csv")
 
     sns.relplot(x="N", y="Episodes to Learn", hue="variable",
                 kind="line", data=results_melted)
