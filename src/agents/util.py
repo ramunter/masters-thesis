@@ -44,6 +44,7 @@ class GaussianRegression():
         self.noise = 1e-12
         self.dim = dim
 
+
     def update_posterior(self, X, y, n):
         y = y.reshape((n, 1))
 
