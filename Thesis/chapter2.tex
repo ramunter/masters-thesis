@@ -565,12 +565,11 @@ Figure \ref{fig:posterior-qvalues} shows that the expected Q-value of action A i
 
 \section{Recent Research within Deep PSRL}
 
-Computationally tractable methods for bayesian inference in neural networks is especially challenging. However there are multiple recent papers within that have been released the past year that are able to generalize PSRL to deep RL. Most of these use some form of approximation to simplify sampling from the posterior Q-value. A summary of three recent deep PSRL papers that are well cited and have helped form this thesis are provided.
+Computationally tractable methods for bayesian inference in neural networks is especially challenging. Despite this there are multiple recent papers within that have been released the past year that are able to generalize PSRL to deep RL. Most of these use some form of approximation to simplify sampling from the posterior Q-value. A summary of three recent deep PSRL papers that are well cited and have helped form this thesis are provided.
 
 \subsection{Randomized Prior Functions for Deep Reinforcement Learning}
 
 \cite{osband_2018} finds an approximation to the posterior Q-value distribution through a mixture of statistical bootstrapping and ensemble methods. First the method assumes the posterior to be a gaussian distribution. It then presents the following, slightly summarized, lemma:
-
 
 \textit{Let $f_\theta (x) = x^T\theta$, $\tilde{y}_i\sim N(y_i,\sigma^2)$ and $\tilde{\theta} \sim N(\bar{\theta}, \lambda I)$. Then the following optimization problem generates a sample $\theta | \mathcal{D}$}
 
@@ -578,7 +577,7 @@ Computationally tractable methods for bayesian inference in neural networks is e
     \tilde{\theta} + \argmin_\theta \sum_{i=1}^n\|\tilde{y}_i-(f_{\tilde{\theta}} + f_\theta)(x_i)\|_2^2 + \frac{\sigma^2}{\lambda}\|\theta\|_2^2.
 \end{equation}
 
-Breaking down this statement the method starts by sampling coefficients $\tilde{\theta}$ from the prior to create a prior function $f_{\tilde{\theta}}$. Then fit an additive model $f_\theta(x)$ with a regularization term $\frac{\sigma^2}{\lambda}\|\theta\|_2^2$ to a noisy version of the dataset $\tilde{y} \sim N(y, \sigma^2)$. The resulting outputs from $(f_{\tilde{\theta}}-f_{\theta})(x_i)$ will be a single sample from the posterior. 
+Breaking down this statement the method starts by sampling coefficients $\tilde{\theta}$ from the prior to create a prior function $f_{\tilde{\theta}}$. Then it fits an additive model $f_\theta(x)$ with a regularization term $\frac{\sigma^2}{\lambda}\|\theta\|_2^2$ to a noisy version of the dataset $\tilde{y} \sim N(y, \sigma^2)$. The resulting outputs from $(f_{\tilde{\theta}}-f_{\theta})(x_i)$ will be a single sample from the posterior. 
 
 This means that in order to model the posterior based on $n$ samples one needs $n$ models. Though it can be computationally heavy to create many models it is also noted that these models can be trained in parallel, meaning this method is scalable given the right computational resources.
 
@@ -588,15 +587,59 @@ To generalize to neural networks the method approximates further by replacing th
     Q(s,a) = f_\theta(s,a) + \beta p(s,a)
 \end{equation}
 
-The paper then shows that on hard exploration toy examples such as a variant on the chain environment(figure \ref{fig:chain}) the method far outperforms an $\varepsilon$-greedy exploration policy. In addition the method manages to escape the first room in Montezuma's Revenge, receiving a an average score of approximately 2500. However the paper also notes that this performance is sensitive to adjustments to the prior scale $\beta$.
+The paper then shows that on hard exploration toy examples such as a variant on the chain environment(figure \ref{fig:chain}) the method far outperforms an $\varepsilon$-greedy exploration policy. In addition the method manages to escape the first room in Montezuma's Revenge, receiving an average score of approximately 2500. However the paper also notes that this performance is sensitive to adjustments to the prior scale $\beta$.
 
-\subsection{Uncertainty Bellman Equation}
+\subsection{The Uncertainty Bellman Equation and Exploration}
 
-\cite{donoghue_2017}
+The specialization project that preceded this work was an investigation into \cite{donoghue_2017}. They introduce an upper-bound on the variance of the Q-value based on the Bellman equation
 
-\subsection{BDQN}
+\begin{equation}
+    \var Q(s,a) \le \nu(s,a) + \sum_{s',a'}\mathbb{E}\big[P(s'|s,a)\big]\var Q(s',a')
+\end{equation}
 
-\cite{azziz_2018}
+where $\nu$ is given by
+
+\begin{equation}
+    \nu(s,a) = \var \mu_r(s,a) + Q_{max}^2 \sum_{s'} \var \frac{P(s'|s,a)}{\mathbb{E}\big[P(s'|s,a)\big]}.
+\end{equation}
+
+$\nu$ is called the local uncertainty since it only depends on the current state-action pair and not the variance of future action-state pairs.
+
+By assuming the variance is the upper-bound value \cite{donoghue_2017} one gets a bellman style equation
+
+\begin{equation}
+    u(s,a) = \nu(s,a) + \sum_{s',a'}\mathbb{E}\big[P(s'|s,a)\big]\var Q(s',a')
+\end{equation}
+
+which, when based on experiences rather than model dynamics gives
+
+\begin{equation}
+    u(s,a) = \nu(s,a) + \gamma^2 u(s',a').
+\end{equation}
+
+Given a method to calculate $\nu$ this allows one to learn the $u(s,a)$ values using the same methods used to learn $Q(s,a)$.
+
+It is then assumed that there are enough experiences to use the central bayesian limit theorem. This implies that the posterior distribution of the $Q^*$-value is approximately distributed by a normal distribution\citep[p.~224]{berger_1985}. As such, given a $\mathbb{E}[Q]$ value from any regular Q-learning method and a variance calculated from the UBE one can sample a posterior $Q$-value from the distribution $N\bigg(\mathbb{E}\big[Q(s,a)\big], u(s,a)\bigg)$.
+
+The issue that remains is how to calculate the local uncertainty $\nu$. \cite{donoghue_2017} argues that $\nu$ can be approximated by action-value models variance. Given a target $y_i$ with i.i.d. variance it can be shown that for a linear regression with weights $w_a$, a new input $\phi(s)$ and design matrix $\bm{\Phi}$ the model variance is $\phi(s)^T\bm{\Phi}^T\bm{\Phi}\phi(s)$. The local uncertainty is the estimated by
+
+\begin{equation}
+    \nu(s,a) = \beta^2\phi(s)^T\bm{\Phi}^T\bm{\Phi}\phi(s)
+\end{equation}
+
+where $\beta$ is a hyperparameter that controls the scale of the local variance and represents the actual variance of the target.
+
+By ignoring the uncertainty in the neural network encoding the same logic can be applied to the final layer in a DQN. The final deep RL implementation creates a DQN with two heads. Head one is trained as a regular DQN and outputs Q-values. Head 2 is trained using the UBE with local uncertainties calculated from the final linear layer from head 1.
+
+Actions are then chosen by sampling the normal distribution with the mean estimate from head 1 and variance estimate from head 2. With this method \cite{donoghue_2017} managed state of the art results on Montezuma's Revenge when published. In addition it allowed, under heavy assumptions that are broken, sampling from an approximated posterior using a DQN model that only took 10\% more computation to run, rather than the $n$ times heavier computation for ensemble methods.
+
+\subsection{Efficient Exploration through Bayesian Deep Q-Networks}
+
+\cite{azziz_2018} will be discussed in detail in chapter \ref{ch:linear} so only a brief overview of the paper is provided here. The paper consists of two major results of which the first is relevant to this thesis. This part introduces a deep RL PSRL method they denote the Bayesian Deep Q-Network (BDQN). 
+
+The BDQN assumes a gaussian prior and posterior distribution. It then replaces the final linear layer in the DQN with a bayesian linear regression. This allows a DQN that can sample Q-values from a posterior, albeit one that ignores uncertainty in the network encoding. Note that this method does not explicitly propagate uncertainty and chapter \ref{ch:linear} will argue that the method has no uncertainty propagation. In addition, as in \cite{donoghue_2017} and \cite{osband_2018} the variance scale is set as a hyperparameter.
+
+Since this thesis will be heavily discussing the BDQN it is also worth noting that \cite{azziz_2018} has not been accepted to any conference at the time of writing. Despite this the paper is well known in the RL field with over 30 citations and is often brought up in new PSRL papers. An open review for ICLR 2019 shows that the concerns about this paper revolve mainly around the second part of the paper, a theoretical proof of performance, not the BDQN\citep{openreview_bdqn}.
 
 \subsection{Drop Out}
 
