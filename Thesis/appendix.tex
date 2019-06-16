@@ -1,4 +1,5 @@
 \appendix
+
 \chapter{Bayesian Regression Posterior Updates}
 
 \section{Normal Prior with Known Noise}{\label{a:bn}
@@ -45,14 +46,14 @@ For the bayesian setting where both $\beta$ and $\sigma^2$ are unknown the resul
 
 Under the assumption that the noise term is homoscedastic the joint prior can then be written as 
 
-% \begin{equation}
-%     \begin{split}
-%         p(\beta, \sigma^2) &= p(\beta|\sigma^2)p(\sigma^2)  \\
-%         &=\frac{1}{(2\pi\sigma^2)^\frac{p}{2}|\Sigma|^\frac{1}{2}}\exp\Big(-\frac{1}{2\sigma^2}\big(\beta-\mu\big)^T\Lambda\big(\beta-\mu\big)\Big)\cdot\\
-%         & \qquad \frac{b^a}{\Gamma(a)}\frac{1}{(\sigma^2)^{a+1}}\exp\Big(-\frac{b}{\sigma^2}\Big) \\
-%         &\propto \frac{1}{(\sigma^2)^{\frac{p}{2}+a+1}}\exp\Big(-\frac{1}{2\sigma^2}\big(\beta-\mu\big)^T\Lambda\big(\beta-\mu\big) - \frac{b}{\sigma^2}\Big)
-%     \end{split}
-% \end{equation}
+\begin{equation}
+    \begin{split}
+        p(\beta, \sigma^2) &= p(\beta|\sigma^2)p(\sigma^2)  \\
+        &=\frac{1}{(2\pi\sigma^2)^\frac{p}{2}|\Sigma|^\frac{1}{2}}\exp\Big(-\frac{1}{2\sigma^2}\big(\beta-\mu\big)^T\Lambda\big(\beta-\mu\big)\Big)\cdot\\
+        & \qquad \frac{b^a}{\Gamma(a)}\frac{1}{(\sigma^2)^{a+1}}\exp\Big(-\frac{b}{\sigma^2}\Big) \\
+        &\propto \frac{1}{(\sigma^2)^{\frac{p}{2}+a+1}}\exp\Big(-\frac{1}{2\sigma^2}\big(\beta-\mu\big)^T\Lambda\big(\beta-\mu\big) - \frac{b}{\sigma^2}\Big)
+    \end{split}
+\end{equation}
 
 Bayes rule then states that 
 
@@ -99,9 +100,128 @@ which one recognizes as the posterior updates for the BN model without the noise
 
 which shows that the normal inverse gamma prior is a conjugate prior with the posterior update shown in equation \ref{eq:unknown_noise_posterior_update}.
 
-\clearpage
+\chapter{Linear Model Experiments}
 
-\chapter{Additional Plots From BNIG DQN Experiments}
+\vspace{-1cm}
+
+\section{2 State Propagation}\label{a:2_state_exp}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[shorten <=2pt,shorten >=2pt,->,>=stealth',auto,node distance=3cm,
+        thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+        \node[main node] (1) {1};
+        \node[main node] (2) [right of=1] {2};
+
+        \path[every node/.style={font=\sffamily\small}]
+            (1) edge node {r=0} coordinate [pos=0.5] (middle)(2);
+    \end{tikzpicture}
+    \caption{\textbf{2 State Toy Environment}}
+    \label{fig:app_2state}
+\end{figure}
+
+For the 2 state propagation experiments a regression model $\mathcal{M}$ with the form $y = X\beta + \varepsilon$ where $\beta = [\begin{array}{cc}\beta_1  & \beta_2\end{array}]$ was used. Since state 2 has a known posterior $\mathcal{M}$ only trains on state 1. This means $x$ is always $[\begin{array}{cc}1  & 1\end{array}]$. The pseudocode for the two target methods follows. 
+
+\begin{algorithm}[H]
+    \caption{Sample Target Variance Propagation}
+    Initialize a model of choice $\mathcal{M}$\\
+    \For{iteration = 1, 1000}{
+        $y = \text{sample from} \; N(1,\sigma^2)$\\
+        Update $\mathcal{M}$ priors given input $(x, y)$
+    }
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{Mean Target Variance Propagation}
+    Initialize a model of choice $\mathcal{M}$\\
+    \For{iteration = 1, 1000}{
+        $y = 1$ \\
+        Update $\mathcal{M}$ priors given input $(x, y)$
+    }
+\end{algorithm}
+
+\section{N State Propagation}\label{a:n_state_exp}
+
+The N state propagation experiments were only running using BNIG models. One model was made per unknown state and each model was trained on one sample from the next state every iteration. This is summarized in the following pseudocode:
+
+\begin{algorithm}[H]
+    \caption{Multiple State Variance Propagation}
+    $s = \text{number of states}$ \\
+    $\mathcal{M}$ = array of $s-1$ of BNIG models\\
+    \For{iteration = 1, T}{
+        \For{i = 1, $s-2$}{
+            Sample $\beta, \sigma$ from $\mathcal{M}$[i+1] \\
+            Sample $\varepsilon \sim N(0, \sigma^2)$ \\
+            $y = x^T\beta + \varepsilon$\\
+            Update $\mathcal{M}[i]$ priors given input $(x, y)$
+        }
+        $y = \text{sample from} \; N(1,\sigma^2)$\\
+        Update $\mathcal{M}[s-1]$ given input $(x, y)$
+    }
+\end{algorithm}
+
+The 3 state experiments were run for 10000 iterations while the 6 state experiments were run for 1000 iterations.
+
+Instructions on how to run the code for all the propagation experiments can be found in the readme file that comes with the provided code.
+
+\section{Linear Corridor Experiment}{\label{a:lin_corridor}}
+
+The code ReadMe contains instructions on how to run the linear corridor experiment presented in chapter \ref{ch:linear}. The hyperparameters used to create the linear corridor experiment figure \ref{fig:linear_corridor}   are given below. A short description per hyperparameter is also provided
+
+\subsection{Hyperparameters}
+
+\subsubsection{$\varepsilon$-Greedy}
+
+The $\varepsilon$-greedy method has few hyperparameters. The learning rate is the learning rate used for the stochastic gradient descent over the regression parameters and is often denoted by $\alpha$ in RL literature. The $\varepsilon$ term is the probability of performing a random action. This is decayed during training from some initial $\varepsilon$ to a final $\varepsilon$ over a set number of episodes.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter                     & Value \\ \midrule
+        Learning Rate                      & 0.01  \\
+        Initial $\varepsilon$              & 1     \\
+        Final $\varepsilon$                & 0.001 \\
+        Num. episodes for decay            & 200   \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{BN}
+
+The hyperparameters for the BN model consist of the priors, the "known" noise variance and the decay rate for the exponential forgetting. The $\beta$ prior mean is se equal for all coefficients, with a value denoted $\mu$. The prior $\beta$ covariance is set have the value $\sigma^2_\beta$ along the diagonal and zero otherwise. The noise term $\sigma^2_\varepsilon$ is assumed known but treated as a hyperparameter. Finally the decay rate defines the discount factor used for the exponential forgetting of previous data. The terms used to update the posterior are multiplied by this factor terms as in formula \ref{eq:exponential_forgetting}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Prior $\mu$                  & 0     \\
+        Prior $\sigma_\beta^2$       & 0.001 \\
+        $\sigma^2_\varepsilon$       & 1e-12 \\
+        Decay Rate                   & 0.999 \\ \bottomrule
+        \end{tabular}
+\end{table}
+
+\subsubsection{BNIG}
+
+The BNIG hyperparameters are the same as the BN model apart from the known noise term which is replaced by the inverse gamma prior parameters. These two parameters are $a$ and $b$.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Prior $\mu$                  & 0     \\
+        Prior $\sigma_\beta^2$       & 1 \\
+        Prior $a$                    & 1 \\
+        Prior $b$                    & 0.01\\
+        Decay Rate                   & 0.999 \\ \bottomrule
+        \end{tabular}
+\end{table}
+
+
+\chapter{BNIG DQN Experiments}
 
 \section{Single Seed Plots}
 
@@ -119,7 +239,7 @@ which shows that the normal inverse gamma prior is a conjugate prior with the po
     \label{fig:nn_per_corridor}
 \end{figure}
 
-\section{Cartpole}
+\subsection{Cartpole}
 
 \begin{figure}[H]
     \centering

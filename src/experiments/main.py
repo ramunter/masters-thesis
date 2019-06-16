@@ -23,11 +23,11 @@ def main(argv):
     methods = {"Q-learning": q_learner}
 
     critics = {
-        "E Greedy": EGreedyCritic,
-        "BN": GaussianBayesCritic,
-        "Deep BN": GaussianBayesCritic,
+        # "E Greedy": EGreedyCritic,
+        # "BN": GaussianBayesCritic,
+        #"Deep BN": GaussianBayesCritic,
         "BNIG": GaussianBayesCritic2,
-        "Deep BNIG": DeepGaussianBayesCritic2
+        #"Deep BNIG": DeepGaussianBayesCritic2
     }
 
     experiment(

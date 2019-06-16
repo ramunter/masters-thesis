@@ -69,7 +69,7 @@ class EGreedyCritic(CriticTemplate):
         """
         self.final_eps = final_eps
         self.eps = 0.1
-        self.eps_decay = (1-final_eps)/2000
+        self.eps_decay = (1-final_eps)/200
         self.batch = batch
         self.model = self.setup_model(state, lr)
 

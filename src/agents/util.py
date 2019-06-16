@@ -43,15 +43,31 @@ class GaussianRegression():
         self.cov = np.eye(dim)*1e-3
         self.noise = 1e-12
         self.dim = dim
-
+        self.XTX = np.zeros((dim,dim))
+        self.XTy = np.zeros((dim,1))
     def update_posterior(self, X, y, n):
+
         y = y.reshape((n, 1))
+    
 
-        inv_cov = np.linalg.inv(self.cov)
+        mean_0 = np.zeros((self.dim, 1))
+        invcov_0 = np.linalg.inv(np.eye(self.dim)*1e-3)
 
-        self.mean = np.linalg.inv(X.T@X + inv_cov) @ \
-            (X.T@y + inv_cov@self.mean)
-        self.cov = np.linalg.inv(X.T @ X + inv_cov)
+        lr = 1-1e-3
+        self.XTX = lr*self.XTX + X.T@X
+        self.XTy = lr*self.XTy + X.T@y
+
+        self.invcov = self.XTX + invcov_0
+        self.cov = np.linalg.inv(self.invcov)
+        self.mean = self.cov@(self.XTy + invcov_0@mean_0)
+
+        # y = y.reshape((n, 1))
+
+        # inv_cov = np.linalg.inv(self.cov)
+
+        # self.mean = np.linalg.inv(X.T@X + inv_cov) @ \
+        #     (X.T@y + inv_cov@self.mean)
+        # self.cov = np.linalg.inv(X.T @ X + inv_cov)
 
     def sample(self, X):
         beta_sample = self.sample_params()
@@ -79,7 +95,7 @@ class GaussianRegression2():
         self.invcov = np.eye(dim)
         self.cov = np.linalg.inv(self.invcov)
 
-        self.a = 1 + 1e-3
+        self.a = 1
         self.b = 1e-2
         self.dim = dim
         self.counter = 0
@@ -103,7 +119,7 @@ class GaussianRegression2():
         mean_0 = np.zeros((self.dim, 1))
         invcov_0 = np.eye(self.dim)
 
-        a_0 = 1e3 + 1e-3
+        a_0 = 1
         b_0 = 1e-2
 
         self.XTX = lr*self.XTX + X.T@X

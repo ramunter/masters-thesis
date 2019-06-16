@@ -19,12 +19,14 @@ plot_data = function(df, title){
 }
 
 df1 = read.csv("all_long_1_step.csv")
-df1$variable = relevel(df1$variable, "Deep BN")
-df1$variable = relevel(df1$variable, "BN")
+df1$variable = relevel(df1$variable, "Per Sample BNIG")
+df1$variable = relevel(df1$variable, "Per Episode BN")
+df1$variable = relevel(df1$variable, "Per Sample BN")
 df1$variable = relevel(df1$variable, "E Greedy")
 df2 = read.csv("all_long_3_step.csv")
-df2$variable = relevel(df2$variable, "Deep BN")
-df2$variable = relevel(df2$variable, "BN")
+df2$variable = relevel(df2$variable, "Per Sample BNIG")
+df2$variable = relevel(df2$variable, "Per Episode BN")
+df2$variable = relevel(df2$variable, "Per Sample BN")
 df2$variable = relevel(df2$variable, "E Greedy")
 
 plot_data(df1, "Corridor 1-Step Methods")
