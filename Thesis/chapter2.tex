@@ -243,13 +243,30 @@ One set of methods are Monte Carlo methods. These simply update the values of th
 
 where $\alpha$ is the step size of the update. This can be viewed as using $G_t$ as the target value that is trying to be modeled. Note that using this method one must wait until the end of the game before updating values.
 
-Temporal difference methods instead update the value function every time a step is taken in the MDP.
+Temporal difference methods instead update the value function every time a step is taken in the MDP. To do one can replace $G_t$ by the one step return $G_{t:t+1} = R_{t+1} + \gamma V_{t+1}(S_{t+1})$ giving
 
 \begin{equation}
-    V_\pi(S_t) = V_\pi(S_t) + \alpha \big[R_{t+1} + \gamma V_\pi(S_{t+1}) - V(S_t)].
+    V_\pi(S_t) = V_\pi(S_t) + \alpha \big[R_{t+1} + \gamma V_\pi(S_{t+1}) - V(S_t)\big].
+    \label{eq:one-step}
 \end{equation}
 
 In this case the target is based on the estimated value of the next state and the reward gained in the step taken. In reinforcement learning literature this is referred to as bootstrapping the target value.
+
+Since equation \ref{eq:one-step} considers the reward after one step it is called the 1-step TD method. However one doesn't have to chose between the monte carlo return or the one-step bootstrap. $G_t$ can be replaced by any $n$-step return. For example a 3-step TD method
+
+\begin{equation}
+    V_\pi(S_t) = V_\pi(S_t) + \alpha \big[R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \gamma^3V_\pi(S_{t+3}) - V(S_t)\big].
+\end{equation}
+
+As $n\rightarrow\infty$ the $n$-step update becomes a Monte Carlo update. The choice of $n$ can be seen as a bias-variance trade-off. The variance in a target in RL comes from a combination of stochastic transitions in the environment and different or stochastic policies. The total return based on the Monte Carlo target has variance from both these sources over all steps in an episode. A 1-step episode only has variance from the single transition and action choice but uses a biased bootstraped target value. The minimal error will then be somewhere between the two as can be seen in in figure \ref{fig:bias-variance}.
+
+\begin{figure}[H] %this figure will be at the right
+    \centering
+    \includegraphics[scale=0.12]{bias_variance.png}
+    \captionsetup{width=.7\textwidth}
+    \caption{\textbf{RMS error on a toy example given different $n$-step updates}. A 4-step update is seen to achieve the best performance. The plot and more information about the toy example can be found on page 145 in \cite{sutton_barto_2018}}.
+    \label{fig:bias-variance}
+\end{figure}
 
 \subsubsection{Q-Learning}
 
