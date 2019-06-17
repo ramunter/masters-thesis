@@ -112,19 +112,37 @@ Here $T_{sync}$ is a hyperparameter that defines how often to sync the online an
     Initialize target BNIG models with priors $\mu^*_a = \mu^*_a$, $\Sigma^*_a = \Sigma^*_a$, $\alpha^*_a = \alpha^*_a$, $\beta^*_a = \beta^*_a$.
 \end{algorithm}
 
-\section{BNIG DQN Results}
+\section{Experiment Setup}
 
-In this section the BNIG DQN is tested on a variety of environments and compared to a regular DQN.
+The rest of this chapter consists of comparing the BNIG DQN to the regular DQN on a variety of environments. There are many factors that effect how well a RL model is perceived to perform so a few precautionary steps were taken to keep comparisons as fair as possible. 
 
-To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented ontop of this DQN implementation.
+\subsection{Implementation}
 
-The Dopamine package has hyperparmeters for the DQN on many of the tested environments. In some of the environments no hyperparemeters were provided. In these cases, to avoid bias towards BNIG DQN, the hyperparemeters were found by testing different combinations with the DQN. Only after good results were acheived using the DQN the BNIG DQN was run with the same hyperparameters. This means no tuning was done on the hyperparameters based on the BNIG DQN results. An overview of the hyperparmeters per environment is provided in the appendix.
+To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented on top of this DQN implementation.
+
+\subsection{Hyperparameter Tuning}
+
+The hyperparameters used in Deep RL can have large effects on the performance of the methods. Due to this it is important not to bias the results towards a model due to tuning hyperparameters more for one model than the other. 
+
+To avoid this and due to computational constraints the DQN hyperparameters were taken from the Dopamine package. For the corridor environment, which is not included in Dopamine, the hyperparameters were taken from the supplemental material provided for \cite{osband_2018}. The BNIG DQN hyperparameters that are not contained in the DQN, such as the priors, were set to the corresponding values from the linear example. The only exception to this was the forgetting rate, which was decreased on all environments apart from cartpole due to the longer episodes of these environments. This approach meant that if the results were to be biased it would most likely be towards the DQN.
+
+However a quick run through on the different environments resulted in the BNIG DQN failing on all environments. The smallest change found that lead to successful runs using the BNIG DQN was to increase from a 1-step update to a 3-step update. This change is known to give improvements to the DQN method \citep{hessel_2017} so the DQN hyperparameters were also changed to match this. To ensure that this was not detrimental to the DQN model performance all environments have been run using both the 1-step and 3-step DQN where the 3-step outperformed the 1-step across all environments.
+
+A detailed overview of the hyperparameters per environment is provided in the appendix.
+
+\subsection{Model Evaluation}
 
 The comparison of the two methods is based on their performance on the environment relative to the number of samples it has trained on. To fairly compare the methods during training the experiments the results are gathered from an evaluation stage. The evaluation stage is run every time one wants to measure the performance of the method and consists of calculating the average total reward over a few episodes.
 
-In this evaluation phase the model and network are not trained. The DQN agent acts greedly with respect to the DQN output, in other words with $\varepsilon=0$. The BNIG DQN acts greedily with respect to it's MAP estimate. This means it acts based on the mean $\beta$ values and no noise.
+In this evaluation phase the model and network are not trained. The DQN agent acts greedily with respect to the DQN output, in other words with $\varepsilon=0$. The BNIG DQN acts greedily with respect to it's MAP estimate. This means it acts based on the mean $\beta$ values and no noise.
+
+\section{BNIG DQN Results}
 
 \subsection{Corridor}
+
+The first environment test is a similar environment to the corridor environment introduced in chapter \ref{ch:linear}. However as an additional challenge half of states the actions are swapped, meaning action 1 moves left and action 0 moves right. Note that this is still a stationary environment. The swapped states are randomly chosen the first time the environment is initialized and stay the same throughout the training process.
+
+Due to computational constraints a chain length versus time to learn figure, like figure \ref{fig:linear_corridor}, was not possible. Instead single seeds were tested on different chain lengths of increasing size until one of the methods started failing. This occurred at a corridor length of 10.
 
 \begin{figure}[H]
     \centering
@@ -135,11 +153,14 @@ In this evaluation phase the model and network are not trained. The DQN agent ac
         \includegraphics[scale=0.5]{BDQNCorridor.png}
     }
     \caption{\textbf{DQN and BNIG DQN Performance on Corridor}: Plots show the median performance over 10 different attempts. The shaded area covers 80\% of the total reward over all attempts.}
-    \label{fig:nn_cartpole}
+    \label{fig:nn_corridor}
 \end{figure}
+
+
+
 \subsection{Cartpole}
 
-The environment considered is a classic toy example called cartpole. The environment was first proposed in \cite{barto_sutton_1983} and is easily available through the Open AI gym environment \citep{brockman_2016}.
+The environment considered is a classic toy example called cartpole. The environment was first proposed in \cite{barto_sutton_1983} and is available through the Open AI gym environment \citep{brockman_2016}.
 
 \begin{figure}[H]
     \centering
@@ -164,7 +185,7 @@ The environment implementation from OpenAI Gym was used \citep{brockman_2016}. E
     \label{fig:nn_cartpole}
 \end{figure}
 
-A policy that does not balance the pole lasts about 10 to 20 frames which is equivalent to a reward of 10 to 20. Figure \ref{fig:nn_cartpole} shows both methods are able to find successfull balancing policy. However, while the max performance of the DQN matches the BNIG DQN, the latter acheives much more stable results. Breaking down the results per seeds (figure \ref{fig:nn_per_cartpole}) one can see that the spread is caused by the instability of DQN after having found an optimal policy in some attempts and failing to find the optimal policy in others. The BNIG BDQN however always finds the optimal policy however can face some detoriation in performance towards the end of the experiment. 
+A policy that does not balance the pole lasts about 10 to 20 frames which is equivalent to a reward of 10 to 20. Figure \ref{fig:nn_cartpole} shows both methods are able to find successful balancing policy. However, while the max performance of the DQN matches the BNIG DQN, the latter acheives much more stable results. Breaking down the results per seeds (figure \ref{fig:nn_per_cartpole}) one can see that the spread is caused by the instability of DQN after having found an optimal policy in some attempts and failing to find the optimal policy in others. The BNIG BDQN however always finds the optimal policy however can face some deterioration in performance towards the end of the experiment. 
 
 \subsection{Acrobot}
 
@@ -218,14 +239,12 @@ Pong is one of the simpler environment in the ALE with superhuman performance ac
     \label{fig:nn_pong}
 \end{figure}
 
-BNIG started off well, with better evaluation performance than all DQN seeds for the first 5 iterations. From there on out the improvements decrease and the evaluation becomes more unstable. After 35 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evalute the performance but the results indicate the performance is similar to the DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update, which should improve performance, the underlying BNIG method seems to actually worse than DQN on this game.
+BNIG started off well, with better evaluation performance than all DQN seeds for the first 5 iterations. From there on out the improvements decrease and the evaluation becomes more unstable. After 35 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evaluate the performance but the results indicate the performance is similar to the DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update, which should improve performance, the underlying BNIG method seems to actually worse than DQN on this game.
 
 \subsection{Tuning BNIG}
 
-Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the rate parameters $b_a$ dramatically increase leading to a too large variance. Multiple attempts were made at controlling this increase but the only successfull result was increasing the scale parameter $a_a$.
+Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the rate parameters $b_a$ becomes increasingly unstable as seen in figure \ref{fig:scale_stability}. Multiple attempts were made at controlling this increase but the only successful result was increasing inverse gamma scale prior $a_a$.
 
-
-\todo replace scale plot, based on wrong hyperparameters, but the gist is correct
 \begin{figure}[H]
     \centering
     \subfloat[Prior Scale of 1]{
@@ -237,6 +256,8 @@ Due to the poor performance on acrobot and pong an attempt was made at tuning th
     \caption{\textbf{Development of rate parameter given different scale priors.}}
     \label{fig:scale_stability}
 \end{figure}
+
+The effect of increasing the inverse gamma scale prior is decreasing the mean $\sigma^2$ and the variance of $\sigma^2$. This means that it pushes the posterior distribution towards a low variance $Q$-value. This seems to stabilize the $\beta$ value but does so by decreasing exploration.
 
 \begin{figure}[H]
     \centering
