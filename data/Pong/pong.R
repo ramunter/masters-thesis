@@ -51,4 +51,4 @@ plot_results = function(filename, save_as){
 }
 
 plot_results('run-bdqn_pong_1-tag-Eval_AverageReturns.csv', 'BDQNPong')
-plot_results('run-bdqn_pong_2-tag-Eval_AverageReturns.csv', "BDQNPongHighAlpha")
+#plot_results('run-bdqn_pong_2-tag-Eval_AverageReturns.csv', "BDQNPongHighAlpha")

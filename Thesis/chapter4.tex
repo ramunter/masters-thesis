@@ -140,9 +140,9 @@ In this evaluation phase the model and network are not trained. The DQN agent ac
 
 \subsection{Corridor}
 
-The first environment test is a similar environment to the corridor environment introduced in chapter \ref{ch:linear}. However as an additional challenge half of states the actions are swapped, meaning action 1 moves left and action 0 moves right. Note that this is still a stationary environment. The swapped states are randomly chosen the first time the environment is initialized and stay the same throughout the training process.
+% However as an additional challenge half of states the actions are swapped, meaning action 1 moves left and action 0 moves right. Note that this is still a stationary environment. The swapped states are randomly chosen the first time the environment is initialized and stay the same throughout the training process.
 
-Due to computational constraints a chain length versus time to learn figure, like figure \ref{fig:linear_corridor}, was not possible. Instead single seeds were tested on different chain lengths of increasing size until one of the methods started failing. This occurred at a corridor length of 10.
+The first environment test is the same environment as the corridor environment introduced in chapter \ref{ch:linear}. Due to computational constraints a chain length versus time to learn figure, like figure \ref{fig:linear_corridor}, was not possible. Instead single seeds were tested on different chain lengths of increasing size until one of the methods started failing. This occurred at corridor length 10. Each model was then run 10 times on the length 10 corridor with results presented in figure \ref{fig:nn_corridor}.
 
 \begin{figure}[H]
     \centering
@@ -156,6 +156,7 @@ Due to computational constraints a chain length versus time to learn figure, lik
     \label{fig:nn_corridor}
 \end{figure}
 
+In contrast to the linear case the $\varepsilon$-greedy DQN method outperforms the BNIG DQN. In fact the BNIG DQN fails to find the correct policy across any seed (figure \ref{fig:nn_per_corridor}).
 
 
 \subsection{Cartpole}
@@ -241,9 +242,13 @@ Pong is one of the simpler environment in the ALE with superhuman performance ac
 
 BNIG started off well, with better evaluation performance than all DQN seeds for the first 5 iterations. From there on out the improvements decrease and the evaluation becomes more unstable. After 35 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evaluate the performance but the results indicate the performance is similar to the DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update, which should improve performance, the underlying BNIG method seems to actually worse than DQN on this game.
 
-\subsection{Tuning BNIG}
+\subsection{Stabilizing Variance}
 
-Due to the poor performance on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the rate parameters $b_a$ becomes increasingly unstable as seen in figure \ref{fig:scale_stability}. Multiple attempts were made at controlling this increase but the only successful result was increasing inverse gamma scale prior $a_a$.
+Due to the stability issues seen on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the scale parameters $b_a$ become increasingly unstable as seen in figure \ref{fig:scale_stability}a. Multiple attempts were made at controlling this increase but the only successful result came from adjusting the initial inverse gamma distribution towards a lower variance output. The reasoning for this will be discussed in chapter \ref{ch:disc}. Note that the statical arguments that follow aren't especially strong originating from the fact that exponential forgetting does not have a strong statistical fundament. The goal of this subsection is purely to show the potential of the BNIG methods given a more stable posterior update.  %increasing the inverse gamma scale prior $a_a$.
+
+\subsubsection{Low Varaince Prior}
+
+One way of decreasing the variance estimate is to adjust the priors of the distribution towards a lower mean inverse gamma. This can be done by either decreasing $b_a$ or increasing $a_a$. Of the two only increasing $a_a$ improved performance. The resulting improved stability can be seen in \ref{fig:scale_stability}b.
 
 \begin{figure}[H]
     \centering
@@ -257,18 +262,55 @@ Due to the poor performance on acrobot and pong an attempt was made at tuning th
     \label{fig:scale_stability}
 \end{figure}
 
-The effect of increasing the inverse gamma scale prior is decreasing the mean $\sigma^2$ and the variance of $\sigma^2$. This means that it pushes the posterior distribution towards a low variance $Q$-value. This seems to stabilize the $\beta$ value but does so by decreasing exploration.
+The effect of increasing the inverse gamma scale prior is decreasing the mean $\sigma^2$ and the variance of $\sigma^2$. This means that it pushes the posterior distribution towards a low variance $Q$-value. In general as the number of datapoints increase the resulting posterior is less and less defined by its prior. However as this method is using exponential forgetting the prior is never truly forgotten and so setting a high $a_a$ value will force a lower variance over the entire training process.
+
+\todo Insert results for corridor and cartpole here
+
+\begin{figure}[H] 
+    \centering 
+    \subfloat[Acrobot BNIG]{ 
+        \includegraphics[scale=0.5]{AlphaBDQNAcrobot.png} 
+    }
+    \subfloat[Pong BNIG]{ 
+        \includegraphics[scale=0.5]{BDQNPongHighAlpha.png}
+    }
+    \caption{\textbf{High scale prior results}} 
+    \label{fig:high_scale} 
+\end{figure}
+
+The results in figure \ref{fig:high_scale} show large improvements on both pong and acrobot. The performance on cartpole is relatively unchanged while the performance on corridor seems to have become slightly worse.
+
+\subsubsection{Data Prior}
+
+An alternative method is to adjust the initial values for the terms used in the posterior update of the inverse gamma parameters: $y^Ty$ and $n$. Up until this point these have been set to zero representing no data. However one can set the two terms to values equivalent to the expected value of having sampled from a distribution with a given variance. Since the mean $\sigma^2$ is $\frac{b_a}{a_a-1}$ setting $y^Ty\approx n$ will give a mean $\sigma^2\approx 1$. This will be referred to as a data prior. In addition one can control for how quickly this data prior is forgotten. To do this recall that given a forgetting rate of $\alpha$ the model is trained on data as far back as $\frac{1}{1-\alpha}$ and each data point increases $n$ by $1/2$. The geometric sum of $n$ given a forgetting rate of $\alpha$ will then be $\frac{0.5}{1-\alpha}$. Therefore setting a data prior $n=y^Ty=\frac{0.5}{1-\alpha}$ will give a prior mean variance of 1 that is forgotten after $\frac{1}{1-\alpha}$ new datapoints. This can then be scaled to control the number of datapoints the data prior will have an effect. The result of doing this on the cartpole example can be seen in figure \ref{fig:scale_stability2}b.
 
 \begin{figure}[H]
     \centering
-    \subfloat[Acrobot BNIG]{
-        \includegraphics[scale=0.5]{AlphaBDQNAcrobot.png}
+    \subfloat[Prior Scale of 1]{
+        \includegraphics[scale=0.5]{BUnstable.png}
     }
-    \subfloat[Pong BNIG]{
-        \includegraphics[scale=0.5]{BDQNPongHighAlpha.png}
+    \subfloat[Data Prior]{
+        \includegraphics[scale=0.5]{BStable2.png}
     }
-    \caption{\textbf{High scale prior results on acrobot and pong}}
-    \label{fig:nn_acrobot}
+    \caption{\textbf{Development of rate parameter given different scale priors.}}
+    \label{fig:scale_stability2}
+\end{figure}
+
+\todo Insert results for corridor, cartpole, acrobot and pong Here
+
+\begin{figure}[H] 
+    \centering 
+    \subfloat[Corridor]{ 
+        \includegraphics[scale=0.5]{RelativeBDQNCorridor.png} 
+    }
+    \subfloat[Cartpole]{ 
+        \includegraphics[scale=0.5]{RelativeBDQNCartpole.png} 
+    }
+    \subfloat[Acrobot]{ 
+        \includegraphics[scale=0.5]{RelativeBDQNAcrobot.png}
+    }
+    \caption{\textbf{Data prior results}} 
+    \label{fig:high_scale} 
 \end{figure}
 
 \cleardoublepage

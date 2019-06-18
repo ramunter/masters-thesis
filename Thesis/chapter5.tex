@@ -29,6 +29,12 @@ Consider regular Q-learning. The magnitude of the Q-values is controlled by the 
 
 In the variance case one should expect the same behavior. The propagation tests in chapter \ref{ch:linear} showed that given a known posterior state all other states leading up to this will converge towards the same variance. However this test is in a tabular setting where each state has its own variance parameter. In the linear setting a state that should have low variance, such as a penultimate state, will have to have a similar variance to all other states. As such there is no low variance state that slowly bounds the variance of all states. This allows for an ever increasing variance. If one instead has a state dependent variance one could expect a similar result as in Q-learning, with the low variance terminal states slowly bounding the variance of the rest of the states.
 
+\section{Results on Corridor Environment}
+
+One surprising result was the difference in performance on the corridor environment between the linear and neural network BNIG method. In the linear case it was shown that the per episode BNIG model outperformed the $\varepsilon$-greedy method. In the neural network setting the it was the opposite case with the $\varepsilon$-greedy DQN outperforming the BNIG DQN. Part of this can be explained by the extra stochasticity introduced through gradient descent over a larger number of parameters leading to more exploration regardless of the method used \citep{carlos_2018}. 
+
+However this does not explain why the BNIG DQN performs worse than the linear BNIG on the same problem. One possible reason for this is that, in hindsight, the linear corridor setup is biased towards the BNIG model. The input state in the linear corridor environment, as seen in the implementation details in \ref{a:lin_corridor}, is a vector of the number of steps taken and the current state. As such the requirement for the BNIG model to reach the end of the corridor is that the two coefficients for the right action are sampled large enough for the sum to be larger than action 0 in all states. The $\varepsilon$-greedy method on the other hand needs to randomly move to the right for every state, giving a probability $\varepsilon^N$ of reaching the end of the corridor based on the exploration policy. In the neural network case the BNIG model has an input size of 20 making it substantially less probable to reach the final state.
+
 \section{Method Improvements}
 
 \subsection{Allowing for State Dependent Variance}
@@ -40,6 +46,10 @@ One approach would be to use a random effects model\citep[p.~382-383]{gelman_201
 To avoid this one could instead set up a new model that incorporates the unequal variances and correlated errors by considering $y \sim N(X\beta, \Sigma_y)$ instead of $y \sim N(X\beta, \sigma_a)$.  However these models are more complicated to setup and usually some prior knowledge about the structure of the covariance matrix. It could be possible to somehow incorporate the RL structure to define a weighting for bayesian weighted regression\citep[p.~370-373]{gelman_2013}. 
 
 One way to define this weighting structure would be to use a model that assumes a known noise variance per datapoint. This is equivalent to a diagonal $\Sigma_y$. Then one could try to directly model the variance parameters by considering the structure of the RL problem. This approach is similar to the one introduced in \cite{donoghue_2017}. However note that the resulting model would be substantially different as instead of propagating explicitly through the uncertainty bellman equation the propagation would occur through sampling the target values.
+
+\subsection{Exponential Forgetting}
+
+Exponential forgetting was used as a quick solution to the non-stationary target issue due to it's simple implementation and low computational cost. However there exists plenty of literature in statistics on filtering to handle non-stationary targets. The main difficulty is finding a method the balances the accuracy of the filter with the computational cost of running the filter.
 
 \subsection{Runtime}
 

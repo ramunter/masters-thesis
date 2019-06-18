@@ -33,3 +33,7 @@ plot_data(df1, "Corridor 1-Step Methods")
 ggsave("../../Thesis/fig/Corridor1StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
 plot_data(df2, "Corridor 3-Step Methods")
 ggsave("../../Thesis/fig/Corridor3StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
+
+df3 = read.csv("state_encoding.csv")
+plot_data(df3, "test")
+ggsave("../../Thesis/fig/CorridorStateEncoding.png", width=126*1, height=63*1, units="mm", dpi=150)

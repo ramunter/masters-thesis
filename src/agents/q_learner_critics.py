@@ -378,7 +378,6 @@ class DeepGaussianBayesCritic2(CriticTemplate):
             feature_size = len(state) + 1  # Add bias term.
 
         self.feature_size = feature_size
-
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
         self.normal_samples = self.sample_standard_normal_vector()
 

@@ -46,16 +46,24 @@ load_data = function(method){
     df = melt(df, measure.vars=c("Value"))
     return(df)
 }
-
+setwd("~/masters-thesis/data/Cartpole/og")
 bdqn = load_data("bdqn")
 dqn = load_data("dqn")
 
 plot_summary(bdqn)
-ggsave("../../Thesis/fig/BDQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/BDQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
 plot_summary(dqn)
-ggsave("../../Thesis/fig/DQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/DQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
 
 plot_per_run(dqn)
-ggsave("../../Thesis/fig/PerDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
 plot_per_run(bdqn)
-ggsave("../../Thesis/fig/PerBDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerBDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
+
+setwd("~/masters-thesis/data/Cartpole/relative")
+
+bdqn = load_data("cartpole_plot_data3_bdqn")
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/RelativeBDQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/RelativePerBDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
