@@ -33,7 +33,11 @@ In the variance case one should expect the same behavior. The propagation tests 
 
 One surprising result was the difference in performance on the corridor environment between the linear and neural network BNIG method. In the linear case it was shown that the per episode BNIG model outperformed the $\varepsilon$-greedy method. In the neural network setting the it was the opposite case with the $\varepsilon$-greedy DQN outperforming the BNIG DQN. Part of this can be explained by the extra stochasticity introduced through gradient descent over a larger number of parameters leading to more exploration regardless of the method used \citep{carlos_2018}. 
 
-However this does not explain why the BNIG DQN performs worse than the linear BNIG on the same problem. One possible reason for this is that, in hindsight, the linear corridor setup is biased towards the BNIG model. The input state in the linear corridor environment, as seen in the implementation details in \ref{a:lin_corridor}, is a vector of the number of steps taken and the current state. As such the requirement for the BNIG model to reach the end of the corridor is that the two coefficients for the right action are sampled large enough for the sum to be larger than action 0 in all states. The $\varepsilon$-greedy method on the other hand needs to randomly move to the right for every state, giving a probability $\varepsilon^N$ of reaching the end of the corridor based on the exploration policy. In the neural network case the BNIG model has an input size of 20 making it substantially less probable to reach the final state.
+However this does not explain why the BNIG DQN performs worse than the linear BNIG on the same problem. In addition there was no observed instability over the noise variance, hence no improvement on the prior tuned BNIG DQN.
+
+In hindsight one possible reason for the worse performance is that the linear corridor setup is biased towards the BNIG model. The input state in the linear corridor environment, as seen in the implementation details in \ref{a:lin_corridor}, is a vector of the number of steps taken and the current state. As such the requirement for the BNIG model to reach the end of the corridor is that the two coefficients for the right action are sampled large enough for the sum to be larger than action 0 in all states. The $\varepsilon$-greedy method on the other hand needs to randomly move to the right for every state, giving a probability $\varepsilon^N$ of reaching the end of the corridor based on the exploration policy. In the neural network case the BNIG model has an input size of 20 making it substantially less probable to reach the final state.
+
+Despite this it was observed during training that the BNIG DQN does in fact reach the terminal state multiple times each iteration. This suggests that the current setup is not sensitive enough to datapoints. This could be due to the combination of the exponential weighting and BNIG model treating the higher rewards as noise. 
 
 \section{Method Improvements}
 
@@ -49,13 +53,13 @@ One way to define this weighting structure would be to use a model that assumes 
 
 \subsection{Exponential Forgetting}
 
-Exponential forgetting was used as a quick solution to the non-stationary target issue due to it's simple implementation and low computational cost. However there exists plenty of literature in statistics on filtering to handle non-stationary targets. The main difficulty is finding a method the balances the accuracy of the filter with the computational cost of running the filter.
+Exponential forgetting was used as a quick solution to the non-stationary target issue due to it's simple implementation and low computational cost. However it does not have a strong statistical base and makes it impossible to use stronger priors without leading to large differences in agent behavior. There exists plenty of literature in statistics on more informed filtering to handle non-stationary targets. One could for example build a state space model to perform this filtering. The main difficulty is finding a method the balances the accuracy of the filter with the computational cost of running the filter.
 
 \subsection{Runtime}
 
-The runtime of the BNIG DQN model is worse than the DQN model. On acrobot the DQN model averaged 220 frames per second during training while the BNIG DQN model averaged 145. However the BNIG implementation has not been optimized. Notably the covariance posterior update can be reduced from $O(p^3)$ to $O(p^2)$ where $p$ is the size of the final layer by using the Sherman-Morrison-Woodbury formula as in \cite{donoghue_2017}.
+The runtime of the BNIG DQN model is worse than the DQN model. On acrobot the DQN model averaged 220 frames per second during training while the BNIG DQN model averaged 145. However the BNIG implementation has not been optimized. Notably the covariance posterior update can be reduced from $O(p^3)$ to $O(p^2)$ where $p$ is the size of the final layer by using the Sherman-Morrison-Woodbury formula as in \cite{donoghue_2017}. 
 
-\subsection{Seperate N-Step}
+\subsection{Separate N-Step}
 
 A minor improvement would be to allow separate $n$-step updates for the neural network and the BNIG model. As seen in chapter \ref{ch:linear} increasing the $n$ can lead to much better variance propagation and better results in the RL setting. However a high $n$-step reduces performance and earlier papers have found $n=3$ performs best on ALE\citep{hessel_2017}. However since the training procedures for the BNIG model and network are separate one can use separate $n$ values for each model. This is used in \cite{donoghue_2017} where n is set to 150 for only the variance model.
 

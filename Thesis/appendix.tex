@@ -169,6 +169,10 @@ Instructions on how to run the code for all the propagation experiments can be f
 
 The code ReadMe contains instructions on how to run the linear corridor experiment presented in chapter \ref{ch:linear}. The hyperparameters used to create the linear corridor experiment figure \ref{fig:linear_corridor}   are given below. A short description per hyperparameter is also provided
 
+\subsection{Environment Details}
+
+The environment consists of N states and lasts N timesteps. A right action leads to 0 reward unless it reaches the final right state in which case it returns a reward of 1. Every left action returns a reward of $\frac{1}{10N}$. The left action is encoded by 0 and the right by 1. The output from the environment is an array of two values, one for the current timestep and one for the current state.
+
 \subsection{Hyperparameters}
 
 \subsubsection{$\varepsilon$-Greedy}
@@ -222,6 +226,142 @@ The BNIG hyperparameters are the same as the BN model apart from the known noise
 
 
 \chapter{BNIG DQN Experiments}
+
+\section{Environment Hyperparameters}
+
+The prior parameters were set to the same value across all environments
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Prior $\mu$                  & 0 \\
+        Prior $\sigma_\beta^2$       & 1 \\
+        Prior $a$                    & 1 \\
+        Prior $b$                    & 0.01\\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Corridor}
+
+The corridor neural network contained one hidden layer with 20 neurons with ReLu activation functions.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.001 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 3-step \\
+        Train DQN Interval           & 10 steps \\
+        Target Sync Interval         & 10 steps \\
+        Batch Size                   & 128 \\
+        Max Replay Capacity          & 100000 \\ 
+        Initial $\varepsilon$        & 1 \\
+        Final $\varepsilon$          & 0 \\
+        $\varepsilon$ Decay Steps    & 250000 \\ \bottomrule
+    \end{tabular}
+    \quad
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.001 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 3-step \\
+        Train DQN Interval           & 10 \\
+        Target Sync Interval         & 10\\
+        Batch Size                   & 128 \\
+        Max Replay Capacity          & 100000 \\
+        Exponential Forgetting Rate  & 0.999 \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Cartpole and Acrobot}
+
+The same neural network and hyperparameters were used in cartpole and acrobot. The neural network consisted of two hidden layers with 512 neurons each and ReLu activation functions.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.001 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 10-step \\
+        Train DQN Interval           & 4 steps \\
+        Target Sync Interval         & 100 steps \\
+        Batch Size                   & 128 \\
+        Max Replay Capacity          & 100000 \\ 
+        Constant $\varepsilon$       & 0.01 \\ \bottomrule
+    \end{tabular}
+    \quad
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.001 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 10-step \\
+        Train DQN Interval           & 4 \\
+        Target Sync Interval         & 100 \\
+        Batch summarized             & 128 \\
+        Max Replay Capacity          & 100000 \\
+        Exponential Forgetting Rate  & 1-1e-5 \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Pong}
+
+The atari setup followed the setup used in \cite{mnih_2015}. This consists of resizing the input image to 84x84 and scaling the pixel values between 0 and 1. Finally the 4 previous frames are stacked before being sent into the network. The network consists of three 2D convolutional layers(details in table \ref{tb:conv_net}) followed by a flattening operation that is sent into a final hidden layer with 512 neurons with ReLu activation functions.
+
+\begin{table}[H]
+    \caption{Convolutional Layers}
+    \label{tb:conv_net}
+    \centering
+    \begin{tabular}{@{}cccc@{}}
+        \toprule
+        Layer & Filters & Size & Stride \\ \midrule
+        1 & 32 & 8x8 & 4 \\
+        2 & 64 & 4x4 & 2 \\
+        3 & 64 & 3x3 & 1 \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.001 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 5-step \\
+        Train DQN Interval           & 4 steps \\
+        Target Sync Interval         & 8000 steps \\
+        Batch Size                   & 32 \\
+        Max Replay Capacity          & 1000000 \\ 
+        Constant $\varepsilon$       & 0.01 \\ 
+        Initial $\varepsilon$        & 1 \\
+        Final $\varepsilon$          & 0.01 \\
+        $\varepsilon$ Decay Steps    & 250000 \\ \bottomrule
+    \end{tabular}
+    \quad
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        Hyperparameter               & Value \\ \midrule
+        Learning rate                & 0.00025 \\
+        Discount factor $\gamma$     & 0.99  \\
+        $N$-step                     & 5-step \\
+        Train DQN Interval           & 4 \\
+        Target Sync Interval         & 000 \\
+        Batch summarized             & 32 \\
+        Max Replay Capacity          & 1000000 \\
+        Exponential Forgetting Rate  & 1-1e-5 \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\clearpage
 
 \section{Single Seed Plots}
 
