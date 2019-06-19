@@ -189,6 +189,7 @@ The $\varepsilon$-greedy method has few hyperparameters. The learning rate is th
         Final $\varepsilon$                & 0.001 \\
         Num. episodes for decay            & 200   \\ \bottomrule
     \end{tabular}
+    \caption{Linear Corridor $\varepsilon$-Greedy hyperparameters}
 \end{table}
 
 \subsubsection{BN}
@@ -205,6 +206,8 @@ The hyperparameters for the BN model consist of the priors, the "known" noise va
         $\sigma^2_\varepsilon$       & 1e-12 \\
         Decay Rate                   & 0.999 \\ \bottomrule
         \end{tabular}
+        \caption{Linear Corridor BN hyperparameters}
+
 \end{table}
 
 \subsubsection{BNIG}
@@ -222,6 +225,7 @@ The BNIG hyperparameters are the same as the BN model apart from the known noise
         Prior $b$                    & 0.01\\
         Decay Rate                   & 0.999 \\ \bottomrule
         \end{tabular}
+        \caption{Linear Corridor BNIG hyperparameters}
 \end{table}
 
 
@@ -242,6 +246,7 @@ The prior parameters were set to the same value across all environments
         Prior $a$                    & 1 \\
         Prior $b$                    & 0.01\\ \bottomrule
     \end{tabular}
+    \caption{BNIG DQN Priors}
 \end{table}
 
 \subsection{Corridor}
@@ -277,6 +282,7 @@ The corridor neural network contained one hidden layer with 20 neurons with ReLu
         Max Replay Capacity          & 100000 \\
         Exponential Forgetting Rate  & 0.999 \\ \bottomrule
     \end{tabular}
+    \caption{Nerual network corridor hyperparameters: \textbf{Left}: DQN Priors. \textbf{right}:BNIG DQN Priors}
 \end{table}
 
 \subsection{Cartpole and Acrobot}
@@ -310,6 +316,7 @@ The same neural network and hyperparameters were used in cartpole and acrobot. T
         Max Replay Capacity          & 100000 \\
         Exponential Forgetting Rate  & 1-1e-5 \\ \bottomrule
     \end{tabular}
+    \caption{Acrobot and Cartpole hyperparameters: \textbf{Left}: DQN Priors. \textbf{right}:BNIG DQN Priors}
 \end{table}
 
 \subsection{Pong}
@@ -359,6 +366,7 @@ The atari setup followed the setup used in \cite{mnih_2015}. This consists of re
         Max Replay Capacity          & 1000000 \\
         Exponential Forgetting Rate  & 1-1e-5 \\ \bottomrule
     \end{tabular}
+    \caption{Atari hyperparameters: \textbf{Left}: DQN Priors. \textbf{right}:BNIG DQN Priors}
 \end{table}
 
 \clearpage
