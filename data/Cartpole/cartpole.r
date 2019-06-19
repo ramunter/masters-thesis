@@ -60,6 +60,14 @@ ggsave("../../../Thesis/fig/PerDQNCartpole.png", width=126*1, height=63*4, units
 plot_per_run(bdqn)
 ggsave("../../../Thesis/fig/PerBDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
 
+setwd("~/masters-thesis/data/Cartpole/alpha")
+
+bdqn = load_data("cartpole_bdqn")
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/AlphaBDQNCartpole.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/AlphaPerBDQNCartpole.png", width=126*1, height=63*4, units="mm", dpi=150)
+
 setwd("~/masters-thesis/data/Cartpole/relative")
 
 bdqn = load_data("cartpole_plot_data3_bdqn")

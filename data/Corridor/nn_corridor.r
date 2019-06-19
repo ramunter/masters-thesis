@@ -64,6 +64,16 @@ ggsave("../../../Thesis/fig/PerDQNCorridor.png", width=126*1, height=63*4, units
 plot_per_run(bdqn)
 ggsave("../../../Thesis/fig/PerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
 
+
+setwd("~/masters-thesis/data/Corridor/alpha")
+bdqn = load_data("corridor_bdqn")
+
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/AlphaBDQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/AlphaPerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
+
+
 setwd("~/masters-thesis/data/Corridor/relative")
 bdqn = load_data("bdqn")
 

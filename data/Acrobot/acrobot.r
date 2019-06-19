@@ -36,7 +36,7 @@ plot_per_run = function(df){
 
 load_data = function(method){
     df = data.frame()
-    for(i in 1:8){
+    for(i in 1:10){
         filename = paste("run-", method,"_acrobot_", i-1, "-tag-Eval_AverageReturns.csv", sep='')
         temp = read.csv(filename)
         temp$seed = as.factor(i)
@@ -70,7 +70,7 @@ bdqn = load_data("bdqn")
 plot_summary(bdqn)
 ggsave("../../../Thesis/fig/AlphaBDQNAcrobot.png", width=126*1, height=63*2, units="mm", dpi=150)
 plot_per_run(bdqn)
-ggsave("../../../Thesis/fig/PerAlphaBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/AlphaPerBDQNAcrobot.png", width=126*1, height=63*4, units="mm", dpi=150)
 
 setwd("~/masters-thesis/data/Acrobot/relative")
 bdqn = load_data("acrobot_tune_bdqn")

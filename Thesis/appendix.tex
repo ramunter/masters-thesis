@@ -229,7 +229,7 @@ The BNIG hyperparameters are the same as the BN model apart from the known noise
 \end{table}
 
 
-\chapter{BNIG DQN Experiments}
+\chapter{Single Seed Plots}
 
 \section{Environment Hyperparameters}
 
@@ -370,10 +370,8 @@ The atari setup followed the setup used in \cite{mnih_2015}. This consists of re
 \end{table}
 
 \clearpage
+\section{BNIG DQN Experiments}
 
-\section{Single Seed Plots}
-
-\subsection{Corridor}
 
 \begin{figure}[H]
     \centering
@@ -383,11 +381,10 @@ The atari setup followed the setup used in \cite{mnih_2015}. This consists of re
     \subfloat[BNIG DQN]{
         \includegraphics[scale=0.5]{PerBDQNCorridor.png}
     }
-    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Corridor}}
+    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Corridor}:  Each color represents a new attempt. The DQN consistently finds a successful policy. The BNIG DQN never finds one.}
     \label{fig:nn_per_corridor}
 \end{figure}
 
-\subsection{Cartpole}
 
 \begin{figure}[H]
     \centering
@@ -397,11 +394,9 @@ The atari setup followed the setup used in \cite{mnih_2015}. This consists of re
     \subfloat[BNIG DQN]{
         \includegraphics[scale=0.5]{PerBDQNCartpole.png}
     }
-    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Cartpole}: Each color represents a new attempt. Note the unstable performance of DQN when it has found a good policy and that some attempts it never finds an optimal policy.}
+    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Cartpole}: The DQN performance varies a lot from seed to seed. Some seeds the reward is unstable despite seemingly having found a good policy. Other  attempts it never finds an optimal policy. The BNIG DQN always reaches an optimal policy and has more stable results.}
     \label{fig:nn_per_cartpole}
 \end{figure}
-
-\subsection{Acrobot}
 
 \begin{figure}[H]
     \centering
@@ -411,6 +406,47 @@ The atari setup followed the setup used in \cite{mnih_2015}. This consists of re
     \subfloat[BNIG DQN]{
         \includegraphics[scale=0.5]{PerBDQNAcrobot.png}
     }
-    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Acrobot}: Each color represents a new attempt. The BNIG DQN occaisonaly finds a good policy, but is not able keep a stable policy.}
+    \caption{\textbf{Per Seed DQN and BNIG DQN Performance on Acrobot}: The BNIG DQN occasionally finds a successful policy but is very unstable. Based on these results the BNIG DQN does not successfully learn the acrobot environment.}
     \label{fig:nn_per_acrobot}
+\end{figure}
+
+\section{High Shape BNIG DQN Experiments}
+
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[scale=0.5]{PerDQNCorridor.png}
+    }
+    \subfloat[High Scale BNIG DQN]{
+        \includegraphics[scale=0.5]{AlphaPerBDQNCorridor.png}
+    }
+    \caption{\textbf{Per Seed DQN and High Shape BNIG DQN Performance on Corridor}: In 6 of 10 seeds the high shape BNIG DQN successfully learns the corridor environment.}
+    \label{fig:alpha_nn_per_corridor}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[scale=0.5]{PerDQNCartpole.png}
+    }
+    \subfloat[High Scale BNIG DQN]{
+        \includegraphics[scale=0.5]{AlphaPerBDQNCartpole.png}
+    }
+    \caption{\textbf{Per Seed DQN and High Shape BNIG DQN Performance on Cartpole}: The high shape BNIG DQN still outperforms the DQN but has less stable performance than the original BNIG DQN.}
+    \label{fig:alpha_nn_per_cartpole}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \subfloat[DQN]{
+        \includegraphics[scale=0.5]{PerDQNAcrobot.png}
+    }
+    \subfloat[High Scale BNIG DQN]{
+        \includegraphics[scale=0.5]{AlphaPerBDQNAcrobot.png}
+    }
+    \caption{\textbf{Per Seed DQN and High Shape BNIG DQN Performance on Acrobot}: The high shape parameter leads to much better performance on cartpole than the original BNIG DQN. The performance between the DQN and high shape BNIG DQN is similar but the high shape BNIG DQN does learn a successful policy marginally faster.}
+    \label{fig:alpha_nn_per_acrobot}
 \end{figure}
