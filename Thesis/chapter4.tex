@@ -223,7 +223,7 @@ A score above -500 indicates the agent was able to lift the robot arm over the r
 
 \subsection{Atari}
 
-A standard benchmark in the deep RL field is a large set of atari 2600 games called the Arcade Learning Environment(ALE) introduced in \cite{bellemare_13}. Papers presenting new methods in this field generally tested for 200 million frames on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. All environments must be learned based purely on the image input from the game. Due to the difficulty of the games and the large networks required the learning process is heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once a subset of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN, so the results are not a completely fair comparison.
+A standard benchmark in the deep RL field is a large set of atari 2600 games called the Arcade Learning Environment(ALE) introduced in \cite{bellemare_2013}. Papers presenting new methods in this field generally tested for 200 million frames on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. All environments must be learned based purely on the image input from the game. Due to the difficulty of the games and the large networks required the learning process is heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once for 20 million one of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN so a single run of a 5-step DQN was also run for a fairer comparison.
 
 \subsubsection{Pong}
 
@@ -236,19 +236,19 @@ Pong is one of the simpler environment in the ALE with superhuman performance ac
     \subfloat[Performance]{
         \includegraphics[scale=0.5]{BDQNPong.png}
     }
-    \caption{\textbf{Pong environment results}: \textbf{(a)} shows an input state of the pong environment\citep{gym_docs}. The green panel is the agent and the ball is in white. \textbf{(b)} compares the BDQN performance in orange to the 5 DQN runs provided in Dopamine.}
+    \caption{\textbf{Pong environment results}: \textbf{(a)} shows an input state of the pong environment\citep{gym_docs}. The green panel is the agent and the ball is in white. \textbf{(b)} compares the BDQN performance in orange to the 5 DQN runs provided in Dopamine and one 5-step DQN run.}
     \label{fig:nn_pong}
 \end{figure}
 
-BNIG started off well, with better evaluation performance than all DQN seeds for the first 5 iterations. From there on out the improvements decrease and the evaluation becomes more unstable. After 35 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evaluate the performance but the results indicate the performance is similar to the DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update, which should improve performance, the underlying BNIG method seems to actually worse than DQN on this game.
+The BNIG method started off well, with better evaluation performance than all DQN seeds for the first 5 iterations but slightly worse results than the 5-step DQN. From there on out the improvements decrease and the evaluation becomes more unstable. After 20 million steps BNIG has similar to slightly worse results than the DQN. Since this test only compares 1 seed to 5 seeds there is not enough data to confidently evaluate the performance but the results indicate the performance is similar to the 1-step DQN albeit more unstable. Taking into consideration that BNIG is using a 5-step update and the much better performance of the 5-step DQN the underlying BNIG method performs worse than DQN on this game.
 
 \subsection{Stabilizing Variance}
 
-Due to the stability issues seen on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the scale parameters $b_a$ become increasingly unstable as seen in figure \ref{fig:scale_stability}a. Multiple attempts were made at controlling this increase but the only successful result came from adjusting the initial inverse gamma distribution towards a lower variance output. The reasoning for this will be discussed in chapter \ref{ch:disc}. Note that the statistical arguments that follow aren't especially strong. The goal of this subsection is purely to show the potential of the BNIG methods given a more stable posterior update.  %increasing the inverse gamma scale prior $a_a$.
+Due to the stability issues seen on acrobot and pong an attempt was made at tuning the hyperparameters of the BNIG model to see if this could get better results. A deeper look at the development of the model parameters for the acrobot environment showed that the scale parameters $b_a$ become increasingly unstable as seen in figure \ref{fig:scale_stability}a. Multiple attempts were made at controlling this increase but the only successful result came from adjusting the initial inverse gamma distribution towards a lower variance output. The reasoning for this will be discussed in chapter \ref{ch:disc}. The following method isn't a suggested solution to the problem, the goal is rather to show the potential of the BNIG methods given a more stable posterior update.  %increasing the inverse gamma scale prior $a_a$.
 
-\subsubsection{Low Varaince Prior}
+\subsubsection{Low Variance Prior}
 
-One way of decreasing the variance estimate is to adjust the priors of the distribution towards a lower mean inverse gamma. This can be done by either decreasing $b_a$ or increasing $a_a$. Of the two only increasing $a_a$ improved performance. The resulting improved stability can be seen in \ref{fig:scale_stability}b.
+One way of decreasing the variance estimate is to adjust the priors of the distribution towards a lower mean inverse gamma. This can be done by either decreasing the scale parameter $b_a$ or increasing the shape parameter $a_a$. Of the two only increasing $a_a$ improved performance. The resulting improved stability can be seen in \ref{fig:scale_stability}b.
 
 \begin{figure}[H]
     \centering
@@ -258,11 +258,11 @@ One way of decreasing the variance estimate is to adjust the priors of the distr
     \subfloat[Prior Scale of 10,000]{
         \includegraphics[scale=0.5]{BStable.png}
     }
-    \caption{\textbf{Development of rate parameter given different scale priors.}}
+    \caption{\textbf{Development of scape parameter given different shale priors.}}
     \label{fig:scale_stability}
 \end{figure}
 
-The effect of increasing the inverse gamma scale prior is decreasing the mean $\sigma^2$ and the variance of $\sigma^2$. This means that it pushes the posterior distribution towards a low variance $Q$-value. In general as the number of datapoints increase the resulting posterior is less and less defined by its prior. However as this method is using exponential forgetting the prior is never truly forgotten and so setting a high $a_a$ value will force a lower variance over the entire training process.
+The effect of increasing the inverse gamma scale prior is decreasing the mean and variance of $\sigma^2$. This means that it pushes the posterior distribution towards a low variance $Q$-value. In general as the number of datapoints increase the resulting posterior is less and less defined by its prior. However as this method is using exponential forgetting the prior is never truly forgotten and so setting a high $a_a$ value will force a lower variance over the entire training process. In other words this stabilizes the method with the drawback of decreased exploration.
 
 \begin{figure}[H] 
     \centering 
@@ -279,11 +279,13 @@ The effect of increasing the inverse gamma scale prior is decreasing the mean $\
     \subfloat[Pong]{ 
         \includegraphics[scale=0.5]{BDQNPongHighAlpha.png}
     }
-    \caption{\textbf{High scale prior results}} 
+    \caption{\textbf{High shale prior results across the 4 introduced environments.}} 
     \label{fig:high_scale} 
 \end{figure}
 
-The results in figure \ref{fig:high_scale} show large improvements on both pong and acrobot. The performance on cartpole is relatively unchanged while the performance on corridor seems to have become slightly worse.
+The results in figure \ref{fig:high_scale} show large improvements on the corridor, acrobot and pong environments while retaining the good performance on cartpole. With exception of the corridor environment the high shape BNIG DQN model manages to stabily learn all environments faster than a regular DQN. On the corridor environment the high shape BNIG DQN often learns faster than the regular DQN but does fail to learn the environment on 4 seeds(figure \ref{fig:alpha_nn_per_corridor}). In pong the method outperforms the DQN by a few million steps however this is over only 1 seed and more experiments would have to be run to confirm better performance.
+
+These results indicate that BNIG model can successfully be applied to neural networks given a stable scale parameter.
 
 \subsubsection{Data Prior}
 

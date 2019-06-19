@@ -122,10 +122,9 @@ The value function decomposition can also be expanded to the action-value functi
 \begin{split}
     \label{eq:act_value_function} 
     Q(s_t, a) &=  \mathbb{E}_\pi[G_t|S_t=s_t, A_t=a] \\
-    Q(s_t, a) &= \mathbb{E}\big[R_{t+1}(s_t, a) + \gamma[v(S_{t+1})|S_t=s_t, A_t = a\big]
+    Q(s_t, a) &= \mathbb{E}\big[R_{t+1}(S_t, A_t) + \gamma v(S_{t+1})|S_t=s_t, A_t = a\big]
 \end{split}
 \end{align}
-\todo Double check this source
 
 In certain situations, which will be discussed at a later stage, equation \ref{eq:act_value_function} can be a more useful decomposition.
 

@@ -50,8 +50,8 @@ plot_results = function(filename, save_as){
     ggplot() + geom_line(data=dqn, aes(x=Iteration, y=Value, group=Seed, color="DQN"), size=1.5, alpha=0.3) +
         geom_line(data=bdqn, aes(x=Iteration, y=Value, color="BNIG"), size=1.5) +
         geom_point(data=bdqn, aes(x=Iteration, y=Value), size=2.5) + 
-        geom_line(data=nstepdqn, aes(x=Iteration, y=Value, color="5StepDQN"), alpha=0.3, size=1.5) +
-        scale_colour_manual(name = "", values=c(DQN="black", BNIG="orange", "5StepDQN"="blue")) +
+        geom_line(data=nstepdqn, aes(x=Iteration, y=Value, color="5 Step DQN"), alpha=0.3, size=1.5) +
+        scale_colour_manual(name = "", values=c(DQN="black", BNIG="orange", "5 Step DQN"="blue")) +
         labs(x="Training Steps (Millions)", y="Average Evaluation Reward", color = "")
     
     ggsave(paste("../../Thesis/fig/", save_as, ".png", sep=""), width=126*1, height=126*1, units="mm", dpi=150)
