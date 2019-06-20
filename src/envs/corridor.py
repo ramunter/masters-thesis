@@ -45,9 +45,14 @@ class Corridor(gym.Env):
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Discrete(self.N)
 
+    # @property
+    # def state_output(self):
+    #     return array([self.steps, self.state])
     @property
     def state_output(self):
-        return array([self.steps, self.state])
+        state = zeros((self.N))
+        state[self.state-1] = 1
+        return array(state)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)

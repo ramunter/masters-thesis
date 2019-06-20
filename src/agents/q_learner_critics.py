@@ -69,7 +69,7 @@ class EGreedyCritic(CriticTemplate):
         """
         self.final_eps = final_eps
         self.eps = 0.1
-        self.eps_decay = (1-final_eps)/2000
+        self.eps_decay = (1-final_eps)/200
         self.batch = batch
         self.model = self.setup_model(state, lr)
 
@@ -378,7 +378,6 @@ class DeepGaussianBayesCritic2(CriticTemplate):
             feature_size = len(state) + 1  # Add bias term.
 
         self.feature_size = feature_size
-
         self.models = [GaussianRegression2(dim=feature_size), GaussianRegression2(dim=feature_size)] # Model per action
         self.normal_samples = self.sample_standard_normal_vector()
 

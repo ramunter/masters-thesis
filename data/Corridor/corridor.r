@@ -19,15 +19,21 @@ plot_data = function(df, title){
 }
 
 df1 = read.csv("all_long_1_step.csv")
-df1$variable = relevel(df1$variable, "Deep BN")
-df1$variable = relevel(df1$variable, "BN")
+df1$variable = relevel(df1$variable, "Per Sample BNIG")
+df1$variable = relevel(df1$variable, "Per Episode BN")
+df1$variable = relevel(df1$variable, "Per Sample BN")
 df1$variable = relevel(df1$variable, "E Greedy")
 df2 = read.csv("all_long_3_step.csv")
-df2$variable = relevel(df2$variable, "Deep BN")
-df2$variable = relevel(df2$variable, "BN")
+df2$variable = relevel(df2$variable, "Per Sample BNIG")
+df2$variable = relevel(df2$variable, "Per Episode BN")
+df2$variable = relevel(df2$variable, "Per Sample BN")
 df2$variable = relevel(df2$variable, "E Greedy")
 
 plot_data(df1, "Corridor 1-Step Methods")
 ggsave("../../Thesis/fig/Corridor1StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
 plot_data(df2, "Corridor 3-Step Methods")
 ggsave("../../Thesis/fig/Corridor3StepMethods.png", width=126*1, height=63*5, units="mm", dpi=150)
+
+df3 = read.csv("state_encoding.csv")
+plot_data(df3, "test")
+ggsave("../../Thesis/fig/CorridorStateEncoding.png", width=126*1, height=63*1, units="mm", dpi=150)

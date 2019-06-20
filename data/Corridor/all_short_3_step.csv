@@ -1,41 +1,41 @@
 ,N,variable,Episodes to Learn
 0,4,E Greedy,233.5
 1,6,E Greedy,233.6
-2,8,E Greedy,233.0
+2,8,E Greedy,233
 3,10,E Greedy,234.1
-4,12,E Greedy,310.0
-5,14,E Greedy,1000.0
-6,16,E Greedy,1000.0
+4,12,E Greedy,310
+5,14,E Greedy,1000
+6,16,E Greedy,1000
 7,18,E Greedy,924.8
-8,4,BN,241.6
-9,6,BN,279.8
-10,8,BN,363.5
-11,10,BN,676.3
-12,12,BN,937.6
-13,14,BN,1000.0
-14,16,BN,1000.0
-15,18,BN,1000.0
-16,4,Deep BN,241.7
-17,6,Deep BN,254.2
-18,8,Deep BN,567.1
-19,10,Deep BN,781.0
-20,12,Deep BN,1000.0
-21,14,Deep BN,1000.0
-22,16,Deep BN,1000.0
-23,18,Deep BN,1000.0
-24,4,BNIG,617.9
-25,6,BNIG,770.1
-26,8,BNIG,1000.0
-27,10,BNIG,1000.0
-28,12,BNIG,851.8
-29,14,BNIG,923.0
-30,16,BNIG,1000.0
-31,18,BNIG,935.0
-32,4,Deep BNIG,309.2
-33,6,Deep BNIG,386.4
-34,8,Deep BNIG,310.3
-35,10,Deep BNIG,471.4
-36,12,Deep BNIG,615.2
-37,14,Deep BNIG,358.5
-38,16,Deep BNIG,536.5
-39,18,Deep BNIG,666.1
+8,4,Per Sample BN,241.6
+9,6,Per Sample BN,279.8
+10,8,Per Sample BN,363.5
+11,10,Per Sample BN,676.3
+12,12,Per Sample BN,937.6
+13,14,Per Sample BN,1000
+14,16,Per Sample BN,1000
+15,18,Per Sample BN,1000
+16,4,Per Episode BN,241.7
+17,6,Per Episode BN,254.2
+18,8,Per Episode BN,567.1
+19,10,Per Episode BN,781
+20,12,Per Episode BN,1000
+21,14,Per Episode BN,1000
+22,16,Per Episode BN,1000
+23,18,Per Episode BN,1000
+24,4,Per Sample BNIG,617.9
+25,6,Per Sample BNIG,770.1
+26,8,Per Sample BNIG,1000
+27,10,Per Sample BNIG,1000
+28,12,Per Sample BNIG,851.8
+29,14,Per Sample BNIG,923
+30,16,Per Sample BNIG,1000
+31,18,Per Sample BNIG,935
+32,4,Per Episode BNIG,309.2
+33,6,Per Episode BNIG,386.4
+34,8,Per Episode BNIG,310.3
+35,10,Per Episode BNIG,471.4
+36,12,Per Episode BNIG,615.2
+37,14,Per Episode BNIG,358.5
+38,16,Per Episode BNIG,536.5
+39,18,Per Episode BNIG,666.1

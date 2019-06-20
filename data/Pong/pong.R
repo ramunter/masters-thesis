@@ -16,7 +16,12 @@ dopamine = fromJSON("pong.json")
 dopamine = dopamine[1:3980,] # For some reason last row is NA
 dopamine$Seed = as.factor(rep(seq(1,20), each=199))
 
-dqn = dopamine %>% filter(Agent=="DQN") %>% filter(Iteration < 35)
+dqn = dopamine %>% filter(Agent=="DQN") %>% filter(Iteration < 21)
+nstepdqn = read.csv('5-step-dqn.csv')
+nstepdqn$Wall.time = NULL
+names(nstepdqn)= c("Iteration", "Value")
+nstepdqn$Agent = "5-step DQN"
+nstepdqn$Seed = -1
 
 dqn_summary = dqn %>% group_by(Iteration) %>% 
     summarize(median=median(Value),
@@ -29,6 +34,7 @@ plot_results = function(filename, save_as){
     names(bdqn)= c("Iteration", "Value")
     bdqn$Agent = "BDQN"
     bdqn$Seed = 0
+    bdqn = bdqn %>% filter(Iteration < 21)
     
     df = rbind(dqn, bdqn)
     p1 = ggplot(data=dqn_summary, aes(x=Iteration)) +
@@ -44,7 +50,8 @@ plot_results = function(filename, save_as){
     ggplot() + geom_line(data=dqn, aes(x=Iteration, y=Value, group=Seed, color="DQN"), size=1.5, alpha=0.3) +
         geom_line(data=bdqn, aes(x=Iteration, y=Value, color="BNIG"), size=1.5) +
         geom_point(data=bdqn, aes(x=Iteration, y=Value), size=2.5) + 
-        scale_colour_manual(name = "", values=c(DQN="black", BNIG="orange")) +
+        geom_line(data=nstepdqn, aes(x=Iteration, y=Value, color="5 Step DQN"), alpha=0.3, size=1.5) +
+        scale_colour_manual(name = "", values=c(DQN="black", BNIG="orange", "5 Step DQN"="blue")) +
         labs(x="Training Steps (Millions)", y="Average Evaluation Reward", color = "")
     
     ggsave(paste("../../Thesis/fig/", save_as, ".png", sep=""), width=126*1, height=126*1, units="mm", dpi=150)

@@ -16,7 +16,10 @@ flags.DEFINE_float("scale", 1, "SD of target")
 
 FLAGS = flags.FLAGS
 
+
+plt.style.use('ggplot')
 plt.rcParams.update({'font.size': 32})
+
 
 def n_state_prop(models, target_scale):
 
@@ -30,10 +33,10 @@ def n_state_prop(models, target_scale):
         for m, model in enumerate(models):
             if m+step < len(models):
                 target = np.array([models[m+step].sample(np.array([1]), norm.rvs(size=1)) for _ in range(n)])
-                var = models[m+step].expected_variance
                 model.update_posterior(np.array([1]*n), target, n) 
+
             else:
-                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), 1)
+                models[m].update_posterior(np.array([1]*n), final_state_posterior.rvs(n), n)
 
 
 
@@ -53,8 +56,9 @@ def n_state_prop(models, target_scale):
         ax.set_xticks(np.linspace(1-3*target_scale, 1+3*target_scale, 3)[1:-1])
         ax.set_xlim(1-3*target_scale, 1+3*target_scale)
 
-        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="Posterior PDF")
-        ax.plot(x, final_state_posterior.pdf(x), linewidth=2, label="Target")
+        ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=6, label="Posterior PDF")
+        ax.plot(x, final_state_posterior.pdf(x), '--', linewidth=6, label="Target")
+        ax.set_facecolor('white')
 
 
     number_of_subplots=len(models)
@@ -64,7 +68,7 @@ def n_state_prop(models, target_scale):
     for i, model in enumerate(models):
         plot_posterior(axs[i], model, i+1)
 
-    plt.legend(loc='best', frameon=False)
+    #plt.legend(loc='best', frameon=False)
 
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axes

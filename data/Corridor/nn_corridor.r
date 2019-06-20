@@ -1,7 +1,7 @@
 library(ggplot2)
 library(dplyr)
 library(reshape2)
-setwd("~/masters-thesis/data/Corridor")
+
 theme_set(theme_minimal() + 
                 theme(legend.position = 'bottom', 
                 legend.text = element_text(size=10),
@@ -32,7 +32,7 @@ plot_per_run = function(df){
         geom_line(aes(y=value, color=it),  size=1, alpha=1) + 
         geom_point(aes(y=value, color=it), size=2) + 
         labs(x="Training Steps (Thosands)", y="Average Evaluation Reward") +
-        facet_wrap(~it, ncol=2)
+        facet_wrap(~it, ncol=2) + ylim(c(0,1))
 }
 
 load_data = function(method){
@@ -49,15 +49,35 @@ load_data = function(method){
     return(df)
 }
 
+setwd("~/masters-thesis/data/Corridor/og")
+
 bdqn = load_data("bdqn")
 dqn = load_data("dqn")
 
 plot_summary(bdqn)
-ggsave("../../Thesis/fig/BDQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/BDQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
 plot_summary(dqn)
-ggsave("../../Thesis/fig/DQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/DQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
 
 plot_per_run(dqn)
-ggsave("../../Thesis/fig/PerDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
 plot_per_run(bdqn)
-ggsave("../../Thesis/fig/PerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
+ggsave("../../../Thesis/fig/PerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
+
+
+setwd("~/masters-thesis/data/Corridor/alpha")
+bdqn = load_data("corridor_bdqn")
+
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/AlphaBDQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/AlphaPerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
+
+
+setwd("~/masters-thesis/data/Corridor/relative")
+bdqn = load_data("bdqn")
+
+plot_summary(bdqn)
+ggsave("../../../Thesis/fig/RelativeBDQNCorridor.png", width=126*1, height=63*2, units="mm", dpi=150)
+plot_per_run(bdqn)
+ggsave("../../../Thesis/fig/RelativePerBDQNCorridor.png", width=126*1, height=63*4, units="mm", dpi=150)
