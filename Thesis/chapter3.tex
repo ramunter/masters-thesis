@@ -9,14 +9,14 @@ To extend linear Q learning methods to Thompson sampling a bayesian perspective 
 
 \begin{align*}
     p(\theta |Q, \mathcal{F}) &\propto p(Q| \theta, \mathcal{F})p(\theta) \\
-    p(Q) &= \int p(Q|\theta, \mathcal{F}) p(\theta) d\theta
+    p(Q|\mathcal{F}) &= \int p(Q|\theta, \mathcal{F}) p(\theta) d\theta
 \end{align*}
 
-$Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. Since this is only used for Thompson sampling the value of the integral is not of interest. Instead it is the samples from $p(Q|\theta, \mathcal{F})$ that will be used to drive exploration.
+$Q$ is a vector of all Q-values given the state $X_t$, $\theta$ denotes all parameters and $\mathcal{F}$ denotes all previous transitions. Since this is only used for Thompson sampling the value of the integral is not of interest. Instead it is the samples from $p(Q|\mathcal{F})$ that will be used to drive exploration.
 
 \section{Conjugate Bayesian Linear Q learning}
 
-The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low to this thesis will consider conjugate priors which have an analytical solution.
+The calculation of an arbitrary posterior can be computationally heavy which is ill-suited to the already long running reinforcement learning methods. In order to keep computation costs low this thesis will consider conjugate priors so that the posterior can be analytically computed.
 
 \subsection{Gaussian Prior with Known noise}
 
@@ -45,7 +45,7 @@ where $\Lambda_a$ is the precision matrix. With this choice of prior the posteri
     \end{split}
 \end{equation}
 
-where $_0$ denotes the prior and $_n$ denotes the posterior parameters. The development of these updates can be found in \ref{a:bn}. This model will be referred to as a bayesian normal model(BN).
+where $0$ denotes the prior and $n$ denotes the posterior parameters. The development of these updates can be found in \ref{a:bn}. This model will be referred to as a bayesian normal model (BN).
 
 With this setup actions can now be picked by Thompson sampling. For each action sample $\beta$ values from its posterior distribution and a noise term from $N(0, \sigma_\varepsilon)$. These sample values are then used in the regression equation \ref{eq:regression} to get a posterior sample from $Q_a$. Finally chose the action with the highest sampled $Q$-value. 
 
@@ -76,15 +76,17 @@ This results in the regression problem $\mathbb{E}[r_t + Q_{t+1}] = X\beta_a$. H
 
 where $\varepsilon$ accounts for the difference between the sample and the mean, $r_t - \mathbb{E}[r_t] + Q_{t+1} - \mathbb{E}[Q_{t+1}]$. This implies that the target used must be a sample from the posterior of $Q_t$ not its expected value $X\mu_a$ as used in \cite{azziz_2018}. 
 
-The result of this is that the known noise model only includes the variance in the reward process through $r$. It does not convey the variance in the Q-value estimate of the next state. Even in a deterministic environment the policy shifts during training mean that there is an uncertainty in the Q-value of the next state. Quoting \cite{moerland_2017},  "\dots repeatedly visiting a state-action pair should not makes us certain about its value if we are still uncertain about what to do next."
+The result of this is that the BN model only includes the variance in the reward process through $r$. It does not convey the variance in the Q-value estimate of the next state. Even in a deterministic environment the policy shifts during training mean that there is an uncertainty in the Q-value of the next state. Quoting \cite{moerland_2017},  "\dots repeatedly visiting a state-action pair should not makes us certain about its value if we are still uncertain about what to do next."
 
 Based on the above a better choice of target is
 
-$$
-y = r_t + \max_aQ(X_{t+1}\beta + \varepsilon)
-$$
+\begin{equation}
+\begin{split}
+&y = r_t + \max_a Q^* \\
+\end{split}
+\end{equation}
 
-where $\beta$ is sampled from its posterior and $\varepsilon$ from the gaussian noise distribution. However the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to include $\sigma_{\varepsilon}$ as an unknown parameter.
+where $Q^*$ is a sample from the the marginal distribution $p(Q|\mathcal{F})$. However using this target with a BN model will not lead to variance propagation. This is because the variance of $\beta$, as seen in equation \ref{eq:known_noise_posterior_update}, is independent of the target. One way to include a variance term that is dependent on the target is to treat $\sigma_{\varepsilon}$ as an unknown parameter.
 
 \subsection{Normal Prior with Unknown noise}
 
@@ -114,9 +116,11 @@ with the posterior update
 
 The development of these formulas can be found in \ref{a:bnig}. This model will be referred to as the Bayesian Normal Inverse Gamma model(BNIG).
 
+\section{Variance Propagation}
+
 \subsection{Testing Variance Propagation}
 
-To show that the BNIG model with sample targets is the only method that propagates uncertainty consider a simple example from \cite{osband_2018}. The environment consists of a MPD with two states(figure \ref{fig:2state}). The initial state allows only one action that deterministically leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
+To show that the BNIG model with sample targets is the only method that propagates uncertainty consider a simple example from \cite{osband_2018}. The environment consists of a MDP with two states (figure \ref{fig:2state}). The initial state allows only one action that deterministically leads to state 2 with no reward. State 2 is a terminal state with a known posterior distribution. If a RL method properly propagates uncertainty the posterior distribution of state 1 should match state 2 as long as $\gamma=1$. 
 
 \begin{figure}[H]
     \centering
@@ -156,11 +160,9 @@ The results summarized in figure \ref{fig:proptest} showed that all models were 
 
 Based on these results further developments are focused on the BNIG model with sampled targets.
 
-\section{Variance Propagation}
-
 \subsection{Over Multiple States}
 
-The setting above is equivalent to regular regression. In a RL setting the variance needs to be propagated to further states. To test that this is still the case with the BNIG model consider a modification to the environment where an extra state is placed between the initial and terminal state(figure \ref{fig:3state}). This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
+The setting above is equivalent to regular regression. In a RL setting the variance needs to be propagated to further states. To test that this is still the case with the BNIG model consider a modification to the environment where an extra state is placed between the initial and terminal state (figure \ref{fig:3state}). This state has the same dynamics as earlier. It deterministically transitions to the next state with zero reward over the transition. The correct posterior for each state is then the target posterior in the terminal state. 
 
 \begin{figure}[H]
     \centering
@@ -180,7 +182,7 @@ The setting above is equivalent to regular regression. In a RL setting the varia
 \end{figure}
 
 
-The same priors as earlier are used on 4 different target posteriors. The results are summarised in figure \ref{fig:3stateproptest}. Implementation details are provided in \ref{a:n_state_imp}.
+The same priors as earlier are used on 4 different target posteriors. The results are summarised in figure \ref{fig:3stateproptest}. Implementation details are provided in \ref{a:n_state_exp}.
 
 \begin{figure}[H]
     \centering
@@ -221,11 +223,9 @@ By extending the toy example to even more states as in figure \ref{fig:longpropt
     \label{fig:longproptest}
 \end{figure}
 
-This issue will be referred to as the speed of propagation. It encompasses the problem of quickly propagating variance estimates from downstream states back to states which are far from the environments reward.
+This issue will be referred to as the speed of propagation. It encompasses the problem of quickly propagating variance estimates from downstream states back to states which are far from the environments reward. In order to improve the speed of propagation insight is required into what causes the issue. This thesis will investigate two factors that are likely contributing to the convergence problem.
 
 \subsection{Speed of propagation}
-
-In order to improve the speed of propagation insight is required into what causes the issue. In this section two possible causes and methods for counteracting them are discussed. However these are not necessarily the only two causes of slow propagation.
 
 The first cause is best explained using an example. Consider the 3 state toy example. State 1 can only converge to the correct distribution once State 2 has converged. If more states are added, State 1 will only converge once all the states between it and the terminal state have converged. The longer the chain is, the more iterations are required for state 1 to converge. This issue is the same issue faced with the expected Q value in regular RL which is dealt with through a bias-variance trade-off. Similarly extending the 1-step update to an n-step update will increase the speed of variance propagation with the downside of introducing more variance to the $\sigma_\varepsilon$ estimate.
 
@@ -253,9 +253,9 @@ where $\alpha$ is the decay rate and the b is the batch size. The result of this
 
 \section{Sampling Frequency}
 
-A final consideration to be made is how often to sample the coefficients for the Q-value regression during decision making. From a statistical background it might seem most natural to sample new coefficients every step. This is what is done in \cite{donoghue_2017}. Another possibility is presented in \cite{osband_2018} which samples new coefficients every episode. This is the equivalent to sampling one action-value function per episode and \cite{osband_2018} argues that this increases the probability for optimistic action-value functions leading to increased exploration. \cite{azziz_2018} takes this even further and samples new coefficients at large intervals spanning thousands of steps. However this is done to stabilize their neural network and mention that ideally the sampling interval should match the average episode length.
+A final consideration to be made is how often to sample the coefficients for the Q-value regression during decision making. From a statistical background it might seem most natural to sample new coefficients every step. This is what is done in \cite{donoghue_2017}. Another possibility is presented in \cite{osband_2018} which samples new coefficients every episode. This is the equivalent to sampling one action-value function per episode and \cite{osband_2018} argues that this increases the probability for optimistic action-value functions leading to increased exploration. \cite{azziz_2018} takes this even further and samples new coefficients at large intervals spanning thousands of steps. However this is purely done to stabilize their neural network. The paper states that ideally the sampling interval should match the average episode length.
 
-Following the 3 mentioned papers the choice stands between sampling every step versus every episode. None of the papers provide mathematical proofs behind their sampling frequencies so both will be tested in the next section.
+Based on the 3 mentioned papers the choice stands between sampling every step versus every episode. None of the papers provide mathematical proofs behind their sampling frequencies so both will be tested in the next section.
 
 \section{Performance on Linear RL Problem}
 
@@ -263,9 +263,9 @@ Up to now the model has only been tested on simple problems with known posterior
 
 The environment is a chain of length N where the goal is to move from the initial state on the left side of the corridor to the final state on the right side of the corridor in N steps. A reward of 1 is given in a final state, moving left gives a reward of $\frac{1}{10N}$ and otherwise the agent receives no reward.
 
-All the methods discussed so far were tested on this environment with different chain lengths. This includes the BN and BNIG model with both per step and episode sampling. In addition a linear Q-learning method following an $\varepsilon$-greedy exploration scheme was tested. The hyperparameters for each model were found by manually testing different combinations. The priors that gave good propagation for the toy examples were used as a starting point. A table of the hyperparameters can be found in the appendix(\ref{a:lin_corridor}).
+All the methods discussed so far were tested on this environment with different chain lengths. This includes the BN and BNIG model with both per step and episode sampling. In addition a linear Q-learning method following an $\varepsilon$-greedy exploration scheme was tested. The hyperparameters for each model were found by manually testing different combinations. The priors that gave good propagation for the toy examples were used as a starting point. A table of the hyperparameters can be found in the appendix (\ref{a:lin_corridor}).
 
-As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the environment. In this case the environment is considered learned when the running average regret of the last 100 episodes drops below 0.1.
+As in \cite{osband_2018} models were compared by the average number of episodes required to "learn" the environment. In this case the environment is considered learned when the running average difference between the obtained reward and the optimal reward of the last 100 episodes drops below 0.1. The results are averaged over 100 attempts for each agent on each corridor length and each attempt is capped at 1000 episodes.
 
 \begin{figure}[H]
     \centering
@@ -275,7 +275,7 @@ As in \cite{osband_2018} models were compared by the average number of episodes 
     \subfloat[3 step update]{
         \includegraphics[scale=0.5]{Corridor3StepMethods.png}
     }
-    \caption{\textbf{Linear Model Performance on Corridor Environment}: (\textbf{a}) shows that the only method that outperforms the $\varepsilon$-greedy policy is the per episode BNIG model. Increasing to a 3-step update in (\textbf{b}) improves the performance of all models but the largest increase in performance seems to be Deep BNIG.}
+    \caption{\textbf{Linear Model Performance on Corridor Environment}: The results per corridor length are averaged over 100 runs and capped at 1000 episodes. (\textbf{a}) shows that the only method that outperforms the $\varepsilon$-greedy policy is the per episode BNIG model. Increasing to a 3-step update in (\textbf{b}) improves the performance of all models but the largest increase in performance seems to be Deep BNIG.}
     \label{fig:linear_corridor}
 \end{figure}
 

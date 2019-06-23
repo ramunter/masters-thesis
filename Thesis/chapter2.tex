@@ -18,7 +18,7 @@ Many of the concepts in RL are best explained through an example. Consider a ver
 
 In RL literature it is common to decompose this problem into an \textit{agent} and \textit{environment}. The agent is the object which can perform actions. In the gridworld example this is the player. The environment is what the agent interacts with and what returns information about the game. 
 
-In general the environment consists of two things. First is the state, which defines what is going on in the environment. In the gridworld example this could be the players position on the grid. Second is the reward, some signal that what the agent is doing is right or wrong. This could be -1 for every action taken and +10 for reaching the goal. Note that one does not always need a reward per action. For example in chess the reward can be purely +1 for a win, -1 for a loss and 0 for everything else. This agent environment decomposition is visualized in figure \ref{fig:agent-env}.
+In general the environment consists of two things. First is the state, which defines what is going on in the environment. In the gridworld example this could be the players position on the grid. Second is the reward, some signal showing if what the agent is doing is right or wrong. This could be -1 for every action taken and +10 for reaching the goal. Note that one does not always need a reward per action. For example in chess the reward can be purely +1 for a win, -1 for a loss and 0 for everything else. This agent environment decomposition is visualized in figure \ref{fig:agent-env}.
 
 \begin{figure}[H]
     \centering
@@ -30,7 +30,7 @@ In general the environment consists of two things. First is the state, which def
 \end{figure}
 
 
-Upon reaching the goal the game is over, making the goal state a \textit{terminal state}. Environments with terminal states are called \textit{episodic} as during training the game must be reset to keep playing. If instead the player is teleported back to the start and can keep playing it is a \textit{continuous} environment.
+Upon reaching the goal the game is over, making the goal state a \textit{terminal state}. Environments with terminal states are called \textit{episodic} as during training the game must be reset to keep playing. If instead the player is teleported back to the start and can keep playing it is called \textit{continuous} environment.
 
 \subsection{Tabular Markov Decision Process}
 
@@ -180,7 +180,7 @@ Policy iteration as described above requires that equation \ref{eq:policy_eval} 
     \label{eq:value_iter}
 \end{equation}
 
-The termination condition is given by equation \ref{eq:policy_eval_termination_condition} as in policy iteration. When the value function has converge a policy is given by
+The termination condition is given by equation \ref{eq:policy_eval_termination_condition} as in policy iteration. When the value function has converged a policy is given by
 
 \begin{equation}
     \pi(s) = \argmax_{a\in \mathbb{A}_t} \mathbb{E}\big[R_{t+1} + \gamma v(S_{t+1})|S_t=s, A_t=a\big]
@@ -245,7 +245,7 @@ where $\alpha$ is the step size of the update. This can be viewed as using $G_t$
 Temporal difference methods instead update the value function every time a step is taken in the MDP. To do one can replace $G_t$ by the one step return $G_{t:t+1} = R_{t+1} + \gamma V_{t+1}(S_{t+1})$ giving
 
 \begin{equation}
-    V_\pi(S_t) = V_\pi(S_t) + \alpha \big[R_{t+1} + \gamma V_\pi(S_{t+1}) - V(S_t)\big].
+    V_\pi(S_t) = V_\pi(S_t) + \alpha \big[R_{t+1} + \gamma V_\pi(S_{t+1}) - V_\pi(S_t)\big].
     \label{eq:one-step}
 \end{equation}
 
@@ -275,7 +275,7 @@ One issue that remains with the aforementioned methods is that they are \textit{
 
 \begin{equation}
     \label{eq:td_q_learning}
-    Q(S_t, A_t) = Q(S_t, A_t) + \alpha\big[R_{t+1} + \gamma \max_a Q(S_{t+1}, a) - Q(S_t, A_t)]
+    Q_\pi(S_t, A_t) = Q_\pi(S_t, A_t) + \alpha\big[R_{t+1} + \gamma \max_a Q_\pi(S_{t+1}, a) - Q_\pi(S_t, A_t)]
 \end{equation}
 
 Note that this equation is completely independent of the policy followed when generating the experience. This means in contrast to an on-policy method, Q-learning can be trained on transition experiences from any policy regardless of what the Q-learning policy is.
@@ -321,7 +321,7 @@ To illustrate this consider the environment of buying and selling stock while ma
     \label{fig:stock_diff}
 \end{figure}
 
-Ideally the value estimate the method should be able to generalize to states with limited experiences or completely unseen states. In the stock price example the value and policy at similar prices should give information about how the agent should act given an unseen price. 
+Ideally the value estimate method should be able to generalize to states with limited experiences or completely unseen states. In the stock price example the value and policy at similar prices should give information about how the agent should act given an unseen price. 
 
 The approach to solving this is using function approximation. When estimating the value or action-value function one is trying to estimate a continuous value given a set of input values. This is a regression problem. So instead of using a table to map states to values one can use regression methods to do the same. 
 
@@ -353,7 +353,7 @@ The ordinary least squares solution to the $\beta$ coefficients can then be foun
 
 However this method is under the assumption that the target distribution is stationary and has to be trained on the entire dataset when given new data. This makes it ill-suited for reinforcement learning where one is constantly receiving new data from a non-stationary distribution. 
 
-Instead the common approach is to apply stochastic gradient descent over the parameters \citep[p~.201-203]. With a monte carlo target this gives the equation 
+Instead the common approach is to apply stochastic gradient descent over the parameters \citep[p~.201-203]{sutton_barto_2018}. With a monte carlo target this gives the equation 
 
 \begin{equation*}
     \beta = \beta + \alpha \big[G_t - Q(s,a|\beta)]\nabla_\beta Q(s,a|\beta).
@@ -375,9 +375,9 @@ Action-value functions can be complicated functions so it can be desirable to ha
 
 \subsubsection{Fully Connected Neural Networks}
 
-One popular class of nonlinear models are neural networks. This class covers a large variety of models. The simplest and perhaps most used model is the fully connected(F neural network(NN). A fully connected NN consists of sets of neurons, called layers, where each neuron receives an input from every neuron in the previous layer.
+One popular class of nonlinear models are neural networks. This class covers a large variety of models. The simplest and perhaps most used model is the fully connected neural network(NN). A fully connected NN consists of sets of neurons, called layers, where each neuron receives an input from every neuron in the previous layer.
 
-A neuron is simply either a regression or classification model where the output is passed through a function named the activation function. This function is usually non-linear to allow the NN to model non-linear functions. Mathematically a neuron is expressed as 
+A neuron is simply a regression model where the output is passed through a function named the activation function. This function is usually non-linear to allow the NN to model non-linear functions. Mathematically a neuron is expressed as 
 
 \begin{equation}
     Z = \sigma(W^TX)
@@ -385,7 +385,7 @@ A neuron is simply either a regression or classification model where the output 
 
 where $X$ is the vector of inputs from the previous layer, $W$ are the coefficients of the regression or classification and $\sigma$ is the activation function.
 
-The coefficients of regression/classification are called weights. These are the unknown parameters in the model that must be estimated. To do this a loss function must be defined. There any many choices of loss function. Two common choices are mean square error(MSE) for regression problems and cross-entropy for classification problems. 
+The coefficients of regression/classification are called weights. These are the unknown parameters in the model that must be estimated. To do this a loss function must be defined. There are many choices of loss function. Two common choices are mean square error (MSE) for regression problems and cross-entropy for classification problems. 
 
 MSE is defined as 
 
@@ -447,11 +447,28 @@ which can then replace $\nabla L(w_K)$ in equation \ref{eq:backprop}.
 
 \subsubsection{Convolutional Neural Networks}
 
-Certain methods in this thesis will also use convolutional neural networks(CNN) in combination with fully connected NNs. This is not vital to the understanding of the work done in this thesis so only a brief intuition of CNNs will be provided. The following is summarized from chapter 9 in \cite{goodfellow_2013}.
+Certain methods in this thesis will also use convolutional neural networks (CNN) in combination with fully connected NNs. This is not vital to the understanding of the work done in this thesis so only a brief introduction of CNNs will be provided. The following is summarized from chapter 9 in \cite{goodfellow_2013}.
 
-Images are high dimensional so running fully connected NN that maps from every input to some final output requires a lot of parameters and is computationally heavy. In addition many of these parameters are wasted the same feature in different parts of the image should lead to similar results. In a fully connected NN this feature would have to be relearned  for each location it can appear in an image. In addition if a feature ends up in a new position that the NN has not be trained on the method will fail.
+Images tend to be high dimensional objects meaning they generally consist of a large set of numbers. Running a fully connected NN that maps from this large input to some final output requires a lot of parameters and is computationally heavy. In addition a fully connected NN does not share any of its parameters. This means that if the network has learned a feature in one part of the image it will still not recognize the same feature in another part of the image.
 
-CNNs are a different NN structure designed towards use cases such as images.  A convolution operator is essentially a weighted sum of some input. In an image the weighted sum is over a local neighborhood based on the inputs position. CNNs learn a small set of weights and repeatedly takes the convolution between these a subset of the input across the entire input. Usually a CNN consists of many sets of these weights which learn different features. The result of this is that a CNN can recognize features regardless of their placement, known as translation invariant, and so does not need to relearn the same encodings. This means a CNN can recognize features with far less features and better generalizability than a regular NN.
+CNNs are a different NN structure designed towards use cases such as images.  A convolution operator is essentially a weighted sum of some input. The weighting scheme is called the kernel. Performing a convolution on a 2D datastructure can be seen in figure \ref{fig:conv}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{conv_kernel.png}
+    \captionsetup{width=.7\linewidth}
+    \caption{\textbf{Convolutional Operator on a 2D object}. The illustration is from \cite{goodfellow_2013}}
+    \label{fig:conv}
+\end{figure}
+
+The weights in a CNN are the weights of the kernel. The learned convolutional operator is then applied to the entire image as seen in equation \ref{eq:convolution}.
+
+\begin{equation}
+(I*K)(i,j) = \sum_m\sum_nI(i-m,j-n)K(m,n)
+\label{eq:convolution}
+\end{equation}
+
+where $I$ is the input image, $K$ is the kernel and $(m,n)$ is the size of the kernel. Usually a CNN layer consists of many kernels which learn different features. Since the same weights are used across the entire image the method is translation invariant, meaning a CNN  can recognize features regardless of their placement.
 
 \subsubsection{The Deadly Triad}
 
@@ -535,7 +552,7 @@ To illustrate the issue, consider the chain example from \cite{osband_2016}. Con
     \label{fig:chain}
 \end{figure}
 
-The optimal policy is to always move right. However an agent following the policy in equation \ref{eq:ucb} will quickly end up underestimating the value of states too the right as multiple visits to $S_2$ would lead to a low exploration bonus despite the fact that states further to the right have not been properly explored. If this occurs before the agent reaches $S_N$ it will never find the higher reward to the right and end up with a suboptimal policy.
+The optimal policy is to always move right. However an agent following the policy in equation \ref{eq:ucb} will quickly end up underestimating the value of states to the right as multiple visits to $S_2$ would lead to a low exploration bonus despite the fact that states further to the right have not been properly explored. If this occurs before the agent reaches $S_N$ it will never find the higher reward to the right and end up with a suboptimal policy.
 
 \subsubsection{Optimism in the Face of Uncertainty}
 
@@ -635,7 +652,7 @@ which, when based on experiences rather than model dynamics gives
 
 Given a method to calculate $\nu$ this allows one to learn the $u(s,a)$ values using the same methods used to learn $Q(s,a)$.
 
-It is then assumed that there are enough experiences to use the central bayesian limit theorem. This implies that the posterior distribution of the $Q^*$-value is approximately distributed by a normal distribution\citep[p.~224]{berger_1985}. As such, given a $\mathbb{E}[Q]$ value from any regular Q-learning method and a variance calculated from the UBE one can sample a posterior $Q$-value from the distribution $N\bigg(\mathbb{E}\big[Q(s,a)\big], u(s,a)\bigg)$.
+It is then assumed that there are enough experiences to use the central bayesian limit theorem. This implies that the posterior distribution of the $Q^*$-value is approximately distributed by a normal distribution \citep[p.~224]{berger_1985}. As such, given a $\mathbb{E}[Q]$ value from any regular Q-learning method and a variance calculated from the UBE one can sample a posterior $Q$-value from the distribution $N\bigg(\mathbb{E}\big[Q(s,a)\big], u(s,a)\bigg)$.
 
 The issue that remains is how to calculate the local uncertainty $\nu$. \cite{donoghue_2017} argues that $\nu$ can be approximated by action-value models variance. Given a target $y_i$ with i.i.d. variance it can be shown that for a linear regression with weights $w_a$, a new input $\phi(s)$ and design matrix $\bm{\Phi}$ the model variance is $\phi(s)^T\bm{\Phi}^T\bm{\Phi}\phi(s)$. The local uncertainty is the estimated by
 
@@ -647,7 +664,7 @@ where $\beta$ is a hyperparameter that controls the scale of the local variance 
 
 By ignoring the uncertainty in the neural network encoding the same logic can be applied to the final layer in a DQN. The final deep RL implementation creates a DQN with two heads. Head one is trained as a regular DQN and outputs Q-values. Head 2 is trained using the UBE with local uncertainties calculated from the final linear layer from head 1.
 
-Actions are then chosen by sampling the normal distribution with the mean estimate from head 1 and variance estimate from head 2. With this method \cite{donoghue_2017} managed state of the art results on Montezuma's Revenge when published. In addition it allowed, under heavy assumptions that are broken, sampling from an approximated posterior using a DQN model that only took 10\% more computation to run, rather than the $n$ times heavier computation for ensemble methods.
+Actions are then chosen by sampling the normal distribution with the mean estimate from head 1 and variance estimate from head 2. With this method \cite{donoghue_2017} managed state of the art results on Montezuma's Revenge when published. In addition it allowed sampling from an approximated posterior using a DQN model that only requires 10\% more computation to run, rather than the $n$ times heavier computation for ensemble methods.
 
 \subsection{Efficient Exploration through Bayesian Deep Q-Networks}
 

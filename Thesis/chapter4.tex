@@ -2,7 +2,7 @@
 
 \chapter{Neural Linear Bayesian Regression Model}\label{ch:bdqn}
 
-A drawback of the methods discussed in chapter \ref{ch:linear} is that they are all linear models. These cannot perform well in environments with complex non-linear relationships between state-action pairs and Q-values without significant feature engineering. Recent developments in the RL field focus on deep RL where neural networks are used to encode these relationships have allowed successful results on complex games\citep{mnih_2015, mnih_2016,silver_2017}. As such it it would be beneficial to be able to combine the methods from chapter \ref{ch:linear} with more complex models. This chapter attempts this and tests the new model on multiple complex environments with comparisons to other popular deep RL methods.
+A drawback of the methods discussed in chapter \ref{ch:linear} is that they are all linear models. These cannot perform well in environments with complex non-linear relationships between state-action pairs and Q-values without significant feature engineering. Recent developments in the RL field focus on deep RL where neural networks are used to encode these relationships. This has lead to successful results on complex games \citep{mnih_2015, mnih_2016,silver_2017}. As such it would be beneficial to be able to combine the methods from chapter \ref{ch:linear} with more complex models. This chapter attempts this and tests the new model on multiple complex environments with comparisons to other popular deep RL methods.
 
 \section{Combining Bayesian Q-learning with Neural Networks}
 
@@ -10,7 +10,7 @@ A drawback of the methods discussed in chapter \ref{ch:linear} is that they are 
 
 Without significant feature engineering a linear model cannot generalize to more complex non-linear relationships between state-action pairs and their Q-values. However using bayesian methods with non-linear models can be difficult and computationally heavy. \cite{carlos_2018} compared a large array of bayesian models on a set of bandit environments. They found that accurate complex models often performed worse than simpler approximate methods. The suggested reason for this is that complex models require more data and training to achieve reasonable variance estimates. Since RL is an online task this can lead to miscalibrated variance early on in the training process that leads to worse results.
 
-Empirically \cite{carlos_2018} finds what they coin the neural linear model to work best. The model consists of using a neural network as a basis function that is used as the covariates to a linear bayesian regression model. This is equivalent to rewriting the regression task to 
+Empirically \cite{carlos_2018} found what they coin the neural linear model to work best. The model consists of using a neural network as a basis function that is used as the covariates to a linear bayesian regression model. This is equivalent to rewriting the regression task to 
 
 \begin{equation*}
 	Q = \phi(X)\beta + \varepsilon \quad \text{where} \quad \varepsilon \sim N(0,\sigma^2)
@@ -22,9 +22,9 @@ This setup allows the application of the methods discussed in chapter \ref{ch:li
 
 \subsection{Bayesian DQN Models}
 
-Based on the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the architecture used in \cite{azziz_2018}, called the BDQN, is provided. This is used as a base which will modified to fit with the BNIG model and thus allow for better variance propagation.
+Based on the results of \cite{carlos_2018} this thesis attempts to combine neural networks and the BNIG model through a neural linear setup. To start off a summary of the architecture used in \cite{azziz_2018}, called the BDQN, is provided. This is used as a base which will be modified to fit with the BNIG model and thus allow for better variance propagation.
 
-The BDQN architecture starts with the same architecture as the standard DQN architecture\citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model and uses the MAP target for both without considering the possibility of sampling the target. The neural network is trained using the loss function
+The BDQN architecture starts with the same architecture as the standard DQN architecture \citep{mnih_2015}. The final layer of a DQN is a linear layer which means it can be replaced by any linear model. \cite{azziz_2018} replaces this with a BN model and uses the MAP target for both without considering the possibility of sampling the target. The neural network is trained using the loss function
 
 \begin{equation*}
 	\theta = \theta - \alpha\nabla_\theta\big(Q_t - [\mu_n^T\phi_\theta(x_t)]\big)^2.
@@ -52,7 +52,7 @@ These two training processes do not have to happen sequentially. In \cite{azziz_
 
 \subsection{From BDQN to BNIG DQN}
 
-The downside retraining the bayesian regression is that this is computational heavy, especially considering that the final layer in the neural network consists of 512 neurons, meaning the update requires matrix arithmetic with a 512 by 512 matrix. On top of this using a BNIG model requires the target Q-values to be sampled from the posterior. This means every 10,000 steps 100,000 new samples must be drawn which requires a new set of matrix arithmetic of the same magnitude. Instead this thesis considers the exponential forgetting method. However implementing this requires some extra considerations to ensure that the model remains stable.
+The downside of retraining the bayesian regression is that this is computational heavy, especially considering that the final layer in the neural network consists of 512 neurons, meaning the update requires matrix arithmetic with a 512 by 512 matrix. On top of this using a BNIG model requires the target Q-values to be sampled from the posterior. This means every 10,000 steps 100,000 new samples must be drawn which requires a new set of matrix arithmetic of the same magnitude. Instead this thesis considers the exponential forgetting method. However implementing this requires some extra considerations to ensure that the model remains stable.
 
 Recall that the classic DQN has one online network that is updated each training step and one target network that is updated occasionally to match the online network. \cite{mnih_2013} found that using this target network to calculate the regression target helped stabilize the algorithm.
 
@@ -109,7 +109,7 @@ Here $T_{sync}$ is a hyperparameter that defines how often to sync the online an
     Initialize neural network $\phi$ with random weights $\theta$\\
     Initialize target neural network $\phi*$ with weights $\theta^*=\theta$\\
     Initialize $|\mathcal{A}|$ BNIG models with priors $\mu_a = zeros(p,1)$, $\Sigma_a = diag(p,p)$, $\alpha_a = 1$, $\beta_a = 0.01$
-    Initialize target BNIG models with priors $\mu^*_a = \mu^*_a$, $\Sigma^*_a = \Sigma^*_a$, $\alpha^*_a = \alpha^*_a$, $\beta^*_a = \beta^*_a$.
+    Initialize target BNIG models with priors $\mu^*_a = \mu_a$, $\Sigma^*_a = \Sigma_a$, $\alpha^*_a = \alpha^*_a$, $\beta^*_a = \beta_a$.
 \end{algorithm}
 
 \section{Experiment Setup}
@@ -118,7 +118,7 @@ The rest of this chapter consists of comparing the BNIG DQN to the regular DQN o
 
 \subsection{Implementation}
 
-To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine\citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented on top of this DQN implementation.
+To ensure a correct implementation of the DQN and a fair comparison to the BNIG DQN the python package Dopamine \citep{castro_18} was used. This package contains an implementation of a DQN that matches the baselines of the \cite{mnih_2015}. The BNIG DQN was implemented on top of this DQN implementation.
 
 \subsection{Hyperparameter Tuning}
 
@@ -219,11 +219,11 @@ The environment implementation from OpenAI Gym was used \citep{brockman_2016}. E
     \label{fig:nn_acrobot}
 \end{figure}
 
-A score above -500 indicates the agent was able to lift the robot arm over the required threshold. Figure \ref{fig:nn_acrobot} shows both agents are occasionally able to do this. However, while the DQN model find a stable policy leading to an average reward of -100, the BDQN struggles to stay above -500. A deeper look into the per seed results (figure \ref{fig:nn_per_acrobot}) shows that the BDQN acheives an average reward of around -100 every seed. However, it is unable to keep this policy over more than two iterations before falling to a -500 reward again. There are many possible reasons. It can be caused by a too high learning rate, a miscalibrated exponential memory or a miscalibrated target update time period to a name a few.
+A score above -500 indicates the agent was able to lift the robot arm over the required threshold. Figure \ref{fig:nn_acrobot} shows both agents are occasionally able to do this. However, while the DQN model find a stable policy leading to an average reward of -100, the BNIG DQN struggles to stay above -500. A deeper look into the per seed results (figure \ref{fig:nn_per_acrobot}) shows that the BNIG DQN acheives an average reward of around -100 every seed. However, it is unable to keep this policy over more than two iterations before falling to a -500 reward again. There are many possible reasons. It can be caused by a too high learning rate, a miscalibrated exponential memory or a miscalibrated target update time period to a name a few.
 
 \subsection{Atari}
 
-A standard benchmark in the deep RL field is a large set of atari 2600 games called the Arcade Learning Environment(ALE) introduced in \cite{bellemare_2013}. Papers presenting new methods in this field generally tested for 200 million frames on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. All environments must be learned based purely on the image input from the game. Due to the difficulty of the games and the large networks required the learning process is heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was tested once for 20 million one of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN so a single run of a 5-step DQN was also run for a fairer comparison.
+A standard benchmark in the deep RL field is a large set of atari 2600 games called the Arcade Learning Environment(ALE) introduced in \cite{bellemare_2013}. Papers presenting new methods in this field generally trained on 200 million frames on 40-50 of these games, such as in \cite{mnih_2015}, \cite{mnih_2016} and \cite{donoghue_2017}. All environments must be learned based purely on the image input from the game. Due to the difficulty of the games and the large networks required the learning process is heavy to run, often taking close to a week on a GPU per game. Due to limited compute the BNIG DQN was trained on 20 million frames on one seed in one of these games. The results were compared to 5 seeds of DQN runs that can be found in the Dopamine package. Both methods use all the same hyperparameters with the exception of the update horizon, which was set to 5 for the BNIG DQN. This is known to increase the performance of the DQN so a single run of a 5-step DQN was also run for a fairer comparison.
 
 \subsubsection{Pong}
 

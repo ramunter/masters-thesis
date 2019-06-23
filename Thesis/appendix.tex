@@ -16,14 +16,14 @@ Start with the linear regression model $y=X\beta + \varepsilon$. In this setting
     \end{split}
 \end{equation}
 
-Consider the bayesian setting where the coefficients $\beta$ are random variables but the noise variance $\sigma^2$ is known. One choice of prior distribution is the normal distribution $N(\mu, \sigma)$ as this is a conjugate prior in this case.
+Consider the bayesian setting where the coefficients $\beta$ are random variables but the noise variance $\sigma^2$ is known. One choice of prior distribution is the normal distribution $N(\mu, \Sigma)$ as this is a conjugate prior in this case.
 
 Using bayes rule it can then be shown that
 
 \begin{equation}
     \label{eq:post_proof_bn}
     \begin{split}
-        p(\beta|X,y) &\propto \exp\bigg[-\frac{1}{2\sigma^2}\big(y-X\beta\big)^T\big(y-X\beta\big)\exp\bigg(-\frac{1}{2}\beta^T\Sigma^{-1}\beta\bigg)\bigg] \\
+        p(\beta|X,y) &\propto \exp\bigg[-\frac{1}{2\sigma^2}\big(y-X\beta\big)^T\big(y-X\beta\big)\bigg]\exp\bigg[-\frac{1}{2}\beta^T\Sigma^{-1}\beta\bigg] \\
         &\propto \exp\bigg[-\frac{1}{2}\Big(\beta-\tilde{\beta}\Big)^T\Big(\frac{1}{\sigma^2}X^TX + \Sigma^{-1}\Big)\Big(\beta - \tilde{\beta}\Big)\bigg]
     \end{split}
 \end{equation}
@@ -81,7 +81,7 @@ In section 4.5.2 in \cite{fahrmeir_2013} a proof is given that shows
     \end{split}
 \end{equation}
 
-where $_0$ denotes the prior and 
+where $0$ denotes the prior and 
 
 \begin{align*}
     \Lambda_{n} & = X^TX + \Lambda_{0} \\
@@ -121,7 +121,7 @@ which shows that the normal inverse gamma prior is a conjugate prior with the po
     \label{fig:app_2state}
 \end{figure}
 
-For the 2 state propagation experiments a regression model $\mathcal{M}$ with the form $y = X\beta + \varepsilon$ where $\beta = [\begin{array}{cc}\beta_1  & \beta_2\end{array}]$ was used. Since state 2 has a known posterior $\mathcal{M}$ only trains on state 1. This means $x$ is always $[\begin{array}{cc}1  & 1\end{array}]$. The pseudocode for the two target methods follows. 
+For the 2 state propagation experiments a regression model $\mathcal{M}$ with the form $y = X\beta + \varepsilon$ where $\beta = [\begin{array}{cc}\beta_1  & \beta_2\end{array}]$ was used. Since state 2 has a known posterior $\mathcal{M}$ only trains on state 1. By encoding state 1 with the number 1 and including a bias term $x$ will always be $[\begin{array}{cc}1  & 1\end{array}]$. The pseudocode for the two target methods follows. 
 
 \begin{algorithm}[H]
     \caption{Sample Target Variance Propagation}
@@ -171,7 +171,9 @@ The code ReadMe contains instructions on how to run the linear corridor experime
 
 \subsection{Environment Details}
 
-The environment consists of N states and lasts N timesteps. A right action leads to 0 reward unless it reaches the final right state in which case it returns a reward of 1. Every left action returns a reward of $\frac{1}{10N}$. The left action is encoded by 0 and the right by 1. The output from the environment is an array of two values, one for the current timestep and one for the current state.
+The environment consists of N states and lasts N timesteps. A right action leads to 0 reward unless it reaches the final right state in which case it returns a reward of 1. Every left action returns a reward of $\frac{1}{10N}$. The left action is encoded by 0 and the right by 1. The output from the environment is an array of two values, one for the current timestep and one for the current state. 
+
+For each corridor length each agent was given 100 attempts at solving the environment. Each attempt was capped to 1000 episodes and the results are the mean number episodes required to learn the environment over the 100 attempts.
 
 \subsection{Hyperparameters}
 
@@ -194,7 +196,7 @@ The $\varepsilon$-greedy method has few hyperparameters. The learning rate is th
 
 \subsubsection{BN}
 
-The hyperparameters for the BN model consist of the priors, the "known" noise variance and the decay rate for the exponential forgetting. The $\beta$ prior mean is se equal for all coefficients, with a value denoted $\mu$. The prior $\beta$ covariance is set have the value $\sigma^2_\beta$ along the diagonal and zero otherwise. The noise term $\sigma^2_\varepsilon$ is assumed known but treated as a hyperparameter. Finally the decay rate defines the discount factor used for the exponential forgetting of previous data. The terms used to update the posterior are multiplied by this factor terms as in formula \ref{eq:exponential_forgetting}.
+The hyperparameters for the BN model consist of the priors, the "known" noise variance and the decay rate for the exponential forgetting. The $\beta$ prior mean is set equal for all coefficients, with a value denoted $\mu$. The prior $\beta$ covariance is set to have the value $\sigma^2_\beta$ along the diagonal and zero otherwise. The noise term $\sigma^2_\varepsilon$ is assumed known but treated as a hyperparameter. Finally the decay rate defines the discount factor used for the exponential forgetting of previous data. The terms used to update the posterior are multiplied by this factor terms as in formula \ref{eq:exponential_forgetting}.
 
 \begin{table}[H]
     \centering
