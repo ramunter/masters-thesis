@@ -16,9 +16,12 @@ flags.DEFINE_float("scale", 1, "SD of target")
 
 FLAGS = flags.FLAGS
 
+
+plt.style.use('ggplot')
 plt.rcParams.update({'font.size': 32})
 
-def n_state_prop(model, states, target_scale):
+
+def n_state_prop(models, target_scale):
 
     final_state_posterior = norm(loc=1, scale=target_scale)
 
@@ -71,7 +74,7 @@ def n_state_prop(model, states, target_scale):
     for i, state in enumerate(range(states)):
         plot_posterior(axs[i], model, i+1)
 
-    plt.legend(loc='best', frameon=False)
+    #plt.legend(loc='best', frameon=False)
 
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axes

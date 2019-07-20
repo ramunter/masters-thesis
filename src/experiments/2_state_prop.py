@@ -6,7 +6,8 @@ import seaborn as sns
 
 from src.agents.util import GaussianRegression, GaussianRegression2
 
-plt.rcParams.update({'font.size': 24})
+plt.style.use('ggplot')
+plt.rcParams.update({'font.size': 28})
 
 scale=10
 state_2_posterior = norm(loc=1, scale=scale)
@@ -37,18 +38,19 @@ def plot_posterior(model, ax, title, known_noise=True):
     # else:
     #     samples = np.array([p[0] + np.random.normal(0, np.sqrt(p[1])) for p in param_samples])
 
-    ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=2, label="State 1 Posterior PDF")
-    ax.plot(x, state_2_posterior.pdf(x), linewidth=2, label="State 2 posterior")
+    ax.plot(x, [model.pdf(i, np.array([1])) for i in x], linewidth=8, label="State 1 Posterior")
+    ax.plot(x, state_2_posterior.pdf(x), '--', linewidth=8, label="Known State 2 Posterior")
+    ax.set_facecolor('white')
 
 
 fig, axs = plt.subplots(1,4)
 plt.subplots_adjust(bottom=0.15, wspace=0.4)
 
 
-plot_posterior(models_mean[0], axs[0], title="Known Noise\nMean Target")
-plot_posterior(models_sample[0], axs[1], title="Known Noise\nSample Target")
-plot_posterior(models_mean[1], axs[2], title="Unknown Noise\nMean Target", known_noise=False)
-plot_posterior(models_sample[1], axs[3], title="Unknown Noise\nSample Target", known_noise=False)
+plot_posterior(models_mean[0], axs[0], title="BN \nMean Target")
+plot_posterior(models_sample[0], axs[1], title="BN \nSample Target")
+plot_posterior(models_mean[1], axs[2], title="BNIG \nMean Target", known_noise=False)
+plot_posterior(models_sample[1], axs[3], title="BNIG \nSample Target", known_noise=False)
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), frameon=False)
 
 fig.add_subplot(111, frameon=False)

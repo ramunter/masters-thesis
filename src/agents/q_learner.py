@@ -62,10 +62,9 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=False):
     critic = Critic(state)
 
     average_regret = 1
-    n_step = 1
+    n_step = 3
     steps = 0
     transitions = []
-    complete=0
 
     for episode in range(1, episodes+1):
 

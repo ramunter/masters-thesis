@@ -120,6 +120,21 @@ def q_learner(env, Critic, episodes=10000, gamma=0.9, verbose=True):
             dataset.append(
                 np.append(X, [target[0], critic.q_value(state, action)]))
 
+                    critic.update(state, action, target[i])
+                    X = np.array(np.append(state, [action, 1]))
+
+                    dataset.append(
+                        np.append(X, [target[i], critic.q_value(state, action)]))
+            
+            elif steps >= n_step:
+                target = calculate_target(episode, transitions[-n_step:], gamma, next_q_value)
+                state = transitions[-n_step].state
+                action =  transitions[-n_step].action
+                critic.update(state, action, target)
+                X = np.array(np.append(state, [action, 1]))
+                dataset.append(
+                    np.append(X, [target, critic.q_value(state, action)]))
+        
             # Reset loop
             if not done:
                 state = next_state
