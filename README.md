@@ -2,7 +2,7 @@
 
 # Current implementations
 
-_Deep RL implementation found in (my dopamine fork)[https://github.com/ramunter/dopamine_mirror]_
+_Deep RL implementation found in [my dopamine fork](https://github.com/ramunter/dopamine_mirror)_
 
 ## Corridor experiment
 
