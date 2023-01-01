@@ -2,6 +2,8 @@
 
 # Current implementations
 
+_Deep RL implementation found in (https://github.com/ramunter/dopamine_mirror)[my dopamine fork]_
+
 ## Corridor experiment
 
 `python -um src.experiments.main`
